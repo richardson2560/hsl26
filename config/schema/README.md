@@ -1,0 +1,1 @@
+# config/schema/README.md
