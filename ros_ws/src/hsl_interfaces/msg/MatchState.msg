@@ -1,1 +1,9 @@
-# ros_ws/src/hsl_interfaces/msg/MatchState.msg
+std_msgs/Header header
+uint8 stage
+string role
+bool freeze
+bool active
+bool finished
+builtin_interfaces/Time deadline
+string score_profile
+bool motion_authorized

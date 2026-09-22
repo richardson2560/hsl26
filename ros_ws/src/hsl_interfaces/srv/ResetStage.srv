@@ -1,1 +1,4 @@
-# ros_ws/src/hsl_interfaces/srv/ResetStage.srv
+string reason
+---
+bool accepted
+string message

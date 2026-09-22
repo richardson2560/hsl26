@@ -71,6 +71,14 @@ CmdVelMux::CmdVelMux(rclcpp::NodeOptions options)
 : rclcpp::Node("cmd_vel_mux", options.allow_undeclared_parameters(
       true).automatically_declare_parameters_from_overrides(true)), allowed_(VACANT)
 {
+  std::string output_topic = "cmd_vel";
+  if (has_parameter("output")) {
+    get_parameter("output", output_topic);
+  } else {
+    declare_parameter("output", output_topic);
+  }
+  output_topic_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(output_topic, 10);
+
   std::map<std::string, rclcpp::Parameter> parameters;
   // Check if there are loaded parameters from config file besides sim_time_used
   if (!get_parameters("subscribers", parameters) || parameters.size() < 1) {
@@ -91,8 +99,7 @@ CmdVelMux::CmdVelMux(rclcpp::NodeOptions options)
     add_on_set_parameters_callback(
     std::bind(&CmdVelMux::parameterUpdate, this, std::placeholders::_1));
 
-  output_topic_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-  RCLCPP_DEBUG(get_logger(), "CmdVelMux : subscribe to output topic 'cmd_vel'");
+  RCLCPP_DEBUG(get_logger(), "CmdVelMux : publishing output topic '%s'", output_topic.c_str());
 
   active_subscriber_pub_ = this->create_publisher<std_msgs::msg::String>(
     "active", rclcpp::QoS(1).transient_local());    // latched topic

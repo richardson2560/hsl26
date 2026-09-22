@@ -1,1 +1,8 @@
-# ros_ws/src/hsl_bringup/config/tactics.yaml
+tactics:
+  policy: deterministic_fsm
+  role: unset
+  planning_rate_hz: 5.0
+  control_rate_hz: 20.0
+  supervisor_rate_hz: 40.0
+  learning_enabled: false
+  map_source: external_configuration

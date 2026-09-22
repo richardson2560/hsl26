@@ -1,1 +1,11 @@
-# ros_ws/src/hsl_bringup/config/perception.yaml
+perception:
+  qos:
+    sensor_depth: 1
+    sensor_reliability: best_effort
+    state_reliability: reliable
+  tracking:
+    max_measurement_age_s: 0.5
+    max_prediction_age_s: 15.0
+    yaw_validity_required: false
+  obstacles:
+    minimum_clearance_m: 0.25

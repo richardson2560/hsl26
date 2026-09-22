@@ -1,1 +1,6 @@
-# ros_ws/src/hsl_bringup/config/frames.yaml
+frames:
+  map: map
+  odom: odom
+  base_link: base_link
+  lidar: lidar_link
+  imu: imu_link

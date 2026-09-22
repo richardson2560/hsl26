@@ -1,1 +1,20 @@
-# ros_ws/src/hsl_bringup/config/hardware.yaml
+hardware:
+  base:
+    type: kobuki
+    command_topic: /commands/velocity
+    wheel_separation_m: 0.23
+    footprint_radius_m: 0.22
+  sensors:
+    pointcloud_topic: /sensors/points
+    imu_topic: /sensors/imu
+    wheel_odom_topic: /wheel_odom
+  limits:
+    max_linear_velocity_mps: 0.5
+    max_angular_velocity_rps: 2.0
+    max_linear_acceleration_mps2: 0.5
+    max_angular_acceleration_rps2: 2.0
+  safety:
+    odom_source: wheel_imu_fused
+    lio_source: fastlio2
+    minimum_deceleration_mps2: 0.5
+    command_latency_s: 0.1

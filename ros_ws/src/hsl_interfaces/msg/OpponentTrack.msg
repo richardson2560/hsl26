@@ -1,1 +1,9 @@
-# ros_ws/src/hsl_interfaces/msg/OpponentTrack.msg
+std_msgs/Header header
+string id
+geometry_msgs/Pose2D pose
+geometry_msgs/Twist twist
+float64[16] covariance
+bool yaw_valid
+builtin_interfaces/Time last_measurement
+uint8 state
+string source_id

@@ -1,1 +1,9 @@
-# ros_ws/src/hsl_interfaces/msg/OptionGoal.msg
+std_msgs/Header header
+string option_id
+string role
+geometry_msgs/Pose2D target
+bool heading_valid
+float64 heading_tolerance
+float64 position_tolerance
+builtin_interfaces/Time deadline
+string source_id

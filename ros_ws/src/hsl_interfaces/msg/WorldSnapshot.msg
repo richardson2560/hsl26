@@ -1,1 +1,8 @@
-# ros_ws/src/hsl_interfaces/msg/WorldSnapshot.msg
+std_msgs/Header header
+uint64 map_version
+string localization_epoch
+uint8 status
+float64 minimum_obstacle_distance
+uint32 obstacle_count
+uint32 portal_count
+string provenance

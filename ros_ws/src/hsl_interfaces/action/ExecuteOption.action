@@ -1,1 +1,6 @@
-# ros_ws/src/hsl_interfaces/action/ExecuteOption.action
+OptionGoal goal
+---
+OptionFeedback result
+---
+float32 progress
+string status

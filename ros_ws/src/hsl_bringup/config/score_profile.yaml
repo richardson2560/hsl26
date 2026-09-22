@@ -1,1 +1,6 @@
-# ros_ws/src/hsl_bringup/config/score_profile.yaml
+score_profile:
+  version: unannounced
+  official_values_loaded: false
+  stage_total_s: 600.0
+  freeze_s: 240.0
+  active_s: 360.0
