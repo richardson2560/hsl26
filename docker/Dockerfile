@@ -1,5 +1,6 @@
-# Stage 1: Base hardware environment inherited from HSL25
-FROM osrf/ros:humble-desktop AS kobuki-base
+# Stage 1: Frozen HSL25 hardware environment
+ARG base_img="nickodema/kobuki:humble-22.04-100625"
+FROM ${base_img} AS kobuki-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -14,7 +15,8 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Build the Kobuki and Livox hardware drivers once in the base stage.
+# Rebuild the inherited workspace against the pinned HSL25 toolchain. The
+# base image already contains Livox-SDK2 and the Kobuki/ecl dependencies.
 WORKDIR /workspace_kobuki
 COPY kobuki/workspace/src src
 RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \

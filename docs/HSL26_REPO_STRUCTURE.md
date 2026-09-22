@@ -192,27 +192,30 @@ Consequences for HSL26's repository structure:
 
 ### 3.1 Reusing the 2025 base image
 
-The 2025 `kobuki/docker/Dockerfile` already solves ROS2 + Kobuki/Livox drivers + `colcon`. It is kept **as is** as the base image (`hsl26/kobuki:2025-frozen`, tagged by the inherited commit hash) and HSL26 is built as a second stage **on top of it**, not replacing it:
+The 2025 `kobuki/docker/Dockerfile` identifies the frozen hardware image
+`nickodema/kobuki:humble-22.04-100625`, which already contains the Livox-SDK2
+and Kobuki/ecl build dependencies. The HSL26 image uses that image as its first
+stage and rebuilds the inherited source workspace before adding the HSL26
+layer:
 
 ```dockerfile
 # hsl26/docker/Dockerfile
-ARG BASE_IMAGE=hsl26/kobuki:2025-frozen
-FROM ${BASE_IMAGE} AS hsl26-base
+ARG base_img=nickodema/kobuki:humble-22.04-100625
+FROM ${base_img} AS kobuki-base
 
-# Dependencies new and exclusive to HSL26 (do not touch kobuki/'s own deps)
-COPY hsl_core/pyproject.toml /tmp/hsl_core/pyproject.toml
-RUN pip install --no-cache-dir -e /tmp/hsl_core \
-    && pip install --no-cache-dir numpy scipy open3d pytest
+COPY kobuki/workspace/src /workspace_kobuki/src
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \
+    cd /workspace_kobuki && colcon build --symlink-install"
 
-# Combined ROS2 workspace: kobuki/workspace (inherited) + ros_ws (own)
-COPY kobuki/workspace /workspace_base
-COPY ros_ws /workspace_hsl26
+COPY hsl_core /workspace_hsl26/hsl_core
+RUN pip3 install -e /workspace_hsl26/hsl_core
+
+COPY ros_ws/src /workspace_hsl26/src
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    cd /workspace_base && colcon build --symlink-install && \
-    source install/setup.bash && \
-    cd /workspace_hsl26 && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release"
+    source /workspace_kobuki/install/setup.bash && \
+    cd /workspace_hsl26 && colcon build --symlink-install"
 
-ENTRYPOINT ["/hsl26/docker/entrypoint.bash"]
+ENTRYPOINT ["/entrypoint.bash"]
 ```
 
 `entrypoint.bash` chain-sources `/opt/ros/.../setup.bash` → `/workspace_base/install/setup.bash` → `/workspace_hsl26/install/setup.bash`, then runs the `CMD` (by default, an interactive shell for `into.bash`).
@@ -240,20 +243,22 @@ Every message described in the architecture document maps 1:1 to a `.msg`. Examp
 ```
 # ros_ws/src/hsl_interfaces/msg/OpponentTrack.msg
 std_msgs/Header header
-uint32 seq
-builtin_interfaces/Time observation_stamp
-builtin_interfaces/Time valid_until
-uint32 map_version
-uint32 localization_epoch
-string status                    # SEARCHING | TRACKED | COASTING | OCCLUDED_BELIEF | LOST
-float64 x
-float64 y
-float64 vx
-float64 vy
+string id
+uint8 STATE_SEARCHING = 0
+uint8 STATE_TRACKED = 1
+uint8 STATE_COASTING = 2
+uint8 STATE_OCCLUDED_BELIEF = 3
+uint8 STATE_LOST = 4
+uint8 state
+geometry_msgs/Pose2D pose
+geometry_msgs/Twist twist
 float64[16] covariance           # 4x4 over [x,y,vx,vy]
 bool yaw_valid
-float64 yaw                      # only valid if yaw_valid=true
-builtin_interfaces/Time t_last_measurement
+builtin_interfaces/Time last_measurement
+builtin_interfaces/Time valid_until
+string localization_epoch
+uint32 map_version
+string source_id
 ```
 
 `status` includes `OCCLUDED_BELIEF` to expose the phase-2/3 belief state from `hsl_core/perception/topological_belief.py` (design §6.3-bis) to the tactics layer, so `hsl_decision` can distinguish "actively tracked" from "diffusing belief over the topological graph" when weighing `INTERCEPT_PORTAL` vs. `FALLBACK_DEFEND_BASE`.

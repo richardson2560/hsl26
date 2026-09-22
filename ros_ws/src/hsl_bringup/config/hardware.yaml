@@ -1,20 +1,32 @@
 hardware:
+  network:
+    mikrotik_subnet: "192.168.88.0/24"
+    nuc_ip: "192.168.88.205"
+    lidar_ip: "192.168.88.105"
   base:
     type: kobuki
-    command_topic: /commands/velocity
+    raw_cmd_topic: /commands/velocity
+    raw_odom_topic: /odom
     wheel_separation_m: 0.23
     footprint_radius_m: 0.22
   sensors:
-    pointcloud_topic: /sensors/points
-    imu_topic: /sensors/imu
-    wheel_odom_topic: /wheel_odom
+    raw_pointcloud_topic: /livox/lidar
+    raw_imu_topic: /livox/imu
+    raw_wheel_odom_topic: /odom
+    logical_pointcloud_topic: /sensors/points
+    logical_imu_topic: /sensors/imu
+    logical_wheel_odom_topic: /wheel_odom
+  command_mux:
+    output_topic: /commands/velocity
+    autonomous_topic: /hsl/cmd_vel_final
+    emergency_teleop_topic: /teleop/cmd_vel
   limits:
     max_linear_velocity_mps: 0.5
     max_angular_velocity_rps: 2.0
-    max_linear_acceleration_mps2: 0.5
+    max_linear_acceleration_mps2: 0.8
     max_angular_acceleration_rps2: 2.0
   safety:
     odom_source: wheel_imu_fused
     lio_source: fastlio2
-    minimum_deceleration_mps2: 0.5
-    command_latency_s: 0.1
+    minimum_deceleration_mps2: 0.85
+    command_latency_s: 0.075
