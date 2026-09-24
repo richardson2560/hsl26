@@ -84,6 +84,18 @@
   ],
   "remaining_limitations": [
     {
+      "id": "LIMIT-005",
+      "area": "Revision-2 ROS adapters",
+      "status": "BLOCKED",
+      "reason": "The existing hsl_safety conversion module still consumes bootstrap field names and cannot safely decode the current ContractHeader-based IDL. A complete fix requires a coordinated domain-record and adapter migration; silent getattr fallbacks or legacy aliases would violate the technical specification."
+    },
+    {
+      "id": "LIMIT-006",
+      "area": "Pure-core API naming",
+      "status": "OPEN",
+      "reason": "Some P1.3 helper names and result records predate the final §16 catalog (for example integrate_unicycle and capture_predicate). They require a deliberate API migration with callers and fixtures, not isolated aliases."
+    },
+    {
       "id": "LIMIT-001",
       "area": "ROS IDL",
       "status": "BLOCKED",

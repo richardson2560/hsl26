@@ -553,6 +553,24 @@ comparisons in polygon/segment predicates. The audit report and P1.1
 migration manifest were updated so evidence contains no references to deleted
 stubs.
 
+## 16. Canonical TrackState naming audit
+
+Compared pure-core names and safety conversion references against the
+technical specification. Renamed the lifecycle enum definition and type
+annotation to canonical `TrackState` with values `0..4`; removed the
+pre-revision `OpponentState` compatibility alias so invalid names fail fast.
+Updated the tests and adapter imports to use `TrackState`, and added required
+repository-path headers to the modified Python files. No future-phase tracker
+or belief implementation was invented during this audit.
+
+The same comparison found two non-silent follow-up items: the current
+`hsl_safety` conversion module still targets bootstrap message fields, and
+some P1.3 helper names predate the final §16 API catalog. Both are recorded as
+explicit limitations in the audit report. They require coordinated migrations
+of domain records, adapters, result types and fixtures; compatibility
+fallbacks were deliberately not added because they would conceal revision-2
+contract violations.
+
 ## 14. Independent audit and adversarial verification
 
 An independent audit of P1.2/P1.3 identified and corrected five concrete

@@ -8,7 +8,7 @@ from hsl_safety.conversions import (
     motion_candidate_from_ros,
     opponent_track_from_ros,
 )
-from hsl_core.types import OpponentState
+from hsl_core.types import TrackState
 
 
 def _time(sec, nanosec=0):
@@ -79,13 +79,13 @@ def test_opponent_conversion_maps_named_lifecycle_state():
         valid_until=_time(31),
         localization_epoch="epoch-2",
         map_version=7,
-        state=OpponentState.COASTING.value,
+        state=TrackState.COASTING.value,
         source_id="tracker",
     )
 
     result = opponent_track_from_ros(message)
 
-    assert result.state is OpponentState.COASTING
+    assert result.state is TrackState.COASTING
     assert result.valid_until_s == 31.0
 
 

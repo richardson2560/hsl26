@@ -1,5 +1,4 @@
 # hsl_core/hsl_core/kinematics.py
-# hsl_core/hsl_core/kinematics.py
 """Exact planar differential-drive kinematics without ROS or implicit clocks.
 
 """

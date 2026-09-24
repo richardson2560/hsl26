@@ -8,7 +8,7 @@ without ROS 2, while malformed or incomplete messages fail explicitly.
 from hsl_core.types import (
     EgoState,
     MotionCandidate,
-    OpponentState,
+    TrackState,
     OpponentTrack,
     Pose2D,
     SafetyStatus,
@@ -69,7 +69,7 @@ def opponent_track_from_ros(message) -> OpponentTrack:
         valid_until_s=_time_to_seconds(message.valid_until),
         localization_epoch=message.localization_epoch,
         map_version=message.map_version,
-        state=OpponentState(message.state),
+        state=TrackState(message.state),
         source_id=message.source_id,
         frame_id=message.header.frame_id,
     )

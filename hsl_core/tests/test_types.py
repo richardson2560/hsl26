@@ -1,14 +1,15 @@
 # hsl_core/tests/test_types.py
+# hsl_core/tests/test_types.py
 import pytest
 
 from hsl_core.types import (
     EgoState,
     MotionCandidate,
-    OpponentState,
     OpponentTrack,
     Pose2D,
     SafetyStatus,
     Twist2D,
+    TrackState,
 )
 
 
@@ -68,11 +69,15 @@ def test_temporal_and_spatial_metadata_are_required():
         valid_until_s=2.0,
         localization_epoch="epoch-1",
         map_version=3,
-        state=OpponentState.TRACKED,
+        state=TrackState.TRACKED,
         source_id="tracker",
         frame_id="map",
     )
-    assert track.state is OpponentState.TRACKED
+    assert track.state is TrackState.TRACKED
+
+
+def test_track_state_serialization_values_are_canonical():
+    assert tuple(state.value for state in TrackState) == (0, 1, 2, 3, 4)
 
 
 def test_safety_status_rejects_empty_audit_fields():

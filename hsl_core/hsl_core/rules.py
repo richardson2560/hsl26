@@ -1,5 +1,4 @@
 # hsl_core/hsl_core/rules.py
-# hsl_core/hsl_core/rules.py
 """Deterministic capture and arrival predicates using explicit frames and time.
 
 """

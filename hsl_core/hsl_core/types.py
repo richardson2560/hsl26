@@ -1,5 +1,4 @@
 # hsl_core/hsl_core/types.py
-# hsl_core/hsl_core/types.py
 """Immutable, ROS-independent domain contracts for the HSL26 safety ring."""
 
 from dataclasses import dataclass
@@ -78,7 +77,9 @@ class EgoState:
         _non_empty(self.frame_id, "frame_id")
 
 
-class OpponentState(IntEnum):
+class TrackState(IntEnum):
+    """Canonical lifecycle states for an opponent track."""
+
     SEARCHING = 0
     TRACKED = 1
     COASTING = 2
@@ -100,7 +101,7 @@ class OpponentTrack:
     valid_until_s: float
     localization_epoch: str
     map_version: int
-    state: OpponentState
+    state: TrackState
     source_id: str
     frame_id: str
 
@@ -122,7 +123,7 @@ class OpponentTrack:
             raise ValueError("valid_until_s must not precede last_measurement_s")
         if self.map_version < 0:
             raise ValueError("map_version must be non-negative")
-        object.__setattr__(self, "state", OpponentState(self.state))
+        object.__setattr__(self, "state", TrackState(self.state))
 
 
 @dataclass(frozen=True)
