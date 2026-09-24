@@ -1,23 +1,26 @@
-std_msgs/Header header
-string id
-
-# State estimator lifecycle.
-uint8 STATE_SEARCHING = 0
-uint8 STATE_TRACKED = 1
-uint8 STATE_COASTING = 2
-uint8 STATE_OCCLUDED_BELIEF = 3
-uint8 STATE_LOST = 4
+hsl_interfaces/ContractHeader meta
+string track_id
 uint8 state
-
-geometry_msgs/Pose2D pose
-geometry_msgs/Twist twist
+float64 x
+float64 y
+float64 vx
+float64 vy
 float64[16] covariance
+bool position_valid
+float64 yaw
+float64 yaw_variance
 bool yaw_valid
+builtin_interfaces/Time last_measurement_stamp
+uint8 sensor_profile
+string model_id
+string association_status
 
-# Temporal and spatial validity.
-builtin_interfaces/Time last_measurement
-builtin_interfaces/Time valid_until
-string localization_epoch
-uint32 map_version
-
-string source_id
+uint8 SEARCHING = 0
+uint8 TRACKED = 1
+uint8 COASTING = 2
+uint8 OCCLUDED_BELIEF = 3
+uint8 LOST = 4
+uint8 REAL_CLOUD = 0
+uint8 SIM_CLOUD = 1
+uint8 SYNTHETIC_DETECTION = 2
+uint8 REPLAY_CLOUD = 3

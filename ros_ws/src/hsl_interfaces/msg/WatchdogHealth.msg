@@ -1,0 +1,7 @@
+hsl_interfaces/ContractHeader meta
+bool healthy
+bool stop_asserted
+uint64 last_decision_seq
+float64 heartbeat_age_s
+string config_hash
+string fault_reason

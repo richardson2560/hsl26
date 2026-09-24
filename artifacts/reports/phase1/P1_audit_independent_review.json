@@ -1,0 +1,119 @@
+{
+  "record": {
+    "title": "Independent audit of P1.2 and P1.3",
+    "date": "2026-09-24",
+    "status": "PASS_WITH_REMAINING_LIMITATIONS",
+    "scope": [
+      "Revision-2 interface contract structure",
+      "Pure-core validators",
+      "Planar kinematics and wheel units",
+      "Capture and contour-arrival predicates"
+    ]
+  },
+  "confirmed_findings_fixed": [
+    {
+      "id": "AUDIT-008",
+      "severity": "LOW",
+      "finding": "Cleanup left tracked empty test stubs that were not executable tests.",
+      "impact": "The repository appeared to provide future-phase coverage that did not exist.",
+      "fix": "Removed the six empty stubs and retained only executable current-phase tests in the migration manifest.",
+      "verification": "Reference scan and 10-test pure-core regression"
+    },
+    {
+      "id": "AUDIT-009",
+      "severity": "LOW",
+      "finding": "Python bool values could pass integer metadata validation, and orientation products mixed squared geometric quantities with dimensionless tolerances.",
+      "impact": "Malformed metadata could be accepted and geometric predicates had an unclear numerical threshold.",
+      "fix": "Reject bool-as-int values and compare orientation signs directly instead of multiplying dimensional quantities.",
+      "verification": "Python compilation, regression suite, and diff check"
+    },
+    {
+      "id": "AUDIT-001",
+      "severity": "HIGH",
+      "finding": "Angular error in radians was added directly to a metric capture distance.",
+      "impact": "The numeric fixture passed while the calculation was dimensionally invalid.",
+      "fix": "Separated position_error_m from angular_error_rad and converted angular error through an explicit angular_reference_radius_m.",
+      "verification": "test_robust_capture_interval_and_geometry_degenerate_cases"
+    },
+    {
+      "id": "AUDIT-002",
+      "severity": "HIGH",
+      "finding": "Polygon validation accepted repeated non-closing vertices and did not reject self-intersection.",
+      "impact": "Invalid obstacle or zone geometry could pass validation and reach downstream algorithms.",
+      "fix": "Require distinct vertices and reject non-adjacent segment intersections.",
+      "verification": "test_covariance_and_polygon_validation_are_explicit"
+    },
+    {
+      "id": "AUDIT-003",
+      "severity": "MEDIUM",
+      "finding": "Header validation did not reject INVALID records or future publication timestamps.",
+      "impact": "Diagnostic/invalid or future-dated data could be treated as current input.",
+      "fix": "Reject INVALID records and publication timestamps beyond an explicit allowed_future_ns tolerance.",
+      "verification": "test_contract_header_rejects_mixed_epoch_and_expiry"
+    },
+    {
+      "id": "AUDIT-004",
+      "severity": "MEDIUM",
+      "finding": "ContractHeader forced stage_id for all records, contrary to the specification allowance for sensor/diagnostic metadata.",
+      "impact": "Valid pre-stage sensor records could be rejected or producers could invent authority metadata.",
+      "fix": "Allow empty stage_id in the value type; require it explicitly in authority validation with require_stage=True.",
+      "verification": "test_contract_header_rejects_mixed_epoch_and_expiry"
+    },
+    {
+      "id": "AUDIT-005",
+      "severity": "LOW",
+      "finding": "Covariance validation accepted invalid dimension values and did not test the PSD boundary deeply.",
+      "impact": "Malformed validator calls could silently accept empty structures.",
+      "fix": "Require a positive integer dimension and add singular PSD and indefinite matrix fixtures.",
+      "verification": "test_covariance_psd_boundary_and_kinematic_time_scaling"
+    }
+  ],
+  "false_positive_or_test_quality_findings": [
+    {
+      "id": "AUDIT-006",
+      "finding": "The original bow-tie self-intersection fixture has zero signed area.",
+      "result": "It is correctly rejected as non-collinear before the simplicity check; this is not evidence that self-intersections are accepted.",
+      "action": "The adversarial test accepts the correct rejection category while separately exercising duplicate-vertex rejection."
+    },
+    {
+      "id": "AUDIT-007",
+      "finding": "The original capture interval test encoded a dimensionally invalid API name while expecting the correct numeric fixture.",
+      "result": "The test was a false positive for physical correctness.",
+      "action": "The API and test now make all metre/radian conversions explicit."
+    }
+  ],
+  "remaining_limitations": [
+    {
+      "id": "LIMIT-001",
+      "area": "ROS IDL",
+      "status": "BLOCKED",
+      "reason": "Generated rosidl/colcon build still requires the pinned ROS 2 environment."
+    },
+    {
+      "id": "LIMIT-002",
+      "area": "Polygon numerical robustness",
+      "status": "OPEN",
+      "reason": "The pure validator uses fixed tolerances; production-scale coordinate bounds and exact robustness policy must be fixed before release."
+    },
+    {
+      "id": "LIMIT-003",
+      "area": "Runtime sequence/source validation",
+      "status": "OPEN",
+      "reason": "validate_header validates one record; monotonic sequence and source-session cache policy belong to P1.5 adapters."
+    },
+    {
+      "id": "LIMIT-004",
+      "area": "Deskew and full rule integration",
+      "status": "OPEN",
+      "reason": "T07, full T20-T23 runtime lease behavior and T28 world/stage integration require later phase components."
+    }
+  ],
+  "verification": {
+    "command": "Set-Location hsl_core; python -m pytest tests -q",
+    "result": "10 passed",
+    "compile": "python -m compileall -q hsl_core/hsl_core",
+    "diff_check": "git diff --check",
+    "ros_import_scan": "No ROS imports in hsl_core/hsl_core",
+    "python_path_header_scan": "All touched Python implementation and test files include a path comment on line 1"
+  }
+}

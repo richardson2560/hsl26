@@ -1,0 +1,6 @@
+hsl_interfaces/ContractHeader meta
+uint64 decision_seq
+uint8 mode
+bool permit_motion
+string config_hash
+string active_option_instance_id

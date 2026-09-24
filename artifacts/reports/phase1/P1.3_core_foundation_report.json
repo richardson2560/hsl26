@@ -1,0 +1,59 @@
+{
+  "record": {
+    "id": "P1.3",
+    "title": "Pure core foundation",
+    "status": "PASS",
+    "date": "2026-09-24",
+    "scope": "P1.3a-P1.3d",
+    "ros_imports": false,
+    "internal_wall_clock_reads": false
+  },
+  "implementation": {
+    "p1_3a": [
+      "Immutable revision-2 ContractHeader with schema, epoch, stage, frame, sequence and lease validation",
+      "Finite, symmetric, positive-semidefinite covariance validation without optional numerical runtime dependencies",
+      "Counterclockwise non-degenerate polygon validation",
+      "Existing domain covariance records now use typed covariance validation"
+    ],
+    "p1_3b": [
+      "Exact SE(2) unicycle integration with small-angle sinc series",
+      "Differential-drive wheel-rate conversion with positive geometry checks",
+      "Planar body-to-parent point transform",
+      "Robust segment intersection including endpoint and collinear contact"
+    ],
+    "p1_3c": [
+      "Strict capture distance below 0.45 m",
+      "Inclusive bearing threshold at pi/4",
+      "Explicit UNKNOWN/FALSE line-of-sight rejection",
+      "Coincident-origin invalidity",
+      "Robust capture-feasibility interval",
+      "First contour contact with interpolated segment fraction and time"
+    ],
+    "p1_3d": [
+      "Boundary fixtures for T01-T06, T14 and T24",
+      "Mixed epoch and expired lease rejection",
+      "Degenerate covariance, polygon and segment fixtures",
+      "First-contact geometry fixture that does not use endpoint chord length"
+    ]
+  },
+  "files": [
+    "hsl_core/hsl_core/contracts.py",
+    "hsl_core/hsl_core/geometry.py",
+    "hsl_core/hsl_core/kinematics.py",
+    "hsl_core/hsl_core/rules.py",
+    "hsl_core/hsl_core/types.py",
+    "hsl_core/tests/test_p13_foundation.py"
+  ],
+  "verification": {
+    "command": "Set-Location hsl_core; python -m pytest tests",
+    "result": "9 passed",
+    "compile_command": "python -m compileall -q hsl_core/hsl_core",
+    "compile_result": "PASS",
+    "format_check": "git diff --check",
+    "limitations": [
+      "Full T07 deskew fixture requires the later sensor/pose-history implementation.",
+      "Full T20-T23 integration semantics require P1.5 adapters and runtime leases.",
+      "Full T28 rule integration requires the later world/stage records."
+    ]
+  }
+}

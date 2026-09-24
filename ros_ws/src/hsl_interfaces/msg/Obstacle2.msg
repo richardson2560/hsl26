@@ -1,0 +1,9 @@
+uint64 obstacle_id
+hsl_interfaces/Polygon2 polygon
+float64 vx
+float64 vy
+float64 speed_bound_mps
+float64 position_error_bound_m
+bool motion_estimate_valid
+bool is_opponent
+builtin_interfaces/Time last_observed_stamp

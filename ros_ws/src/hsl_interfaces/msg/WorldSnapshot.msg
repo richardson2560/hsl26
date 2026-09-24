@@ -1,8 +1,8 @@
-std_msgs/Header header
-uint64 map_version
-string localization_epoch
-uint8 status
-float64 minimum_obstacle_distance
-uint32 obstacle_count
-uint32 portal_count
-string provenance
+hsl_interfaces/ContractHeader meta
+hsl_interfaces/TopologyNode[] nodes
+hsl_interfaces/TopologyEdge[] edges
+hsl_interfaces/GoalZone[] zones
+string grid_snapshot_id
+string grid_hash
+string map_profile
+bool localization_valid

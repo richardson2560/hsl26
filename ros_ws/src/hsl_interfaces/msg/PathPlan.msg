@@ -1,0 +1,9 @@
+hsl_interfaces/ContractHeader meta
+string path_id
+string option_instance_id
+hsl_interfaces/Point2[] points
+float64[] speed_limits_mps
+bool final_yaw_required
+float64 final_yaw
+float64 cost
+string planner_profile_id

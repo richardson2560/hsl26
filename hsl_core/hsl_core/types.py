@@ -1,10 +1,13 @@
 # hsl_core/hsl_core/types.py
+# hsl_core/hsl_core/types.py
 """Immutable, ROS-independent domain contracts for the HSL26 safety ring."""
 
 from dataclasses import dataclass
 from enum import IntEnum
 import math
 from typing import Tuple
+
+from .contracts import validate_covariance
 
 
 def _finite(value: float, field_name: str) -> float:
@@ -68,7 +71,7 @@ class EgoState:
         object.__setattr__(
             self,
             "pose_covariance",
-            _fixed_vector(tuple(self.pose_covariance), 9, "pose_covariance"),
+            validate_covariance(self.pose_covariance, 3),
         )
         _finite(self.observation_time_s, "observation_time_s")
         _non_empty(self.localization_epoch, "localization_epoch")
@@ -109,7 +112,7 @@ class OpponentTrack:
         object.__setattr__(
             self,
             "covariance",
-            _fixed_vector(tuple(self.covariance), 16, "covariance"),
+            validate_covariance(self.covariance, 4),
         )
         _finite(self.velocity_x_mps, "velocity_x_mps")
         _finite(self.velocity_y_mps, "velocity_y_mps")

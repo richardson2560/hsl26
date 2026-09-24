@@ -1,6 +1,5 @@
 OptionGoal goal
 ---
-OptionFeedback result
+OptionResult result
 ---
-float32 progress
-string status
+OptionFeedback feedback

@@ -1,7 +1,10 @@
-std_msgs/Header header
+hsl_interfaces/ContractHeader meta
 geometry_msgs/Pose2D pose
-geometry_msgs/Twist twist
+float64 v
+float64 omega
 float64[9] pose_covariance
-string localization_epoch
+float64[4] twist_covariance
 bool healthy
 bool slip
+bool localization_valid
+string calibration_id

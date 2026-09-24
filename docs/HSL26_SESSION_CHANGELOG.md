@@ -465,3 +465,119 @@ roadmap:
 This documentation change does not claim that the simulator, launch graph, or
 training CLI is already production-ready; it establishes the reproducible
 workflow and the evidence required before those surfaces can be marked done.
+
+## 11. P1.1 repository audit and migration manifest
+
+P1.1a–P1.1e were completed as a read-only audit of commit
+`1ca74154e8ef8ea3cde24fb0c595e794b24c2c60`. The new evidence is:
+
+- `docs/adr/ADR-003-interface-revision-2.md`, documenting the revision-2
+  migration boundary, current bootstrap incompatibilities and command
+  authority decisions.
+- `artifacts/reports/phase1/P1.1_migration_manifest.json`, containing the
+  package/entry-point/launch/test/interface inventory, producer/consumer
+  migration table, SHA-256 hashes, mux/Kobuki timeout findings and Livox
+  message-time analysis.
+
+The audit found no unexpected direct `/commands/velocity` publisher:
+`cmd_vel_mux` remains the sole known physical command authority before the
+Kobuki input. It also records four open follow-up items: completing the
+revision-2 IDL, wiring runtime producers/consumers, measuring mux/driver
+stop behavior, and resolving the active Livox topic/type and point-time
+normalization. No Python file was modified.
+
+## 12. P1.2 revision-2 interface contracts
+
+P1.2a–P1.2d replaced the bootstrap `hsl_interfaces` schemas with the
+revision-2 contract set defined by the technical specification:
+
+- Added `ContractHeader`, geometry/coverage/obstacle records, topology records,
+  execution identity, path/candidate/safety authority records, heartbeat and
+  rule-event messages.
+- Reworked `EgoState`, `OpponentTrack`, `MatchState`, `OptionGoal`,
+  `OptionFeedback`, `MotionCandidate`, `SafetyStatus` and `WorldSnapshot` to
+  use `ContractHeader` and revision-2 field names.
+- Added `OptionResult`, `StartStage`, `SetGoalZone`, `ResolveEvent` and
+  `RearmSafety`; upgraded `ExecuteOption` and `ResetStage` transaction shapes.
+- Registered all 24 messages, 5 services and 1 action in the interface
+  generator, with generated-test integration through `ament_cmake_pytest`.
+- Added static contract tests and sample accepted/rejected encoding fixtures.
+
+Validation passed with 5 static contract tests and complete CMake path
+coverage. The ROS 2 generated build is `BLOCKED` on the unavailable pinned
+ROS 2/colcon environment; this limitation and the required build command are
+recorded in `artifacts/reports/phase1/P1.2_contract_report.json`. Existing ROS
+adapters are intentionally not updated in P1.2; they remain incompatible
+until P1.5 performs explicit revision-2 adapter migration. The new Python test
+file includes its repository path in the required header comment.
+
+## 13. P1.3 pure core foundation
+
+P1.3a–P1.3d are complete. The pure core now provides:
+
+- immutable revision-2 metadata validation, lease/epoch checks, finite
+  covariance validation and non-degenerate counterclockwise polygon checks;
+- exact SE(2) differential-drive integration with a small-angle `sinc`
+  continuation, wheel-rate conversion and planar frame transforms;
+- robust segment intersection, strict capture distance (`d < 0.45 m`),
+  inclusive bearing (`|beta| <= pi/4`), explicit LOS validity handling,
+  coincident-origin rejection and robust capture intervals;
+- first-contour-arrival detection with interpolated contact time and point.
+
+The new implementation is ROS-independent and does not read any wall clock.
+Boundary and degenerate fixtures are in
+`hsl_core/tests/test_p13_foundation.py`; the evidence report is
+`artifacts/reports/phase1/P1.3_core_foundation_report.json`. Validation passed
+with 9 tests and Python compilation. Full sensor deskew, runtime lease
+integration and later world-event fixtures remain assigned to their respective
+future phase tasks.
+
+## 15. Removal of obsolete empty test stubs
+
+The repository structure was compared against the revision-2 implementation
+boundaries. Six tracked test files contained only a path comment and no test
+code: `test_astar.py`, `test_braking.py`, `test_ekf_gating.py`,
+`test_kinematics.py`, `test_rules.py` and `test_topological_belief.py`.
+They were removed because they falsely inflated the apparent test surface and
+were superseded for the current P1.3 slice by
+`hsl_core/tests/test_p13_foundation.py`. The corresponding future-phase test
+modules must be recreated with real fixtures when their implementation work
+starts; they were not silently marked as passed.
+
+No target implementation module was deleted: empty core modules remain because
+they are explicitly reserved by `HSL26_REPO_STRUCTURE.md` for later phases.
+
+The cleanup audit also tightened integer metadata validation to reject
+`bool` values and replaced dimensional orientation products with direct sign
+comparisons in polygon/segment predicates. The audit report and P1.1
+migration manifest were updated so evidence contains no references to deleted
+stubs.
+
+## 14. Independent audit and adversarial verification
+
+An independent audit of P1.2/P1.3 identified and corrected five concrete
+issues that the original happy-path tests did not expose:
+
+- angular radians had been added directly to a metric capture distance;
+- polygon validation did not reject repeated internal vertices or
+  self-intersections;
+- header validation accepted `INVALID` records and future publication times;
+- `ContractHeader` incorrectly required `stage_id` even for sensor/diagnostic
+  metadata;
+- covariance validation accepted invalid dimensions and lacked PSD boundary
+  coverage.
+
+The corrected API makes angular-to-linear conversion explicit through an
+angular reference radius, rejects invalid geometry and separates generic
+metadata from authority-stage requirements. Additional adversarial tests cover
+singular PSD matrices, indefinite matrices, future leases, invalid records,
+duplicate/self-intersecting polygons, wheel-rate round trips and exact
+kinematic time composition.
+
+The audit evidence is
+`artifacts/reports/phase1/P1_audit_independent_review.json`. The final pure
+core run was 10 passed, Python compilation passed, `git diff --check` passed,
+and no ROS imports or internal wall-clock reads were found in the pure core.
+Remaining limitations are explicitly retained: rosidl/colcon generation,
+runtime sequence/session caches, production-scale geometric tolerance policy,
+sensor deskew and full world/stage integration.

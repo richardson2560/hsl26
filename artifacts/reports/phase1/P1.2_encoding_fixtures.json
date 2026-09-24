@@ -1,0 +1,53 @@
+{
+  "schema_version": 2,
+  "header_valid": {
+    "schema_version": 2,
+    "source_id": "fixture.ego",
+    "source_session": "session-a",
+    "seq": 7,
+    "stage_id": "stage-1",
+    "clock_epoch": "clock-a",
+    "localization_epoch": "loc-a",
+    "frame_id": "odom",
+    "observation_stamp": {"sec": 10, "nanosec": 500000000},
+    "state_stamp": {"sec": 10, "nanosec": 500000000},
+    "publication_stamp": {"sec": 10, "nanosec": 510000000},
+    "valid_until": {"sec": 10, "nanosec": 700000000},
+    "map_version": 3,
+    "topology_version": 4,
+    "validity": 1
+  },
+  "enum_fixture": {
+    "role_explorer": 0,
+    "role_guardian": 1,
+    "stage_active": 2,
+    "safety_stop": 0,
+    "safety_admit": 1,
+    "safety_limit": 2
+  },
+  "rejected_headers": [
+    {
+      "name": "legacy_schema",
+      "schema_version": 1,
+      "expected_rejection": "schema_version"
+    },
+    {
+      "name": "epoch_mismatch",
+      "schema_version": 2,
+      "clock_epoch": "clock-old",
+      "expected_rejection": "clock_epoch"
+    },
+    {
+      "name": "expired_lease",
+      "schema_version": 2,
+      "valid_until": {"sec": 9, "nanosec": 0},
+      "expected_rejection": "valid_until"
+    },
+    {
+      "name": "unknown_enum",
+      "schema_version": 2,
+      "validity": 99,
+      "expected_rejection": "validity"
+    }
+  ]
+}

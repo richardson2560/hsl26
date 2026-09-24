@@ -1,0 +1,7 @@
+hsl_interfaces/ContractHeader meta
+hsl_interfaces/Obstacle2[] obstacles
+hsl_interfaces/CoverageGrid coverage
+float64 pose_error_bound_m
+float64 map_error_bound_m
+string bounds_id
+bool complete

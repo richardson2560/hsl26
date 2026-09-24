@@ -1,0 +1,98 @@
+{
+  "record": {
+    "id": "P1.2",
+    "title": "Revision-2 interface generation and compatibility report",
+    "status": "PASS_STATIC_NOT_BUILT",
+    "date": "2026-09-24",
+    "source_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "package": "ros_ws/src/hsl_interfaces",
+    "schema_version": 2
+  },
+  "p1_2a": {
+    "status": "PASS",
+    "registered_messages": 24,
+    "registered_services": 5,
+    "registered_actions": 1,
+    "contract_header": {
+      "field_order": [
+        "schema_version",
+        "source_id",
+        "source_session",
+        "seq",
+        "stage_id",
+        "clock_epoch",
+        "localization_epoch",
+        "frame_id",
+        "observation_stamp",
+        "state_stamp",
+        "publication_stamp",
+        "valid_until",
+        "map_version",
+        "topology_version",
+        "validity"
+      ],
+      "validity_values": {
+        "INVALID": 0,
+        "VALID": 1,
+        "DEGRADED": 2
+      }
+    },
+    "enum_values_are_explicit": true,
+    "fixed_arrays": {
+      "EgoState.pose_covariance": 9,
+      "EgoState.twist_covariance": 4,
+      "OpponentTrack.covariance": 16
+    }
+  },
+  "p1_2b": {
+    "status": "BLOCKED_BUILD_ENVIRONMENT",
+    "declared_dependencies": [
+      "ament_cmake",
+      "rosidl_default_generators",
+      "rosidl_default_runtime",
+      "geometry_msgs",
+      "std_msgs",
+      "builtin_interfaces",
+      "action_msgs",
+      "ament_cmake_pytest"
+    ],
+    "command": "colcon build --packages-select hsl_interfaces --event-handlers console_direct+",
+    "limitation": "ROS 2 Humble/colcon environment is not available in the Windows host checkout."
+  },
+  "p1_2c": {
+    "status": "PASS_STATIC",
+    "sample_fixture": "artifacts/reports/phase1/P1.2_encoding_fixtures.json",
+    "rejection_rules": [
+      "schema_version must equal 2",
+      "clock_epoch, localization_epoch, stage_id and source_session must match the active authority context",
+      "valid_until must cover the consumer evaluation time",
+      "unknown enum values are rejected",
+      "geometric records require a non-empty frame_id",
+      "authority and command records require a non-empty stage_id",
+      "sequence and execution identity must be monotonic/current"
+    ]
+  },
+  "p1_2d": {
+    "status": "PASS_STATIC",
+    "generated_api_report": {
+      "legacy_records_replaced": [
+        "EgoState.header -> EgoState.meta",
+        "EgoState.twist -> EgoState.v/omega",
+        "OpponentTrack.id -> OpponentTrack.track_id",
+        "OpponentTrack.pose/twist -> OpponentTrack.x/y/vx/vy",
+        "MotionCandidate.linear_velocity/angular_velocity -> MotionCandidate.v/omega",
+        "OptionGoal.option_id -> OptionGoal.option_instance_id",
+        "SafetyStatus.vetoed/reason -> SafetyStatus.decision/primary_reason"
+      ],
+      "legacy_publishers": "No runtime HSL26 publisher/subscriber exists yet; adapters remain P1.5 mocks or future producers.",
+      "mixed_schema_policy": "Legacy bootstrap messages are incompatible and cannot authorize revision-2 motion."
+    }
+  },
+  "verification": {
+    "static_test": "python -m pytest ros_ws/src/hsl_interfaces/test/test_contract_schema.py",
+    "static_result": "5 passed",
+    "path_check": "All CMake-registered message and service paths exist",
+    "ros_build_result": "NOT_RUN",
+    "known_limitation": "Generated ROS APIs and rosidl compiler output require the pinned ROS 2 environment."
+  }
+}

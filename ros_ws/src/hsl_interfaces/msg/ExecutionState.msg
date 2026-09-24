@@ -1,0 +1,4 @@
+hsl_interfaces/ContractHeader meta
+string active_option_instance_id
+uint8 phase
+bool candidate_authorized

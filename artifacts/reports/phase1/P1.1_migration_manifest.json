@@ -1,0 +1,256 @@
+{
+  "record": {
+    "id": "P1.1",
+    "title": "Repository audit and migration manifest",
+    "status": "PASS",
+    "audited_at": "2026-09-24T21:55:55+03:00",
+    "repository": "C:\\Users\\edgar\\Documents\\MASTER ROBOTIC AND AI\\PROJECTS\\hsl26",
+    "commit": "1ca74154e8ef8ea3cde24fb0c595e794b24c2c60",
+    "git_status": "clean",
+    "method": "Read-only checkout inspection; no algorithm or runtime changes",
+    "source_plan": "docs/HSL26_PHASE1_IMPLEMENTATION_PLAN.md",
+    "adr": "docs/adr/ADR-003-interface-revision-2.md"
+  },
+  "inventory": {
+    "ros_packages": [
+      "hsl_bringup",
+      "hsl_decision",
+      "hsl_diagnostics",
+      "hsl_interfaces",
+      "hsl_match",
+      "hsl_navigation",
+      "hsl_perception",
+      "hsl_safety",
+      "hsl_world"
+    ],
+    "python_entry_point_packages": [
+      "hsl_bringup",
+      "hsl_decision",
+      "hsl_diagnostics",
+      "hsl_match",
+      "hsl_navigation",
+      "hsl_perception",
+      "hsl_safety",
+      "hsl_world"
+    ],
+    "launch_files": [
+      "ros_ws/src/hsl_bringup/launch/hsl26.launch.py",
+      "ros_ws/src/hsl_bringup/launch/real_hardware.launch.py",
+      "ros_ws/src/hsl_bringup/launch/replay_bag.launch.py",
+      "ros_ws/src/hsl_bringup/launch/sim_mvsim.launch.py",
+      "ros_ws/src/hsl_decision/launch/decision.launch.py",
+      "ros_ws/src/hsl_match/launch/match.launch.py",
+      "ros_ws/src/hsl_navigation/launch/navigation.launch.py",
+      "ros_ws/src/hsl_perception/launch/perception.launch.py",
+      "ros_ws/src/hsl_safety/launch/safety.launch.py",
+      "ros_ws/src/hsl_world/launch/world.launch.py"
+    ],
+    "pure_core_tests": [
+      "hsl_core/tests/test_p13_foundation.py",
+      "hsl_core/tests/test_types.py"
+    ],
+    "ros_tests": [
+      "ros_ws/src/hsl_safety/test/test_conversions.py"
+    ],
+    "interface_files": {
+      "messages": [
+        "EgoState.msg",
+        "MatchState.msg",
+        "MotionCandidate.msg",
+        "OpponentTrack.msg",
+        "OptionFeedback.msg",
+        "OptionGoal.msg",
+        "SafetyStatus.msg",
+        "WorldSnapshot.msg"
+      ],
+      "services": [
+        "ResetStage.srv"
+      ],
+      "actions": [
+        "ExecuteOption.action"
+      ]
+    }
+  },
+  "migration": {
+    "revision_2_required_contracts": [
+      "ContractHeader",
+      "Polygon2",
+      "EgoState",
+      "CoverageGrid",
+      "Obstacle2",
+      "LocalObstacleSnapshot",
+      "MatchState",
+      "OptionGoal",
+      "ExecutionState",
+      "MotionCandidate",
+      "SafetyStatus",
+      "SupervisorHeartbeat",
+      "WatchdogHealth",
+      "RuleEvent"
+    ],
+    "bootstrap_records": [
+      {
+        "record": "EgoState",
+        "current_path": "ros_ws/src/hsl_interfaces/msg/EgoState.msg",
+        "current_users": [
+          "ros_ws/src/hsl_safety/hsl_safety/conversions.py"
+        ],
+        "revision_2_action": "Replace with header/frame/epoch-aware contract; update conversion and generated API",
+        "compatibility": "INCOMPATIBLE"
+      },
+      {
+        "record": "OpponentTrack",
+        "current_path": "ros_ws/src/hsl_interfaces/msg/OpponentTrack.msg",
+        "current_users": [
+          "ros_ws/src/hsl_safety/hsl_safety/conversions.py"
+        ],
+        "revision_2_action": "Preserve temporal validity and lifecycle semantics; update conversion",
+        "compatibility": "INCOMPATIBLE"
+      },
+      {
+        "record": "MotionCandidate",
+        "current_path": "ros_ws/src/hsl_interfaces/msg/MotionCandidate.msg",
+        "current_users": [
+          "ros_ws/src/hsl_safety/hsl_safety/conversions.py"
+        ],
+        "revision_2_action": "Add canonical header/authority/validity semantics before supervisor wiring",
+        "compatibility": "INCOMPATIBLE"
+      },
+      {
+        "record": "SafetyStatus",
+        "current_path": "ros_ws/src/hsl_interfaces/msg/SafetyStatus.msg",
+        "current_users": [
+          "ros_ws/src/hsl_safety/hsl_safety/conversions.py"
+        ],
+        "revision_2_action": "Align veto, reason, source and freshness fields with supervisor contract",
+        "compatibility": "INCOMPATIBLE"
+      },
+      {
+        "record": "MatchState, OptionGoal, OptionFeedback, WorldSnapshot",
+        "current_path": "ros_ws/src/hsl_interfaces/msg",
+        "current_users": [],
+        "revision_2_action": "Replace or map to revision-2 records; no compatible runtime consumer exists yet",
+        "compatibility": "UNWIRED"
+      },
+      {
+        "record": "ExecuteOption, ResetStage",
+        "current_path": "ros_ws/src/hsl_interfaces/action;ros_ws/src/hsl_interfaces/srv",
+        "current_users": [],
+        "revision_2_action": "Freeze action/service semantics with stage authority and error handling",
+        "compatibility": "UNWIRED"
+      }
+    ]
+  },
+  "authority": {
+    "physical_chain": [
+      {
+        "role": "emergency_input",
+        "topic": "/teleop/cmd_vel",
+        "priority": 100,
+        "timeout_s": 0.2
+      },
+      {
+        "role": "autonomous_input",
+        "topic": "/hsl/cmd_vel_final",
+        "priority": 50,
+        "timeout_s": 0.15
+      },
+      {
+        "role": "sole_mux_output",
+        "topic": "/commands/velocity",
+        "implementation": "kobuki/workspace/src/cmd_vel_mux/src/cmd_vel_mux.cpp"
+      },
+      {
+        "role": "kobuki_input",
+        "topic": "commands/velocity",
+        "timeout_s": 0.6,
+        "implementation": "kobuki/workspace/src/kobuki_ros/kobuki_node/src/kobuki_ros.cpp"
+      }
+    ],
+    "unexpected_direct_commands_velocity_publishers": [],
+    "exit_check": "PASS",
+    "open_risks": [
+      "Mux expiry and Kobuki timeout are not a measured physical stop guarantee",
+      "HSL26 nodes currently contain no runtime command publisher"
+    ]
+  },
+  "livox": {
+    "driver": "kobuki/workspace/src/livox_ros_driver2",
+    "launch_transfer_type": {
+      "value": 0,
+      "meaning": "sensor_msgs/msg/PointCloud2"
+    },
+    "available_custom_type": "livox_interfaces2/msg/CustomMsg",
+    "custom_point_time": {
+      "field": "offset_time",
+      "type": "uint32",
+      "meaning": "nanosecond offset relative to CustomMsg.timebase"
+    },
+    "device_config": {
+      "pcl_data_type": 1,
+      "meaning": "Cartesian coordinate data, 32-bit device encoding"
+    },
+    "topic_configured_by_hsl26": "/livox/lidar",
+    "runtime_resolution": "OPEN",
+    "unknowns": [
+      "Resolved ROS topic/type from the active launch graph",
+      "PointCloud2 timestamp field and per-point time availability in the active profile",
+      "Deskew adapter and validation evidence"
+    ]
+  },
+  "file_hashes_sha256": {
+    "docs/HSL26_PHASE1_IMPLEMENTATION_PLAN.md": "4eddae31aaca78e75e9f01eaba49af716e24377a8827055c13f8597bfdade2da",
+    "ros_ws/src/hsl_interfaces/CMakeLists.txt": "52641216f0ba69f6fb74f471de9c9ae98767851e9a2deccf429a9b583dc87699",
+    "ros_ws/src/hsl_interfaces/package.xml": "f90ea69ab947f5f8cf3f0bd8d94fccaeef9bd7799e956cffd1fbac42a72a68cf",
+    "ros_ws/src/hsl_bringup/config/hardware.yaml": "f40b278f10cf857d5717e4b8c60a57699a4281479c71b023ed75408124ab1ba2",
+    "kobuki/workspace/src/cmd_vel_mux/config/cmd_vel_mux_params.yaml": "6719a0c78b3ccf31790ced743755c925769553fcdc710a4ea40f2086f02843e6",
+    "kobuki/workspace/src/cmd_vel_mux/src/cmd_vel_mux.cpp": "a9377ac0fc8a9bc44f717212f692347f9fdec51ebb3c2e0d764f171fbbb91ec2",
+    "kobuki/workspace/src/kobuki_ros/kobuki_node/src/kobuki_ros.cpp": "bc0b18ff850d19b5aaab0462f2e09ff6498da8d8f0b5b0cbc4ec10a4d756a249",
+    "kobuki/workspace/src/kobuki_ros/kobuki_node/src/odometry.cpp": "a8b8873295ddc4e326064da98ee41ed8dcb87301080e45ce6e641c606d8a8080",
+    "kobuki/workspace/src/livox_ros_driver2/msg/CustomMsg.msg": "f42d6709db951b1fa307e929e742c0593cbf0d1b0ff977d2ed63ad8d7cee0a96",
+    "kobuki/workspace/src/livox_ros_driver2/msg/CustomPoint.msg": "b64b31a8edc8c8b3765d82b5d3ccd2d2e1f217b9525ef7007ab918674c619c59",
+    "kobuki/workspace/src/livox_ros_driver2/config/MID360_tb_config.json": "9a7b8906745d57095125376630264cafe86a82fba99d5d6925b37cc9ab73bfc5"
+  },
+  "open_incompatibilities": [
+    {
+      "id": "P1.1-01",
+      "severity": "BLOCKER_FOR_P1.2",
+      "finding": "Current hsl_interfaces is not the complete revision-2 IDL",
+      "owner": "P1.2",
+      "status": "OPEN"
+    },
+    {
+      "id": "P1.1-02",
+      "severity": "BLOCKER_FOR_RUNTIME_WIRING",
+      "finding": "HSL26 ROS nodes have declared dependencies but no publisher/subscriber graph",
+      "owner": "P1.5",
+      "status": "OPEN"
+    },
+    {
+      "id": "P1.1-03",
+      "severity": "BLOCKER_FOR_G0_PHYSICAL",
+      "finding": "Mux/driver timeout and physical zero response are unmeasured",
+      "owner": "P1.7",
+      "status": "OPEN"
+    },
+    {
+      "id": "P1.1-04",
+      "severity": "BLOCKER_FOR_SENSOR_ADAPTER",
+      "finding": "Livox runtime topic/type and point-time normalization are unresolved",
+      "owner": "P2",
+      "status": "OPEN"
+    }
+  ],
+  "verification": {
+    "commands": [
+      "git --no-pager status --short",
+      "git --no-pager rev-parse HEAD",
+      "rg command/publisher/subscriber/interface references under ros_ws/src",
+      "rg mux/timeout/topic references under kobuki/workspace/src",
+      "Get-FileHash -Algorithm SHA256 <audited-file>"
+    ],
+    "environment": "Windows checkout; ROS 2 build container not available for this audit",
+    "build_or_runtime_tests": "NOT_RUN",
+    "limitation": "This PASS covers the read-only repository audit only; it does not claim ROS build, generated API compatibility, hardware timeout or physical-stop evidence."
+  }
+}

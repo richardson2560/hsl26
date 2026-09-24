@@ -3,7 +3,7 @@
 <package format="3">
   <name>hsl_interfaces</name>
   <version>0.1.0</version>
-  <description>Custom interfaces for HSL26 architecture</description>
+  <description>Revision-2 contracts for HSL26 authority and data flow</description>
   <maintainer email="team@starline.ru">HSL26 Team</maintainer>
   <license>Proprietary</license>
 
@@ -15,6 +15,7 @@
   <depend>builtin_interfaces</depend>
   <depend>action_msgs</depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
 
   <member_of_group>rosidl_interface_packages</member_of_group>
 

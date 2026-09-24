@@ -13,18 +13,37 @@ find_package(builtin_interfaces REQUIRED)
 find_package(action_msgs REQUIRED)
 
 set(msg_files
+  "msg/ContractHeader.msg"
+  "msg/Point2.msg"
+  "msg/Polygon2.msg"
   "msg/EgoState.msg"
+  "msg/CoverageGrid.msg"
+  "msg/Obstacle2.msg"
+  "msg/LocalObstacleSnapshot.msg"
   "msg/MatchState.msg"
+  "msg/GoalZone.msg"
+  "msg/TopologyNode.msg"
+  "msg/TopologyEdge.msg"
+  "msg/ExecutionState.msg"
+  "msg/PathPlan.msg"
   "msg/MotionCandidate.msg"
   "msg/OpponentTrack.msg"
   "msg/OptionFeedback.msg"
   "msg/OptionGoal.msg"
+  "msg/OptionResult.msg"
   "msg/SafetyStatus.msg"
+  "msg/SupervisorHeartbeat.msg"
+  "msg/WatchdogHealth.msg"
+  "msg/RuleEvent.msg"
   "msg/WorldSnapshot.msg"
 )
 
 set(srv_files
+  "srv/StartStage.srv"
+  "srv/SetGoalZone.srv"
   "srv/ResetStage.srv"
+  "srv/ResolveEvent.srv"
+  "srv/RearmSafety.srv"
 )
 
 set(action_files
@@ -39,4 +58,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 
 ament_export_dependencies(rosidl_default_runtime)
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(contract_schema_test test/test_contract_schema.py)
+endif()
+
 ament_package()
