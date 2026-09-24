@@ -1,430 +1,427 @@
-# HSL26 — Repository Structure and Implementation (Professional Software Engineering Report)
+# HSL26 — Repository Structure and Implementation Boundaries
 
-**Role:** software engineering / repository architecture.
-**Inherited base:** the `hackathon/2025` repository (StarLine GitLab), Docker + `colcon` + ROS2 pattern, with `kobuki/docker/{build,run,into,stop}.bash`, `kobuki/scripts/udev_rules`, `kobuki/scripts/connect_to_new_wifi.bash`, and `kobuki/workspace/src/{cmd_vel_mux, kobuki_core, kobuki_ros, kobuki_ros_interfaces, livox_ros_driver2}`.
-**Hardware context confirmed by the 2025 repo:** Kobuki (differential base) + Livox MID-360 + Intel NUC (BOXNUC7I7BNH) + MikroTik RB951G-2HND router (robot's local subnet, `eth2`→NUC, `eth3`→Livox) + Rombica NEO PRO 280 auxiliary battery. SSH over this subnet is the only preparation channel (R8).
-**Goal of this document:** define the directory tree, the Docker contract, the ROS2 package layout, the real/simulation/replay policy, the concrete mechanisms that close the 4 blind spots flagged by the external audit (§3 of the attached dictamen): LiDAR blind zone, LiDAR-odometry degeneration, Python GIL blocking the supervisor, and the Kobuki driver watchdog — and, in this revision, the `kobuki_core` dependency details and the GitHub repository creation procedure.
+**Revision:** 2.2 · **Date:** 2026-09-24  
+**Normative companions:** `HSL26_FINAL_ARCHITECTURE.md` revision 2.2 and `HSL26_TECHNICAL_SPECIFICATION.md` revision 2.2. Work breakdown: `HSL26_IMPLEMENTATION_ROADMAP.md` and phase documents.
+**Status:** target repository structure and migration contract; this document does not assert that target modules are already implemented.
 
----
+## 1. Purpose and evidence boundary
 
-## 0. Software engineering decisions (why this structure and not another)
+This document translates the revision-2 architecture into concrete repository ownership. It supersedes the earlier repository report wherever that report conflicts with the new authority, temporal-validity, safety, simulation or interface contracts. The supplied session changelog remains the authoritative record of what was reportedly changed in the actual checkout. It states that package scaffolding and static checks exist, while runtime perception, planning, safety, match management, simulation wiring and integration testing were not yet complete.
 
-1. **`kobuki/` is treated as the inherited hardware layer.** The Kobuki and Livox drivers, udev rules, and Docker scripts remain unchanged. `cmd_vel_mux` has one narrowly scoped HSL26 compatibility change: it now honors its configured `output` topic so the physical output can be `/commands/velocity`; the driver and all other inherited packages remain untouched. All HSL26 development lives in new packages that depend on this layer.
-2. **The existing `cmd_vel_mux` is reused as the final physical arbitration layer**, instead of reimplementing a custom mux: the Supervisor (Layer 6 of the design) publishes on an autonomous-priority topic, and a higher-priority topic is kept for teleop/emergency stop over SSH during testing — so a human can always take control without touching code.
-3. **Strict separation between core (pure Python, no ROS) and ROS2 adapters (thin).** Everything mathematical (`rules.py`, `kinematics.py`, `topology.py`, EKF, A*, FSM/ASG) is implemented as a `pytest`-testable Python library. The `ros_ws/src/hsl_*` packages are thin *wrappers*: they receive ROS2 messages, call the `hsl_core` library, and publish ROS2 messages. This allows running **thousands** of unit tests without bringing up ROS or Docker, and reusing exactly the same code in the lightweight kinematic simulator.
-4. **Real, simulation (MVSim), and bag replay share the same ROS2 node graph** via a profiled bringup; only the origin of `/sensors/points`, `/sensors/imu`, and `/wheel_odom` changes, along with who runs the physics. No decision node knows whether it is in sim or real — this is what makes the sim-to-real transition valid without rewriting tactics/control.
-5. **A single, isolated system process for the Supervisor**, directly addressing audit point 3.3 (GIL): the Supervisor runs in its own ROS2 node/process, with its own dedicated single-thread executor, and does not import heavy NumPy/SciPy, DBSCAN, or the A* planner in that process. It communicates via topics with `depth=1`, `reliability=BEST_EFFORT` for sensor data and `RELIABLE` for `MatchState`.
-6. **Anything the rulebook forbids hardcoding (R9) lives in `config/`, never in code.** No `.py`/`.cpp` file contains maze, obstacle, or opponent coordinates.
+The repository itself was not attached in this documentation pass. Therefore:
 
----
+- paths marked **existing/reported** come from the supplied changelog;
+- paths marked **required** are revision-2 implementation targets;
+- no package, node or test is considered operational merely because it appears in this tree;
+- migration must begin by comparing the live checkout with this document and preserving unrelated work.
 
-## 1. Proposed directory tree (extends the 2025 repo)
+The official rulebook remains above all software documents. Competition-specific coordinates, maps, score values and metadata require documented provenance and organizer permission regardless of whether they appear in source code, YAML or generated artifacts.
 
+## 2. Dependency and authority rules
+
+The repository uses four strict dependency tiers:
+
+1. `hsl_core`: pure Python domain mathematics and algorithms; no ROS, simulator API or physical I/O.
+2. `hsl_interfaces`: ROS 2 IDL only; no algorithms.
+3. `ros_ws/src/hsl_*`: thin runtime adapters and state owners that call `hsl_core`.
+4. `kobuki`, simulator and hardware adapters: external plant/driver boundaries.
+
+Dependencies point inward. `hsl_core` never imports `rclpy`, generated messages, launch files or `sim`. Decision, navigation and safety never import simulator truth. The learning package is not imported by competition-critical nodes. ROS conversion functions live at adapter boundaries, not as `to_ros_msg()` methods on core dataclasses.
+
+The physical command chain is unique:
+
+```text
+hsl_navigation -> MotionCandidate -> hsl_safety supervisor
+               -> /hsl/cmd_vel_final -> cmd_vel_mux
+               -> /commands/velocity -> Kobuki driver
 ```
+
+The independent watchdog writes zero commands only to `/hsl/cmd_vel_stop`, a dedicated highest-priority mux input. Test teleoperation uses `/teleop/cmd_vel`. Only `cmd_vel_mux` publishes `/commands/velocity`. No watchdog, planner, simulator or diagnostic node may publish the driver topic directly.
+
+## 3. Target tree
+
+```text
 hsl26/
-├── .gitignore
-├── .gitlab-ci.yml
-├── .github/                                  # if mirrored to GitHub — see §7
-│   ├── workflows/ci.yml
-│   ├── CODEOWNERS
-│   └── ISSUE_TEMPLATE/
 ├── README.md
 ├── LICENSE
+├── pyproject.toml                         # optional workspace tooling only
+├── .gitignore
+├── .gitlab-ci.yml
+├── .github/
+│   ├── workflows/ci.yml
+│   └── CODEOWNERS
+├── docker/
+│   ├── Dockerfile                         # reported, based on pinned HSL25 image
+│   ├── entrypoint.bash
+│   ├── build.bash
+│   ├── run.bash
+│   ├── run_sim.bash
+│   ├── into.bash
+│   └── stop.bash
 ├── docs/
-│   ├── HSL26_FINAL_ARCHITECTURE.md            # this design document (normative source)
-│   ├── REPO_STRUCTURE.md                      # this report
-│   ├── Регламент_HSL26_-_v06092026.pdf
+│   ├── HSL26_FINAL_ARCHITECTURE.md
+│   ├── HSL26_TECHNICAL_SPECIFICATION.md
+│   ├── HSL26_REPO_STRUCTURE.md
+│   ├── HSL26_IMPLEMENTATION_ROADMAP.md
+│   ├── HSL26_PHASE1_IMPLEMENTATION_PLAN.md
+│   ├── HSL26_PHASE2_SENSING_AND_CALIBRATION.md
+│   ├── HSL26_PHASE3_WORLD_AND_NAVIGATION.md
+│   ├── HSL26_PHASE4_OPPONENT_PERCEPTION.md
+│   ├── HSL26_PHASE5_MATCH_AND_TACTICS.md
+│   ├── HSL26_PHASE6_LEARNING_AND_RELEASE.md
+│   ├── HSL26_SESSION_CHANGELOG.md
 │   ├── runbook_competition.md
-│   └── media/
-│
-├── kobuki/                                    # ← inherited from HSL25, pinned by commit, NOT edited
-│   ├── docker/{Dockerfile,build.bash,run.bash,into.bash,stop.bash}
-│   ├── scripts/{udev_rules/, connect_to_new_wifi.bash}
+│   ├── rulebook/
+│   │   └── Регламент_HSL26_-_v06092026.pdf
+│   └── adr/
+│       ├── ADR-001-command-authority.md
+│       ├── ADR-002-time-and-epochs.md
+│       ├── ADR-003-interface-revision-2.md
+│       └── ADR-004-goal-provenance.md
+├── kobuki/                                 # inherited and commit-pinned hardware layer
+│   ├── docker/
+│   ├── scripts/
 │   └── workspace/src/
-│       ├── cmd_vel_mux/                       # reused as the final teleop > autonomous arbiter
-│       ├── kobuki_core/                       # C++ core libraries — see §2 for pinning strategy
+│       ├── cmd_vel_mux/
+│       ├── kobuki_core/
 │       ├── kobuki_ros/
 │       ├── kobuki_ros_interfaces/
 │       └── livox_ros_driver2/
-│
-├── hsl_core/                                  # pure Python library, NO ROS, pytest-testable
+├── hsl_core/
 │   ├── pyproject.toml
 │   ├── hsl_core/
 │   │   ├── __init__.py
-│   │   ├── types.py                           # EgoState, OpponentTrack, WorldSnapshot, OptionGoal...
-│   │   ├── kinematics.py                      # Eq. (1)-(6): integration, deskew, footprint
-│   │   ├── rules.py                           # Eq. (15)-(18): capture, arrival, geometric feasibility
-│   │   ├── mapping.py                         # Eq. (7)-(8): log-odds, inflation, background veto
-│   │   ├── topology.py                        # portal graph, bridge/articulation-point DFS
+│   │   ├── types.py
+│   │   ├── contracts.py
+│   │   ├── geometry.py
+│   │   ├── kinematics.py
+│   │   ├── rules.py
+│   │   ├── mapping.py
+│   │   ├── topology.py
 │   │   ├── perception/
-│   │   │   ├── implicit_surface.py            # GPIS-W (reused/adapted from the 2025 tracker)
-│   │   │   ├── registration.py                # damped Gauss-Newton, Eq. (9)-(10)
-│   │   │   ├── segmenter.py                   # DBSCAN + shape/volume cascade filter
-│   │   │   ├── ekf_opponent.py                # Eq. (11)-(14): CV filter + gating
-│   │   │   └── topological_belief.py          # Eq. (§6.3-bis): occlusion + anti-flanking belief tracker
+│   │   │   ├── __init__.py
+│   │   │   ├── implicit_surface.py
+│   │   │   ├── registration.py
+│   │   │   ├── segmenter.py
+│   │   │   ├── ekf_opponent.py
+│   │   │   └── topological_belief.py
 │   │   ├── planning/
-│   │   │   ├── astar.py                       # Eq. (19)-(20): costs ≥0, admissible heuristic
-│   │   │   └── intercept.py                   # Eq. (22)-(24): quadratic + topological route times
+│   │   │   ├── __init__.py
+│   │   │   ├── astar.py
+│   │   │   └── intercept.py
 │   │   ├── tactics/
-│   │   │   ├── fsm.py                         # base deterministic FSM (initial policy)
-│   │   │   ├── options.py                     # option contracts: precond./effect/termination
-│   │   │   └── utility.py                     # U_E, U_G (Appendix A of the design)
+│   │   │   ├── __init__.py
+│   │   │   ├── options.py
+│   │   │   ├── fsm.py
+│   │   │   └── utility.py
 │   │   ├── control/
-│   │   │   ├── regulated_pursuit.py           # Eq. (25)
-│   │   │   ├── dwa_local.py                   # Eq. (26)
-│   │   │   └── braking.py                     # Eq. (27)-(28): braking envelope with latency
-│   │   └── learning/                          # Layer 7 — never imported by critical runtime nodes
-│   │       ├── dirichlet.py                   # Eq. (33)-(34)
-│   │       ├── option_value.py                # Eq. (32)
-│   │       └── evolution.py                   # bounded search over 5-10 parameters
+│   │   │   ├── __init__.py
+│   │   │   ├── braking.py
+│   │   │   ├── safety.py
+│   │   │   ├── regulated_pursuit.py
+│   │   │   └── dwa_local.py
+│   │   └── learning/
+│   │       ├── __init__.py
+│   │       ├── dirichlet.py
+│   │       ├── option_value.py
+│   │       └── evolution.py
 │   └── tests/
-│       ├── test_rules.py                      # T01-T04, T14 of the design's verification table
-│       ├── test_braking.py                    # T12
-│       ├── test_astar.py                      # T11
-│       ├── test_ekf_gating.py                 # T08, T09
-│       ├── test_topological_belief.py         # reachable-set bound, negative-information collapse
-│       └── test_kinematics.py                 # T06 deskew, sinc for |ω|≤ε
-│
+│       ├── test_contracts.py
+│       ├── test_geometry.py
+│       ├── test_kinematics.py
+│       ├── test_rules.py
+│       ├── test_braking.py
+│       ├── test_safety.py
+│       ├── test_mapping.py
+│       ├── test_topology.py
+│       ├── test_spectrum.py
+│       ├── test_registration.py
+│       ├── test_ekf_opponent.py
+│       ├── test_topological_belief.py
+│       ├── test_astar.py
+│       ├── test_intercept.py
+│       ├── test_options.py
+│       └── test_learning.py
 ├── ros_ws/
 │   └── src/
-│       ├── hsl_interfaces/                    # ONLY .msg/.action/.srv definitions, no logic
-│       │   ├── msg/{EgoState,OpponentTrack,WorldSnapshot,OptionGoal,OptionFeedback,
-│       │   │        MotionCandidate,SafetyStatus,MatchState}.msg
-│       │   ├── action/ExecuteOption.action
-│       │   └── srv/ResetStage.srv
-│       │
-│       ├── hsl_perception/                    # adapter: real/sim Livox cloud → hsl_core.perception
+│       ├── hsl_interfaces/
+│       │   ├── CMakeLists.txt
+│       │   ├── package.xml
+│       │   ├── msg/
+│       │   │   ├── ContractHeader.msg
+│       │   │   ├── Polygon2.msg
+│       │   │   ├── EgoState.msg
+│       │   │   ├── OpponentTrack.msg
+│       │   │   ├── BeliefCell.msg
+│       │   │   ├── OpponentBelief.msg
+│       │   │   ├── Obstacle2.msg
+│       │   │   ├── CoverageGrid.msg
+│       │   │   ├── LocalObstacleSnapshot.msg
+│       │   │   ├── TopologyNode.msg
+│       │   │   ├── TopologyEdge.msg
+│       │   │   ├── GoalZone.msg
+│       │   │   ├── WorldSnapshot.msg
+│       │   │   ├── SpectralSignature.msg
+│       │   │   ├── MatchState.msg
+│       │   │   ├── OptionGoal.msg
+│       │   │   ├── OptionFeedback.msg
+│       │   │   ├── OptionResult.msg
+│       │   │   ├── ExecutionState.msg
+│       │   │   ├── PathPlan.msg
+│       │   │   ├── MotionCandidate.msg
+│       │   │   ├── SafetyStatus.msg
+│       │   │   ├── SupervisorHeartbeat.msg
+│       │   │   ├── WatchdogHealth.msg
+│       │   │   └── RuleEvent.msg
+│       │   ├── action/
+│       │   │   └── ExecuteOption.action
+│       │   └── srv/
+│       │       ├── ResetStage.srv
+│       │       ├── SetGoalZone.srv
+│       │       ├── StartStage.srv
+│       │       ├── ResolveEvent.srv
+│       │       └── RearmSafety.srv
+│       ├── hsl_perception/
 │       │   ├── hsl_perception/
-│       │   │   ├── ego_state_node.py          # deskew + TF + EgoState (Layer 0)
-│       │   │   ├── local_obstacles_node.py    # fast obstacle path (Layer 1, high priority)
-│       │   │   └── opponent_tracker_node.py   # Layer 2
+│       │   │   ├── adapters.py
+│       │   │   ├── ego_state_node.py
+│       │   │   ├── local_obstacles_node.py
+│       │   │   └── opponent_tracker_node.py
 │       │   └── launch/perception.launch.py
-│       │
-│       ├── hsl_world/                         # Layer 1: structural map + topology
-│       │   ├── hsl_world/{map_server_node.py, topology_node.py, odom_fusion_node.py}
+│       ├── hsl_world/
+│       │   ├── hsl_world/
+│       │   │   ├── adapters.py
+│       │   │   ├── odom_fusion_node.py
+│       │   │   ├── map_server_node.py
+│       │   │   └── topology_node.py
+│       │   ├── config/robot_localization.yaml
 │       │   └── launch/world.launch.py
-│       │
-│       ├── hsl_decision/                      # Layer 3: per-role FSM/ASG
-│       │   ├── hsl_decision/{tactics_node.py, option_lifecycle.py}
+│       ├── hsl_decision/
+│       │   ├── hsl_decision/
+│       │   │   ├── adapters.py
+│       │   │   └── tactics_node.py
 │       │   └── launch/decision.launch.py
-│       │
-│       ├── hsl_navigation/                    # Layer 4: A* + regulated pursuit/DWA
-│       │   ├── hsl_navigation/{global_planner_node.py, local_control_node.py}
+│       ├── hsl_navigation/
+│       │   ├── hsl_navigation/
+│       │   │   ├── adapters.py
+│       │   │   ├── option_executor_node.py
+│       │   │   ├── global_planner_node.py
+│       │   │   └── local_control_node.py
 │       │   └── launch/navigation.launch.py
-│       │
-│       ├── hsl_safety/                        # Layer 6: ISOLATED PROCESS, sole producer of cmd_vel_final
+│       ├── hsl_safety/
 │       │   ├── hsl_safety/
-│       │   │   ├── supervisor_node.py         # dedicated single-thread executor, no SciPy/DBSCAN
-│       │   │   ├── watchdog.py                # publishes zeros ≥20 Hz, closes §3.4 of the dictamen
-│       │   │   └── braking_envelope.py        # thin wrapper over hsl_core.control.braking
+│       │   │   ├── adapters.py
+│       │   │   ├── supervisor_node.py
+│       │   │   └── watchdog.py
 │       │   └── launch/safety.launch.py
-│       │
-│       ├── hsl_match/                         # Layer 5: freeze/active/timeout/score_profile
-│       │   ├── hsl_match/stage_manager_node.py
+│       ├── hsl_match/
+│       │   ├── hsl_match/
+│       │   │   ├── adapters.py
+│       │   │   └── stage_manager_node.py
 │       │   └── launch/match.launch.py
-│       │
-│       ├── hsl_bringup/                       # SINGLE entry point; real/sim/replay profiles
+│       ├── hsl_bringup/
+│       │   ├── hsl_bringup/__init__.py
 │       │   ├── launch/
-│       │   │   ├── hsl26.launch.py            # orchestrates every hsl_* node per `mode:=`
-│       │   │   ├── real_hardware.launch.py    # includes real kobuki + livox_ros_driver2
-│       │   │   ├── sim_mvsim.launch.py        # includes sim/mvsim/*
-│       │   │   └── replay_bag.launch.py       # ros2 bag play + remaps
+│       │   │   ├── hsl26.launch.py
+│       │   │   ├── real_hardware.launch.py
+│       │   │   ├── sim_mvsim.launch.py
+│       │   │   ├── sim_kinematic.launch.py
+│       │   │   └── replay_bag.launch.py
 │       │   └── config/
-│       │       ├── hardware.yaml              # extrinsics, physical limits, measured b_min
+│       │       ├── hardware.yaml
+│       │       ├── frames.yaml
+│       │       ├── timing.yaml
 │       │       ├── perception.yaml
+│       │       ├── topology.yaml
 │       │       ├── tactics.yaml
-│       │       ├── score_profile.yaml         # NO official values until announced (R13)
-│       │       └── frames.yaml                # map/odom/base_link/lidar_frame
-│       │
-│       └── hsl_diagnostics/                   # R16 terminal-indication requirement
-│           └── hsl_diagnostics/terminal_hud_node.py
-│
+│       │       ├── score_profile.yaml
+│       │       ├── memory_profiles.yaml
+│       │       └── cmd_vel_mux.yaml
+│       └── hsl_diagnostics/
+│           ├── hsl_diagnostics/terminal_hud_node.py
+│           └── launch/diagnostics.launch.py
 ├── sim/
-│   ├── kinematic/                             # lightweight tactical simulator (NumPy), reuses hsl_core
-│   │   ├── engine.py                          # integrates (3), no ROS, thousands of episodes/sec
-│   │   ├── referee.py                         # private ground truth + official events
-│   │   └── scenarios/                         # corridor, T, crossroads, cycle, dead end, etc. (design §8)
+│   ├── common/
+│   │   ├── ports.py
+│   │   ├── scenario.py
+│   │   └── referee.py
+│   ├── kinematic/
+│   │   ├── engine.py
+│   │   ├── raycaster.py
+│   │   ├── sensors.py
+│   │   ├── adapters.py
+│   │   └── scenarios/
 │   └── mvsim/
-│       ├── worlds/*.world.xml
-│       ├── vehicles/turtlebot2_mid360.vehicle.xml
-│       └── adapter/simulation_adapter.py      # real reset/step/observe/ground_truth_for_referee
-│
+│       ├── worlds/
+│       ├── vehicles/
+│       ├── sensors/
+│       └── adapter/simulation_adapter.py
 ├── config/
-│   └── schema/                                # JSON-Schema validation for every YAML above
-│
+│   └── schema/
+│       ├── hardware.schema.json
+│       ├── timing.schema.json
+│       ├── perception.schema.json
+│       ├── tactics.schema.json
+│       ├── policy_manifest.schema.json
+│       └── model_manifest.schema.json
 ├── tools/
-│   ├── preflight_check.py                     # G0: TF, topics, time, command, clean shutdown;
-│   │                                           #     `--blind-zone-sweep` mode for §5.1 below
+│   ├── validate_config.py
+│   ├── preflight_check.py
+│   ├── benchmark_latency.py
+│   ├── calibrate_braking.py
+│   ├── train_gpis_prior.py
+│   ├── validate_gpis_prior.py
 │   ├── bag_replay_eval.py
-│   ├── benchmark_latency.py                   # end-to-end p50/p95/p99 (design §9)
-│   └── release_freeze.py                      # commit hash + manifest (R10, R18)
-│
+│   ├── benchmark_policy.py
+│   ├── check_no_sim_imports.py
+│   ├── check_ros_graph_authority.py
+│   └── release_freeze.py
 ├── tests/
-│   └── integration/                           # colcon test: startup, TF tree, remaps, freeze→active,
-│                                               # watchdog rate (§5.4 below)
-│
+│   ├── contract/
+│   ├── integration/
+│   ├── launch/
+│   ├── simulation/
+│   └── hardware/                              # opt-in only; never ordinary CI
 └── artifacts/
-    ├── policies/                              # frozen policies/parameters + hash manifest
-    └── calibration/                           # blind_zone_report.yaml and similar measured constants
+    ├── models/
+    │   └── opponent_gpis/
+    │       ├── model.npz
+    │       ├── manifest.json
+    │       └── validation.json
+    ├── policies/
+    ├── calibration/
+    ├── releases/
+    └── reports/
 ```
 
----
+## 4. Core package boundaries
 
-## 2. The `kobuki_core` dependency
+### 4.1 Foundational modules
 
-`kobuki_core` (folder `kobuki/workspace/src/kobuki_core/` in the tree above) is not an internal HSL package: it is the **C++ library and utility stack** for talking to a Kobuki robot base, maintained upstream at `kobuki-base/kobuki_core` (`http://kobuki.yujinrobot.com`). Two release lines are documented upstream:
+`types.py` contains immutable dataclasses and enums mirroring revision-2 concepts. It contains no ROS conversion logic. `contracts.py` validates schema metadata, temporal validity, epochs, finite values and covariance structure. `geometry.py` owns robust segment/polygon operations and swept-footprint representations. `kinematics.py` owns exact constant-twist integration, wheel conversions and point-cloud deskew. `rules.py` owns capture and arrival predicates and reports intermediate metrics.
 
-| `kobuki_core` branch | Documentation |
-|:---:|:---:|
-| [`devel`](https://github.com/kobuki-base/kobuki_core/tree/devel) | https://kobuki.readthedocs.io/en/devel/ |
-| [`release/1.2.x`](https://github.com/kobuki-base/kobuki_core/tree/release/1.2.x) | https://kobuki.readthedocs.io/en/release-1.0.x/ |
+These modules form the first implementation slice because all later packages depend on them. They are also the only modules needed for most Phase 1 mathematical tests.
 
-Consequences for HSL26's repository structure:
+### 4.2 Safety modules
 
-- **Pin, don't fork.** Since `kobuki_core` is a real upstream project with its own branches, it should be tracked with `git submodule` (or `git subtree` if the team prefers a single-clone workflow) pointed at a specific commit on `release/1.2.x` — the stable line — rather than a loose copy-pasted snapshot as currently sits under `kobuki/workspace/src/`. This makes upstream bug fixes/security updates a deliberate `git submodule update` instead of an untracked diff.
-- **`devel` is for reference only.** It is useful to consult the `devel` docs when debugging a driver-level issue, but HSL26 competition builds must resolve to a `release/1.2.x` commit, matching the C++ ABI the rest of `kobuki/workspace/src/{kobuki_ros, kobuki_ros_interfaces}` (already vendored from 2025) was built against.
-- **Version manifest.** `tools/release_freeze.py` (§1 tree) records the exact `kobuki_core` commit hash alongside the HSL26 commit hash in `artifacts/policies/*.yaml`, so a competition-day build is fully reproducible even if upstream moves.
-- **Language boundary.** `kobuki_core` and `kobuki_ros` are C++; everything HSL26 adds (`hsl_core`, `ros_ws/src/hsl_*`) is Python. The only interface between them is standard ROS2 topics/services/actions — `hsl_perception`/`hsl_safety` never link against `kobuki_core` directly, they only depend on the topics `kobuki_ros` already exposes. This keeps the build graph simple (`colcon build` handles the mixed C++/Python workspace without custom glue) and keeps the audit's GIL argument (§5.3 below) valid: the C++ driver layer is not subject to Python's GIL at all.
+`control/braking.py` implements explicitly named braking models. The simple analytic model and the delay-acceleration model must not share an ambiguous function. `control/safety.py` contains the pure, bounded supervisor evaluator: it accepts immutable records and limits, returns an admitted command/status/heartbeat, and performs no ROS publication.
 
----
+The ROS supervisor wraps this evaluator in its own operating-system process. The watchdog is another process, not another timer inside the supervisor. It observes completed-decision heartbeats and stage/configuration leases and writes only the highest-priority zero channel. Mutual health is required before motion is released.
 
-## 3. Docker strategy
+### 4.3 Mapping, perception and planning
 
-### 3.1 Reusing the 2025 base image
+Mapping and topology keep structural evidence separate from collision occupancy and observed-free coverage. Opponent recognition may suppress structural points only within its candidate-identification copy of the cloud. The safety path always retains static walls, unidentified returns and unknown space.
 
-The 2025 `kobuki/docker/Dockerfile` identifies the frozen hardware image
-`nickodema/kobuki:humble-22.04-100625`, which already contains the Livox-SDK2
-and Kobuki/ecl build dependencies. The HSL26 image uses that image as its first
-stage and rebuilds the inherited source workspace before adding the HSL26
-layer:
+The GPIS prior is a versioned offline artifact. `implicit_surface.py` loads and evaluates it, while `registration.py` performs bounded online optimization. `ekf_opponent.py` owns a four-state constant-velocity filter. `topological_belief.py` owns multimodal edge-interval belief and unknown mass. No module uses a single point estimate after long occlusion as if it were observed truth.
 
-```dockerfile
-# hsl26/docker/Dockerfile
-ARG base_img=nickodema/kobuki:humble-22.04-100625
-FROM ${base_img} AS kobuki-base
+Planning uses graph edge polylines, not only endpoint chords. A* accepts nonnegative costs with explicit units. Interception helpers return candidate opportunities with assumptions, not capture guarantees. Tactical options are defined once in `options.py`; their initiation, invariant and termination predicates are consumed by both the selector and executor.
 
-COPY kobuki/workspace/src /workspace_kobuki/src
-RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \
-    cd /workspace_kobuki && colcon build --symlink-install"
+## 5. Interface migration rules
 
-COPY hsl_core /workspace_hsl26/hsl_core
-RUN pip3 install -e /workspace_hsl26/hsl_core
+The reported bootstrap interfaces are revision 1 and must not be extended field-by-field while old producers continue running. Revision 2 is an atomic compatibility boundary:
 
-COPY ros_ws/src /workspace_hsl26/src
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    source /workspace_kobuki/install/setup.bash && \
-    cd /workspace_hsl26 && colcon build --symlink-install"
+- add `ContractHeader.msg` and use it in every domain message;
+- migrate `EgoState`, `OpponentTrack`, `MotionCandidate`, `SafetyStatus`, `MatchState`, `WorldSnapshot` and option messages together;
+- add local obstacle/coverage, opponent belief, execution authority, supervisor heartbeat, watchdog health, rule event and typed goal-zone records;
+- replace untyped target overrides with `SetGoalZone.srv`;
+- use `ExecuteOption.action` as the only tactical execution command;
+- reject unknown schema versions and mixed producer/consumer revisions at startup.
 
-ENTRYPOINT ["/entrypoint.bash"]
-```
+During migration, a temporary `hsl_interfaces_v1_bridge` may be used only in a development branch if required. It must be removed or disabled in the release profile. Do not encode missing revision-2 provenance using empty strings while still granting motion authority.
 
-`entrypoint.bash` chain-sources `/opt/ros/.../setup.bash` → `/workspace_base/install/setup.bash` → `/workspace_hsl26/install/setup.bash`, then runs the `CMD` (by default, an interactive shell for `into.bash`).
+## 6. ROS runtime ownership
 
-### 3.2 Scripts, same pattern as 2025 (operational consistency for the team)
-
-| Script | Change relative to 2025 |
-|---|---|
-| `hsl26/docker/build.bash` | Same pattern; adds a `MODE` build-arg (`real`/`sim`) to install MVSim dependencies only when needed |
-| `hsl26/docker/run.bash` | Mounts `ros_ws/`, `hsl_core/`, `sim/`, `config/`, `artifacts/` as development volumes (`--symlink-install` already supports hot editing); exposes `--network host` only on the real robot (required for Livox/Kobuki on the MikroTik subnet) |
-| `hsl26/docker/into.bash` | Same |
-| `hsl26/docker/stop.bash` | Same |
-| `hsl26/docker/run_sim.bash` (**new**) | No `--network host`, no USB/serial device access, for laptop development without a robot |
-
-### 3.3 Why not a single monolithic image
-
-Separating the "frozen kobuki base" from the "HSL26 layer" lets the team rebuild the own layer in seconds during development (Docker cache over the heavy driver stage), and it also lets the team **exactly reproduce the HSL25 environment** to debug regressions without contaminating it with new dependencies (NumPy/SciPy/Open3D specific to opponent perception).
-
----
-
-## 4. `hsl_interfaces`: contracts as code, not prose
-
-Every message described in the architecture document maps 1:1 to a `.msg`. Example (`OpponentTrack.msg`):
-
-```
-# ros_ws/src/hsl_interfaces/msg/OpponentTrack.msg
-std_msgs/Header header
-string id
-uint8 STATE_SEARCHING = 0
-uint8 STATE_TRACKED = 1
-uint8 STATE_COASTING = 2
-uint8 STATE_OCCLUDED_BELIEF = 3
-uint8 STATE_LOST = 4
-uint8 state
-geometry_msgs/Pose2D pose
-geometry_msgs/Twist twist
-float64[16] covariance           # 4x4 over [x,y,vx,vy]
-bool yaw_valid
-builtin_interfaces/Time last_measurement
-builtin_interfaces/Time valid_until
-string localization_epoch
-uint32 map_version
-string source_id
-```
-
-`status` includes `OCCLUDED_BELIEF` to expose the phase-2/3 belief state from `hsl_core/perception/topological_belief.py` (design §6.3-bis) to the tactics layer, so `hsl_decision` can distinguish "actively tracked" from "diffusing belief over the topological graph" when weighing `INTERCEPT_PORTAL` vs. `FALLBACK_DEFEND_BASE`.
-
-`MotionCandidate.msg` and `SafetyStatus.msg` follow the same principle: **every temporal field explicit**, never an isolated `float confidence` (rule fixed in the design's §4). This package has **no logic**, only definitions — so `hsl_core` can have its own mirrored Python dataclasses without depending on `rclpy`, and ROS2 nodes only convert at the boundary.
-
----
-
-## 5. Real / Simulation / Replay: one graph, three data origins
-
-`hsl_bringup/launch/hsl26.launch.py` accepts a `mode:={real,sim,replay}` argument and composes:
-
-```
-                         ┌─────────────────────────────┐
-mode:=real   ──────────► │ kobuki_node + livox_ros_     │
-                         │ driver2 (real hardware)       │──┐
-                         └─────────────────────────────┘  │
-                                                            │  /sensors/points
-mode:=sim    ──────────► ┌─────────────────────────────┐  │  /sensors/imu
-                         │ sim/mvsim adapter (or the     │──┤  /wheel_odom
-                         │ lightweight kinematic engine)  │  │  (logical channels
-                         └─────────────────────────────┘  │   identical)
-                                                            │
-mode:=replay ──────────► ┌─────────────────────────────┐  │
-                         │ ros2 bag play (real           │──┘
-                         │ preparation bags)              │
-                         └─────────────────────────────┘
-                                       │
-                                       ▼
-        (identical in all 3 modes) hsl_perception → hsl_world → hsl_decision →
-        hsl_navigation → hsl_safety → cmd_vel_mux → real or sim driver
-```
-
-Hard rules of this design (already fixed in the architecture document, §14.3, and enforced in code):
-
-- **No node in `hsl_decision`, `hsl_navigation`, or `hsl_safety` imports anything from `sim/`.** They only consume logical topics (`/state/ego`, `/world/opponent`, etc.), never the simulator's API. This is verified by a static import check in CI (`tools/check_no_sim_imports.py`).
-- **`hsl_safety` is the only node allowed to write to `cmd_vel_mux`'s autonomous-priority input.** A second, higher-priority topic is reserved for manual teleop (`teleop_twist_keyboard`, already used in 2025) — so during field tests a human operator can always take control without stopping the process.
-- **In `mode:=sim`, the opponent's true pose never reaches `hsl_decision`.** The simulation adapter publishes `ground_truth_for_referee` on a separate topic, consumed *only* by `sim/kinematic/referee.py` or the MVSim referee — never by `hsl_perception`. This closes the "guard against simulation cheating" that the audit highlighted as a strength, here turned into a verifiable ROS2 namespacing rule (separate namespaces `/referee/*` vs. `/world/*`).
-- **`mode:=replay` remaps `/sensors/points` and `/sensors/imu`** to the topics stored in the bag, and forces `use_sim_time:=true` with the bag's clock — wall clock and bag clock are never mixed (the "single epoch" rule from the design, §14.4).
-
----
-
-## 6. How the repository closes the 4 blind spots flagged by the audit, in code
-
-### 6.1 MID-360 short-range blind zone (dictamen §3.1)
-
-- `tools/preflight_check.py` has a `--blind-zone-sweep` mode that at G1 places both robots at 0.50/0.40/0.30 m and logs the point count returned by `hsl_perception/opponent_tracker_node.py`; the result is stored in `artifacts/calibration/blind_zone_report.yaml`.
-- `hsl_core/perception/ekf_opponent.py` implements an explicit **short-range** `COASTING` state (distinct from the general occlusion `OCCLUDED_BELIEF` of §6.3-bis in the design), activated when `d̂ < d_blind_measured` and the track was `TRACKED` with low relative velocity: it coasts inertially without declaring `LOST`, with a short `valid_until`. The `d_blind_measured` threshold is loaded from `blind_zone_report.yaml`, **never hardcoded**.
-
-### 6.2 LiDAR-odometry degeneration in homogeneous corridors (dictamen §3.2)
-
-- `hsl_bringup/config/hardware.yaml` explicitly declares the odometry source: `odom_source: wheel_imu_fused` by default (via a `robot_localization` EKF fusing `kobuki_core`/`kobuki_ros` wheel encoders + the NUC/Livox IMU), with `lio_source: fastlio2` only as slow-drift correction or relocalization, never as the sole source of longitudinal advance.
-- New package `hsl_world/hsl_world/odom_fusion_node.py` (or, if time is short, a direct `robot_localization` configuration) is the sole producer of `odom→base_link`; `hsl_perception/ego_state_node.py` consumes its output and does **not** publish a second transform on the same link (the "one producer per transform" rule, design §4).
-
-### 6.3 Python GIL and the 50 Hz Supervisor (dictamen §3.3)
-
-- `hsl_safety` is its **own ROS2 package with its own process** (`supervisor_node.py` launched as an independent node, not as a *component* loaded into a shared container). `hsl_safety/launch/safety.launch.py` launches it with its own `ExecuteProcess`, never inside the same `ComposableNodeContainer` as perception/planning.
-- `hsl_safety/hsl_safety/watchdog.py` runs in the same process as a high-priority timer of the single-thread executor; that process **does not import** `open3d`, `scipy.spatial`, or the A* planner — only `hsl_core.control.braking` and lightweight types. This is what guarantees a 40 ms DBSCAN call in `hsl_perception` cannot steal the GIL from the supervisor: they are separate OS processes, not threads of the same interpreter.
-- Supervisor input QoS: `depth=1`, `history=KEEP_LAST` on every topic it consumes, so it never processes a stale queued sample.
-
-### 6.4 Kobuki driver watchdog (dictamen §3.4)
-
-- `hsl_safety/hsl_safety/watchdog.py` publishes on `/commands/velocity` (or whichever topic the installed `kobuki_ros` version exposes) at **≥20 Hz unconditionally**, even in `FREEZE` or with `cmd_vel_final` at explicit zero — it never stops publishing. Verified by an integration test (`tests/integration/test_watchdog_rate.py`) that measures the actual published frequency over 30 s of tactical inactivity.
-- `tools/preflight_check.py` at G0 includes an explicit test: kill the decision/planning node and confirm the robot still receives zero commands at the Kobuki driver's minimum frequency (avoids the ~0.6 s motor cutoff documented by the manufacturer).
-
----
-
-## 7. Creating and structuring the GitHub repository
-
-The team's 2025 work lives on GitLab (`StarLine / hackathon / 2025`); this section covers standing up HSL26 as its own **GitHub** repository (or a GitHub mirror of the same GitLab project), matching the structure above.
-
-### 7.1 Initial creation
-
-```bash
-# 1. Create the repo on GitHub first (empty, no README/gitignore/license — avoids a merge conflict
-#    with the local history below), e.g. via `gh repo create StarLine/hsl26 --private --source=. `
-#    or through the GitHub web UI.
-
-# 2. Locally, start from the existing 2025 layout so history/config are not lost
-git clone <gitlab-url>/hackathon/2025.git hsl26
-cd hsl26
-git remote rename origin gitlab-2025          # keep the 2025 remote for reference/cherry-picks
-git remote add origin git@github.com:StarLine/hsl26.git
-
-# 3. Pin kobuki_core to the real upstream project instead of a loose copy (see §2)
-git rm -r --cached kobuki/workspace/src/kobuki_core
-git submodule add -b release/1.2.x https://github.com/kobuki-base/kobuki_core.git \
-    kobuki/workspace/src/kobuki_core
-git commit -m "Pin kobuki_core to upstream release/1.2.x as a submodule"
-
-# 4. Scaffold the new layers from §1
-mkdir -p hsl_core/hsl_core hsl_core/tests \
-         ros_ws/src/{hsl_interfaces,hsl_perception,hsl_world,hsl_decision,hsl_navigation,hsl_safety,hsl_match,hsl_bringup,hsl_diagnostics} \
-         sim/kinematic/scenarios sim/mvsim/{worlds,vehicles,adapter} \
-         config/schema tools tests/integration artifacts/{policies,calibration} docs/media
-
-git add -A
-git commit -m "HSL26: scaffold repository structure on top of the HSL25 base"
-git push -u origin main
-```
-
-### 7.2 Branch strategy
-
-| Branch | Purpose | Protection |
+| Runtime state | Sole owner | Other nodes receive |
 |---|---|---|
-| `main` | Always buildable; every commit passes `unit` + `integration` CI | Protected, PR-only, required status checks |
-| `develop` | Integration branch for in-progress features | Protected, PR-only |
-| `feature/<layer>-<short-desc>` | One branch per layer/task (e.g. `feature/hsl_safety-braking-envelope`) | Deleted after merge |
-| `release/hsl26-<tag>` | Cut before a competition day, only bugfixes on top | Protected |
+| `odom→base_link` | fusion or selected driver/fusion configuration | TF and `EgoState`; no duplicate broadcaster |
+| `map→odom` | localization owner | TF plus localization epoch |
+| structural map and versions | map server | immutable snapshots/version events |
+| topological graph | topology node | `WorldSnapshot` |
+| opponent filter and belief | opponent tracker process | `OpponentTrack`, `OpponentBelief` |
+| active option instance | option executor | `ExecutionState`, action feedback/result |
+| final autonomous command | supervisor | `/hsl/cmd_vel_final` and status |
+| independent stop latch | watchdog | `/hsl/cmd_vel_stop`, health |
+| stage identity/phase/zones | stage manager | leased `MatchState`, `RuleEvent` |
+| physical driver command | mux | `/commands/velocity` |
 
-### 7.3 Repository-root files to add alongside the tree in §1
+Each node validates inputs before replacing its cache. Timers operate on coherent immutable snapshots. Long-running mapping, registration or planning work carries input versions and is discarded when stale. Safety never blocks on these workers.
 
-- **`README.md`** — mirrors the 2025 README's structure (hardware description, power-on sequence, Docker usage, launch commands) updated for `hsl_bringup`'s `mode:=` argument, plus a link to `docs/HSL26_FINAL_ARCHITECTURE.md` and this report.
-- **`.gitignore`** — extends the 2025 one with `hsl_core/**/__pycache__/`, `ros_ws/**/build/`, `ros_ws/**/install/`, `ros_ws/**/log/`, `artifacts/calibration/*.yaml` (measured, machine-specific — not committed by default; only the schema is), `*.bag`.
-- **`.gitmodules`** — created automatically by `git submodule add` in §7.1; also add any other vendored upstream package the team decides to pin the same way.
-- **`.github/CODEOWNERS`** — maps each `ros_ws/src/hsl_*` package and `hsl_core/hsl_core/<area>/` to the teammate(s) responsible for that layer, so PRs auto-request the right reviewer.
-- **`.github/workflows/ci.yml`** — GitHub Actions mirror of the `.gitlab-ci.yml` stages in §8 below, if the team wants CI on both platforms (or only on GitHub, if it fully migrates).
-- **`LICENSE`** — match whatever license the 2025 repo/StarLine organization uses; `kobuki_core` and `livox_ros_driver2` keep their own upstream licenses under `kobuki/`.
+The baseline co-locates the logical `GlobalPlannerNode` with the option executor and uses a typed internal request/result API. A deployment in separate processes requires a separately specified, versioned ROS transport contract before use; no implicit planner service is part of revision 2.
 
-### 7.4 Keeping GitLab and GitHub in sync (if both are used)
+## 7. Configuration layout
 
-If GitLab remains the org's primary platform and GitHub is only a mirror (or vice versa), configure a simple two-remote push:
+`hardware.yaml` contains only controller assumptions and authorized raw/logical interfaces tied to calibration identifiers. It must distinguish the reported raw topics `/livox/lidar`, `/livox/imu`, `/odom` from logical topics. It also defines mux inputs and the physical output `/commands/velocity`. IP addresses from the supplied MID-360 configuration remain deployment data, not general mathematical constants.
 
-```bash
-git remote set-url --add --push origin git@github.com:StarLine/hsl26.git
-git remote set-url --add --push origin <gitlab-url>/hackathon/hsl26.git
-git push origin main   # pushes to both remotes in one command
-```
+`timing.yaml` contains periods, leases, expected jitter, compute budgets and driver/mux timeouts. `frames.yaml` contains frame IDs, TF ownership and extrinsic calibration IDs. `perception.yaml`, `topology.yaml` and `tactics.yaml` contain algorithm profiles with schema validation. `score_profile.yaml` distinguishes official values from surrogate training rewards. `memory_profiles.yaml` lists only organizer-approved retention behavior.
 
-For automated mirroring instead of a manual dual-push, GitLab's built-in "Mirroring repositories" (push mirror to GitHub) or a scheduled `git push --mirror` CI job are both simpler to maintain than keeping two independent histories by hand.
+Configuration validation is performed before arming. Missing braking, latency, rear-coverage or angular-response evidence disables the associated mode. No Python default silently supplies a competition safety bound.
 
----
+## 8. Simulation organization
 
-## 8. Testing and CI (`.gitlab-ci.yml`, GitLab already being the team's platform)
+Simulation capabilities are separated so the policy cannot access referee truth. `sim/common/ports.py` defines observation, actuation, simulation-control and referee-truth interfaces. Policy runners receive only observation and admitted-actuation ports. The referee receives truth but never exposes it on policy namespaces.
 
-| Stage | What runs | Where |
+The NumPy simulator supports `observed_map`, `approved_map` and `oracle` profiles. Only the first two are competition-representative, and each clearly declares what structural prior is available. GPIS is bypassed only at the synthetic-detection boundary; filtering, belief, tactics, rules and safety remain shared. MVSim must use a version-pinned, inspected sensor model; a generic point cloud is not automatically a MID-360 validation.
+
+Replay has no physical actuator devices and cannot be used as a closed-loop counterfactual after commands change. It is for deterministic estimator/contract regression. Runtime graph inspection complements static no-simulator-import checks.
+
+## 9. Artifacts and provenance
+
+Generated files are grouped by meaning:
+
+- `artifacts/models`: non-executable perception model arrays, manifest and held-out validation;
+- `artifacts/policies`: baseline/learned parameters, feature/option schema hashes and validation;
+- `artifacts/calibration`: measured braking, latency, footprint, extrinsic and blind-zone evidence;
+- `artifacts/releases`: immutable release manifest with source, image, configuration, model and policy hashes;
+- `artifacts/reports`: benchmark and acceptance reports.
+
+Never store safety calibration under a learning-policy directory. Never load Python pickle or another executable artifact for a competition model. Machine-local exploratory measurements may remain uncommitted; promoted release evidence is versioned deliberately and contains operating-condition scope.
+
+## 10. Testing and CI
+
+CI is ordered from cheapest to most integrated:
+
+| Stage | Content | Required environment |
 |---|---|---|
-| `lint` | `ruff`/`flake8` + `mypy` on `hsl_core/` | Lightweight runner, no robot Docker |
-| `unit` | `pytest hsl_core/tests` (T01-T09, T11, T12, T14 of the design's verification table) | Same runner, seconds |
-| `build` | `docker build` of `hsl26/docker/Dockerfile`, full `colcon build` (submodule checked out) | Runner with Docker-in-Docker |
-| `integration` | `tests/integration/` against `mode:=sim` (startup, TF tree, freeze→active, watchdog rate) | Inside the built container |
-| `no-sim-leak` | `tools/check_no_sim_imports.py` (fails the pipeline if `hsl_decision`/`hsl_safety` import anything from `sim/`) | Static, fast |
-| `release` (manual, tags only) | `tools/release_freeze.py`: generates a hash + manifest (including the pinned `kobuki_core` commit) in `artifacts/policies/` | Only before competing |
+| `lint` | format/static typing, forbidden imports, generated schema drift | Python |
+| `unit-core` | pure mathematical and contract tests | Python, no ROS |
+| `interface-build` | ROS IDL generation and adapter round trips | ROS 2 Humble |
+| `container-build` | pinned Docker build and dependency manifest | Docker runner |
+| `launch-smoke` | startup, topic/TF ownership, zero-at-start | Built container |
+| `integration-sim` | stage/action/safety/mux behavior, namespace/truth isolation | Container plus simulator |
+| `fault-injection` | stale inputs, process deaths, clock/epoch jumps | Container; no physical robot |
+| `hardware-opt-in` | braking, blind zone, driver/mux timeout and minimum objects | Supervised final hardware only |
+| `release` | hashes, offline cold start and two-stage rehearsal | Final target environment |
 
-The `unit` stage catches regressions fastest because it **does not depend on ROS2 or Docker** — the main reason `hsl_core` is kept separate from `ros_ws/`.
+`pytest` passing is not a physical certificate. The release gate attaches the actual commands, versions and reports. An observed worst case is not called WCET. Hardware tests are never run automatically on a generic CI runner.
 
----
+## 11. Docker and execution profiles
 
-## 9. Short usage runbook (consistent with the design's §18.1)
+The reported corrected Dockerfile uses `nickodema/kobuki:humble-22.04-100625` as a parameterizable inherited hardware base. Before release, verify that the tag remains available, record its immutable digest, rebuild the actual inherited sources and run the complete ROS test suite. A tag name alone is not a reproducible dependency.
 
-```bash
-# Normal development (laptop, no robot)
-bash hsl26/docker/run_sim.bash
-bash hsl26/docker/into.bash
-ros2 launch hsl_bringup hsl26.launch.py mode:=sim role:=explorer
+The entrypoint sources, in order:
 
-# Validation with real preparation bags
-ros2 launch hsl_bringup hsl26.launch.py mode:=replay bag:=/data/bags/prep_day1
-
-# On the real robot, over SSH, during preparation (R8)
-bash hsl26/docker/run.bash        # --network host, access to Kobuki/Livox
-bash hsl26/docker/into.bash
-ros2 launch hsl_bringup hsl26.launch.py mode:=real role:=guardian
-
-# Before competing (release freeze, R10/R18)
-python3 tools/release_freeze.py --tag hsl26-final --profile config/score_profile.yaml
+```text
+/opt/ros/humble/setup.bash
+/workspace_kobuki/install/setup.bash
+/workspace_hsl26/install/setup.bash
 ```
 
-This flow reuses exactly the same verbs the team already used in HSL25 (`build.bash`, `run.bash`, `into.bash`, `stop.bash`, `colcon build --symlink-install`), minimizing the learning curve for the new repository under time pressure.
+`mode:=real`, `mode:=mvsim`, `mode:=kinematic` and `mode:=replay` choose adapters, not algorithms. The real profile alone receives network/USB/serial access. Sim/replay profiles do not mount or address the physical driver. Release images contain frozen code and artifacts rather than editable bind mounts.
+
+## 12. Branch and change discipline
+
+Every change affecting interfaces, authority, frames, time, geometry or physical limits requires:
+
+1. an architecture/specification reference;
+2. an updated unit/contract test;
+3. an adapter migration across every producer and consumer;
+4. a launch/integration check when runtime ownership changes;
+5. an acceptance-report update when a measured envelope changes.
+
+Feature branches should correspond to one vertical capability, such as `feature/phase1-contracts` or `feature/phase1-stop-path`, not one isolated file that cannot run. Do not create independent GitLab/GitHub histories without an explicit project decision. The inherited driver layer is pinned and changed only by a reviewed compatibility patch.
+
+## 13. Definition of repository readiness
+
+The tree is **documentation-ready** when architecture, blueprint and repository contracts agree and every required path has an owner; the roadmap and phase documents must trace to those contracts. It is **build-ready** when the live checkout generates revision-2 interfaces and the container/colcon build passes. It is **Phase-1-ready** when foundational core tests, supervisor, independent watchdog, mux authority and software fault-injection tests pass with zero-only startup. It is **autonomy-ready** only after mapping/perception/navigation/stage gates and physical calibration evidence pass.
+
+The current supplied evidence supports “build-oriented scaffold with reported corrections,” not autonomous operation. `HSL26_IMPLEMENTATION_ROADMAP.md` indexes P1–P6 work and evidence gates; the phase files specify actionable tasks without treating a documented target as an implemented module.

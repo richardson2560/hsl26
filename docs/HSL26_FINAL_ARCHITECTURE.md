@@ -1,383 +1,453 @@
-# HSL26 — Final Engineering Architecture (Independent Audit and Delivery Structure)
+# HSL26 — Final Engineering Architecture
 
-**Role:** development team lead / independent technical auditor.
-**Audited inputs:** `Регламент_HSL26_-_v06092026.pdf` (official rulebook, 6 pp.), `DESIGN_OVERVIEW.md` (qualification-stage system, fixed sensor), `audit1.md` (reviewer proposal: evolutionary ASG + spectral signatures + coevolution), `audit2.md` (reviewer proposal: rejection of pure OT/PH-CPG/MPPI, A*+DWA+CBF hierarchy), `DESIGN_OVERVIEW_FINAL.md` (previous synthesis, rev. 2.0), 
-**Method:** no reviewer claim is accepted on authority alone. Every equation cited below was re-derived or dimensionally cross-checked by me before being accepted; every requirement was verified against the literal text of the PDF. Discrepancies found between reviewers are resolved explicitly in §0 and §10.
+**Revision:** 2.2 · **Date:** 2026-09-24 · **Language:** English  
+**Status:** normative design baseline; implementation and hardware acceptance remain separate.  
+**Companion:** `HSL26_TECHNICAL_SPECIFICATION.md`, revision 2.2 (abbreviated **TS** below).
 
----
+## Contents
 
-## 0. Audit verdict (what is accepted, corrected, or discarded)
+1. Scope, evidence and precedence
+2. Independent audit decisions
+3. Competition requirements and unresolved inputs
+4. Layers, dependencies and command authority
+5. Frames, clocks and coherent contracts
+6. Acquisition, mapping and topology
+7. Opponent model, registration and belief
+8. Competition predicates and stage lifecycle
+9. Planning, options and local control
+10. Safety admission and failure containment
+11. Simulation, calibration and model artifacts
+12. Offline learning and bounded evolution
+13. Repository alignment and release workflow
+14. Acceptance gates and residual risks
+15. Traceability and sources
 
-### 0.1 What both reviewers got right and is kept
+## 1. Scope, evidence and precedence
 
-- **Separating "what I want to achieve" (tactics) from "what command I can execute" (control+safety)** is the correct idea and is exactly the option/policy separation from options theory (Sutton, Precup & Singh 1999). Kept as the backbone.
-- **Discarding neural networks** is reasonable given the available time, the absence of labeled data for the real opponent, and the 100%-on-CPU execution requirement (R11). This is not a limitation of the problem; it is a correct risk-management decision.
-- **audit2.md is right to discard** Wasserstein-2 optimal transport and the 32D Port-Hamiltonian generator as the control core: both are designed for continuous densities or for arms/legs with rich null spaces; a 2D differential base does not have that problem, and forcing those tools adds cost without demonstrable benefit. **Independently verified**: the control space of a differential robot is $\mathbb R^2$ ($v,\omega$), and primitives (arcs, trapezoidal profiles) solve it in closed form; there is no null subspace that would justify lifting to $\mathbb R^{32}$.
+The system controls one differential-drive TurtleBot2 in either role of the HSL26 pursuit–evasion competition. The delivery is CPU-only, without neural networks, with the same decision and control core in simulation and on hardware. The chosen hierarchy is deterministic options/FSM → non-negative-cost A* → regulated pursuit or bounded arc evaluation → independent command admission. Statistical tactical learning is optional and offline.
 
-### 0.2 Real mathematical errors found in the proposals (verified by me, not just cited)
+This revision independently reviews the five supplied files: the previous `HSL26_FINAL_ARCHITECTURE.md`, `HSL26_REPO_STRUCTURE.md`, `HSL26_SESSION_CHANGELOG.md`, `rev1.md`, and the six-page official `Регламент HSL26 - v06092026(1).pdf`. Claims concerning other documents quoted by those inputs were not independently verified because those documents and the live repository were not supplied. References to nonexistent equation numbers, appendices and monograph theorems have therefore been replaced by explicit definitions here or in TS.
 
-| # | Original claim | My own verification | Correction |
-|---|---|---|---|
-| E1 | audit1.md: distance CBF with sign `−∇h·ṗ+γh≥0` | With $h(p)=\lVert p-o\rVert^2-R^2$ (safe if $h\ge0$) and $\dot p=v\,e(\theta)$: $\dot h=2(p-o)^Te(\theta)v$. The Nagumo/CBF invariance condition is $\dot h\ge-\gamma h$, i.e. $\dot h+\gamma h\ge0$. With the proposed negative sign, moving away from the obstacle ($\dot h>0$) could *violate* the constraint for large $\gamma h$ — the opposite of the intent. | `2(p−o)ᵀe(θ)v + γh ≥ 0` (positive sign). Confirmed against Ames, Xu, Grizzle & Tabuada, *CBF-QP*, IEEE TAC / arXiv:1609.06408. |
-| E2 | audit1.md: reinforcing Dirichlet-Multinomial "collapses the transition to deterministic" | Counterexample I constructed: a real Bernoulli(0.5,0.5) transition. With $A=\sum\alpha_j\approx200$, $\mathrm{Var}(p_j)=\bar p_j(1-\bar p_j)/(A+1)\approx0.25/201\approx0.00124$, std. dev. $\approx0.035$: the **estimate** of $p$ converges, but the entropy of the **physical transition** remains at $\log 2$. Reducing epistemic variance of the parameter does not reduce the aleatoric randomness of the event. | Explicitly distinguish parameter uncertainty (reducible with data) from outcome uncertainty (not reducible without changing the physics/opponent). Do not use "variance collapse" as an argument for tactical determinism. |
-| E3 | audit1.md: first non-zero eigenvalue of the Laplacian called interchangeably $\lambda_1$ and used as $\lambda_2-\lambda_1$ | For the symmetric normalized Laplacian $L_{sym}=I-D^{-1/2}WD^{-1/2}$ of a connected graph, $\lambda_1=0$ (constant eigenvector) and $\lambda_2$ is the Fiedler value. Under that convention, $\lambda_2-\lambda_1\equiv\lambda_2$: the "spectral gap" in the sketch is a tautology, not a second independent signal. | Fix indices from $\lambda_1=0$; use $\lambda_2,\lambda_3,\dim\ker(L)$ as a non-redundant signature, not $\lambda_2-\lambda_1$. |
-| E4 | audit1.md: spectral signature uniquely identifies chokepoint/corner/zone | A graph's spectrum is not injective with respect to geometry (co-spectral non-isomorphic graphs exist; long chains without narrowing also decrease $\lambda_2$). | Spectral signature as an auxiliary *feature* concatenated to explicit geometric characteristics (minimum width, number of exits — §5.4), never as a unique identifier or a substitute for collision checking. |
-| E5 | audit2.md: capture-approach law with sign `v=k(0.40−d)` (advance when `d` is large) | If the goal is to reduce `d` toward `d*` and `d>d*`, the correct proportional law for $\dot e=-k e$ with $e=d-d^*$ is $v\propto k(d-d^*)$ (advance if `d` is large relative to `d*`), not $k(d_0-d)$, which reverses the direction of advance for `d>d0`. | $v_{nom}=\mathrm{clip}(k_d(d-d_*),0,v_{approach})\max(0,\cos\beta)$, with bearing-based orientation. Verified: for a static rival and $\beta=0$, $\dot e=-k_d e$ gives correct exponential convergence. |
-| E6 | audit2.md: A* with negative cost or a "reward" edge near the opponent | Dijkstra/A* with negative-length edges does not guarantee termination or optimality (breaks the non-decreasing property of the priority queue); it can generate negative-cost cycles. | Edge costs strictly $\ge0$ (Eq. 19 below); the "press/intercept" objective is encoded in the tactical layer (utility $U_G,U_E$), not as a negative graph cost. |
-| E7 | audit2.md: single interception formula $t=d/(v_G-v_E\cdot u)$ presented as a general solution | That formula is only valid for collinear motion at constant speed in free space; in a maze with walls and acceleration it is nothing more than a degenerate special case. | General quadratic equation (Eq. 22–23 below) solved as the minimum valid positive root, and for the maze it is replaced by topological route times $\hat T_G,\hat T_E$ (Eq. 24), not the collinear formula. |
-| E8 | audit2.md: `mvsim.World(...).captured()` and similar methods cited as a real API | These do not exist in the public MVSim documentation consulted (mvsimulator.readthedocs.io); it is pseudocode, not a verified interface. | Define a custom adapter (`SimulationAdapter`) with its own methods (`reset/step/observe/ground_truth_for_referee`) implemented against the real APIs of the installed version. |
+**Precedence:** official rulebook and documented organizer clarifications → this architecture → TS contracts → repository layout report → implementation notes and rev1. Architecture and TS form one baseline: any future conflict requires a versioned correction and tests, not a developer's silent interpretation. The changelog is evidence of reported work, not proof that algorithms, ROS launch wiring or hardware behavior have passed acceptance.
 
-### 0.3 Own mathematical confirmations (derivations I verified from scratch)
+The supplied changelog reports package/interface scaffolding, configuration and Docker corrections, and static checks. It explicitly reports that perception, planning, safety, match runtime, simulation wiring and integration tests remain unfinished. This revision does not claim to have executed or modified that repository. New classes, messages and tools below are **required implementation contracts**, not assertions that files already exist.
 
-- **Capture predicate (Eq. 15)** literally reproduces the rulebook, p. 6: *"расстояние между СК роботов менее 0.45 м... ось Х стража не более чем на 45 град... между роботами отсутствуют препятствия"* → $d<0.45\ \land\ e_G^Tr\ge d\cos(\pi/4)\ \land\ \mathrm{LOS}$. It matches exactly; there is no room for interpretation here.
-- **Braking distance with latency (Eq. 27–28)**: derived from elementary kinematics — distance covered during latency $\tau$ plus braking distance at constant deceleration $b_{min}$: $v\tau+v^2/(2b_{min})\le d-m$. Solving the quadratic for $v$ gives exactly Eq. 28. It is the standard "stopping sight distance" formula from vehicle engineering, correctly adapted.
-- **Quadratic interception equation (Eq. 22)**: from $\lVert r+v_Et\rVert=s_Gt$, squaring gives $(\lVert v_E\rVert^2-s_G^2)t^2+2r^Tv_Et+\lVert r\rVert^2=0$. Verified term by term.
-- **Dirichlet posterior variance (Eq. 34)**: for $p_i\sim\mathrm{Dir}(\alpha)$, $\mathrm{Var}(p_i)=\alpha_i(\alpha_0-\alpha_i)/(\alpha_0^2(\alpha_0+1))$ is the standard formula; substituting $\bar p_i=\alpha_i/\alpha_0$ gives $\bar p_i(1-\bar p_i)/(\alpha_0+1)$, which is exactly Eq. 34. Confirmed against the same Dirichlet-Multinomial model that appears literally in §20.3 (lines 7816–7838 of the monograph), with the same $\alpha_0=0.10$.
-- **Kemeny–Snell lumpability (§20.6, Theorem 20.6.1)**: it exists in the monograph and is correct *under its hypotheses* (equality of the transition kernel **and** the per-class expected reward/duration). audit1.md's error was omitting the duration condition: two transitions with the same destination probability but $\tau=1$s vs $\tau=10$s are not interchangeable under discounting. I verified this with the continuous-time discounted Bellman operator $K_o(s,C)=\mathbb E[e^{-\beta\tau}\mathbf 1\{s'\in C\}]$: if $\tau$ differs, $K_o$ differs even when $P(s'\in C)$ matches.
+## 2. Independent audit decisions
 
----
-
-## 1. Rulebook → verifiable engineering requirements
-
-Extracted and verified line by line against the PDF (p. = document page):
-
-| ID | Normative fact (source) | Mandatory technical consequence |
+| ID | Finding in the supplied drafts | Decision and reason |
 |---|---|---|
-| R1 | TurtleBot2 + Livox MID-360 (p. 4) | Differential kinematic model; single authorized sensor |
-| R2 | Modules ≈1×1 m, maze (p. 4) | Do not assume a 1 m clear passage; measure real walls/posts |
-| R3 | Maze configuration known on Day 1, fixed during competition (p. 4) | Reusable structural map **if** it is clarified that saving it is allowed; `online_only` mode as fallback |
-| R4 | Obstacles in unknown but equal order for all teams; width/length ≥0.1 m, height ≥0.15 m (p. 4) | Minimum-block detection with real LiDAR, not simulated |
-| R5 | Opaque, non-specular surfaces (p. 4) | LiDAR return is not guaranteed from every angle; validate with hardware |
-| R6 | 2 symmetric 10-minute stages, roles swapped (p. 5) | The same binary must operate both roles without recompiling |
-| R7 | 4-minute `freeze` inside the start zone before active (p. 5) | `FREEZE` state with motion authority inhibited at the supervisor level, not the tactics level |
-| R8 | Preparation only via SSH from the organizer's PC (p. 5) | Startup with no mandatory GUI, no external network |
-| R9 | Forbidden to hardcode in software any information tied to particulars unknown beforehand (p. 5) | No hardcoded obstacle/opponent positions; reset of stage-specific memory pending clarification |
-| R10 | Code editing only before crossing the line and with organizer agreement (p. 5) | Binary and config frozen by hash before each stage |
-| R11 | No extra sensors/network/compute; no altering appearance (p. 5) | 100% onboard execution, no offload |
-| R12 | Stage ends by arrival, capture, or timeout; an uncaptured explorer wins the stage (p. 5) | Explicit terminal with 3 outcomes; do not optimize only for "arrive fast" |
-| R13 | Points announced on Day 1; wins by sum of stages (p. 5–6) | `score_profile` decoupled and versionable, not hardcoded |
-| R14 | Arrival = contour contact with the zone (p. 6) | Footprint-based goal geometry, not center/waypoint |
-| R15 | Capture = distance between frames <0.45 m ∧ guardian's X axis ≤45° from the line ∧ no obstacle between robots (p. 6) | Exact predicate Eq. (15); see §0.3 |
-| R16 | Terminal indication recommended (p. 6) | SSH-readable telemetry with no visualizer |
-| R17 | No penalty for collision with static obstacles; restart if a critical shift occurs (p. 6) | Avoiding collision remains a reliability requirement, not a scoring one |
-| R18 | Access blocked 30 min before; robots powered off and handed over (p. 3) | Reproducible cold-start mandatory |
-| R19 | Full restart once, by agreement of both captains or the organizer; stopping a stage cedes the maximum score to the opponent (p. 5) | "Restart" is not a normal autonomous recovery mechanism |
+| A01 | “Freeze means the robot must not move.” | The rule prohibits crossing the start boundary. HSL26 deliberately adopts zero motion during freeze; this is a stricter engineering policy. |
+| A02 | “MID-360 is the single authorized sensor.” | The rule calls it the main data source and prohibits extra sensors. Use supplied base odometry and supplied IMU only after inventory confirmation; do not assume an additional NUC IMU exists. |
+| A03 | Unknown competition coordinates become permissible when moved to YAML. | False. R9 concerns information, not file extensions. All competition-specific metadata needs permitted provenance. |
+| A04 | Watchdog and mux both publish `/commands/velocity`. | Eliminate this race. Only the mux publishes the physical driver input. Independent watchdog publishes zero only on a dedicated, highest-priority mux input. |
+| A05 | Watchdog shares the supervisor process and prevents its failure. | A timer in a blocked/dead process cannot detect that process's failure. Use a separate process plus a verified driver timeout. |
+| A06 | Closest-obstacle `Float64` is sufficient for safety. | It lacks time, frame, coverage and geometry. Use bounded local geometry plus observed-free coverage; evaluate the proposed and stopping swept footprint. |
+| A07 | Fast safety path removes the structural background. | Unsafe: that would remove walls. Safety includes all relevant returns, static structure and unknown coverage. Background suppression belongs only to object recognition. |
+| A08 | Clamp linear speed while leaving angular speed unchanged. | This changes curvature; the previously checked trajectory no longer applies. Recheck every transformed command, including pure rotation. |
+| A09 | The low-yaw-rate integrator is exact without a sinc factor. | Use the continuous sinc formula in §6.1. The draft midpoint formula is an approximation. |
+| A10 | A corridor edge length equals endpoint distance. | Only for a straight edge. Store and sum its centerline polyline. A* endpoint distance remains a lower-bound heuristic. |
+| A11 | A normalized Laplacian has the constant vector as its null vector. | For non-isolated vertices the null vector is proportional to square-root degree. Define isolated vertices explicitly. |
+| A12 | Three eigenvalues identify geometry; localization jumps preserve the extracted graph. | A spectrum is non-injective; extraction may change under noise or grid resampling. Invariance holds for the same abstract graph under consistent relabeling/rigid embedding changes. |
+| A13 | Occlusion forces a single centerline track with high confidence. | Keep multiple corridor hypotheses and lateral uncertainty. Use a speed-capped reachable envelope; no invented 30 cm guarantee. |
+| A14 | Earlier portal arrival or base defense guarantees capture. | It creates an opportunity only. Capture still requires distance, guardian bearing and unoccluded geometry at the same time. |
+| A15 | Guardian may ignore the explorer as a physical obstacle. | Target semantics never remove collision occupancy. Both roles enforce physical traversability. |
+| A16 | Missing goal means select the farthest dead end. | Rejected. Geometry cannot identify the opponent's start zone without semantic evidence. Publish unresolved goal, allow only explicitly authorized fallback behavior. |
+| A17 | GPIS is globally a signed-distance field; cluster centroid is the robot origin. | Neither follows. Use an implicit field with a supported domain and a calibrated model-to-base transform. Partial-view centroids are biased observations. |
+| A18 | MVSim automatically supplies realistic MID-360 data. | Pin and inspect the installed sensor model. Generic scans/point clouds do not establish scan-pattern, timing or blind-zone fidelity. |
+| A19 | Symmetric Dirichlet prior 0.1 is uniform over the simplex. | Its mean is uniform; its density favors sparse distributions. Uniform simplex density uses all parameters equal to 1. |
+| A20 | Equal expected option duration is enough for discounted state fusion. | Require equality of expected discounted reward and discounted transition kernel; equal mean duration is insufficient. |
+| A21 | Fixed genome mutation invents arbitrary new options. | It changes selection/timing among existing realizers. New option structures require a separate constrained grammar and new verification; excluded from MVP. |
+| A22 | Unit tests “certify” physical safety and fixed CPU throughput. | Tests provide scoped evidence. Timing, friction, sensor coverage and failure response require final-platform measurements. |
 
-**Open questions that affect design and do not block development** (moving forward with the provisional decision indicated, to be confirmed before freezing the competition build):
+A further covariance clarification is necessary: a six-dimensional ROS pose covariance is not intrinsically invalid for a planar platform. It can explicitly represent `[x,y,z,roll,pitch,yaw]`, with the planar submatrix extracted at indices `[0,1,5]`. The chosen custom `EgoState` contract uses nine values for `[x,y,yaw]`; the error is an undocumented mismatch between representation and consumer, not the mere existence of 36 elements.
 
-1. Is it allowed to keep the structural map built during preparation? → Implement **two profiles** (`approved_map`, `online_only`); decide which to use on competition day.
-2. Does memory/map persist between stage 1 and stage 2 of the same match? → By default, **reset** opponent track and detection map per stage.
-3. How is the target zone and initial pose communicated (coordinates, visual marker)? → With no official input, no claim of "autonomous arrival at an identified zone" is made; the metadata-entry mechanism still needs to be defined.
-4. Do the 4 minutes of preparation count within the 10, or are they additional? → Parameterize `stage_total=600s, freeze=240s, active=360s` as a literal reading of the text, adjustable via configuration.
+These corrections retain the useful separation in rev1: pure domain code, typed ROS interfaces, thin adapters, graph-based planning, explicit track uncertainty, stage authority and offline learning. They remove incompatible names and unsupported guarantees rather than adding another control hierarchy.
 
----
+## 3. Competition requirements and unresolved inputs
 
-## 2. Why this architecture and not another (engineering contrast against families other teams are likely to use)
+| ID | Rulebook fact | Engineering interpretation |
+|---|---|---|
+| R1 | TurtleBot2 with MID-360 as main data source, p. 4 | Differential base; confirm all supplied sensor interfaces. |
+| R2 | Approximately 1 m modules, p. 4 | Module size is not clear corridor width; measure footprint and clearance. |
+| R3 | Maze configuration announced on day 1 and fixed during competition, p. 4 | Support approved structural map and online-only profiles; retention permission remains an organizer decision. |
+| R4 | Static obstacles at least 0.1 m in width/length and 0.15 m high, p. 4 | Demonstrate detection at the stopping distance, including low and nearby obstacles. |
+| R5 | Opaque, non-mirror surfaces, p. 4 | Do not infer guaranteed returns or treat missing returns as free space. |
+| R6 | Two symmetric 10-minute stages with swapped roles, p. 5 | Same executable and contract registry for both roles. |
+| R7 | Four preparation minutes after stage start; do not cross the starting line, p. 5 | Default 600 s total, 240 s freeze, 360 s active; zero-motion freeze is our policy. Organizer clarification can revise the signed timing profile. |
+| R8 | Preparation through organizer PCs and SSH, p. 5 | Headless cold start; no mandatory GUI or cloud dependency. |
+| R9 | Do not fix in software information tied to previously unknown trial specifics, p. 5 | Metadata provenance and permission matter equally for source, YAML, maps and policies. |
+| R10 | Source editing during preparation before crossing and with organizer agreement, p. 5 | Hash the approved executable, configuration and artifacts before release. |
+| R11 | No extra sensors, networking equipment, compute enhancements or appearance changes, p. 5 | Use supplied hardware. CPU-only/no-NN is a project decision, not a literal ban on all neural algorithms. |
+| R12 | Arrival, capture or timeout ends a stage; uncaptured explorer wins, p. 5 | Timeout is not explorer failure. Keep internal estimates separate from adjudication. |
+| R13 | Detailed points announced on day 1; match sums two stages, pp. 5–6 | Versioned score profile; no invented official numeric rewards. |
+| R14 | Arrival at first robot-contour/start-zone-contour contact, p. 6 | Physical footprint, continuous event detection, known zone geometry. |
+| R15 | Frame distance <0.45 m, guardian X-axis deviation ≤45°, no intervening obstacle, p. 6 | Exact inequalities and tri-state LOS; estimated confidence separate from true predicate. |
+| R16 | Informative terminal indication recommended, p. 6 | SSH-readable stage/event/safety diagnostics. |
+| R17 | Static collisions unpenalized; critical displacement may trigger restart, p. 6 | Collision avoidance remains a reliability objective; no intentional collision policy. |
+| R18 | Access ends 30 minutes before competition; robots off and handed over, p. 3 | Reproducible offline cold start and archived release. |
+| R19 | One complete restart by both captains or organizer; stopping concedes maximum score, p. 5 | Internal safety hold is not an official concession or permission to restart. |
 
-| Solution family | What it gains | Why it loses on this specific problem | Verdict |
+**Open-input register.** Before G6, record organizer decisions for map retention, stage-to-stage data retention, goal/start-zone identity and coordinates, allowed metadata entry, stage-start signal, numerical scoring, simultaneous terminal events, reference-frame origins and any timing clarification. No software fallback may invent these answers. Development proceeds using explicitly labeled simulation assumptions.
+
+The default goal is `UNRESOLVED`. Valid providers are organizer-approved metadata, approved map semantics, or a separately validated onboard semantic detector using permitted sensors. A farthest node, a rectangular room or a high-reflectance return is not by itself the guardian's start zone. If goal identity is unavailable, explorer survival/search may run under an explicit fallback policy, but autonomous arrival is unavailable. Guardian base defense additionally requires its own start-zone geometry.
+
+## 4. Layers, dependencies and command authority
+
+| Layer | Owner | Output | Authority boundary |
 |---|---|---|---|
-| **Standard Nav2 (DWB/TEB) + reactive pursuit** | Fast to set up, many teams know it | No concept of "role", "intentional opponent", or "capture by relative geometry"; it is point-to-point navigation, not a two-player game | Insufficient alone; *regulated pursuit* is reused as the control layer, not as the tactical brain |
-| **Mapless reactive pursuit** (chase last seen position) | Trivial to implement | Loses the rival around a corner, does not anticipate portals, does not distinguish "capturing" from "approaching" | Serves as a low-priority *fallback*, not the main policy |
-| **End-to-end deep RL** | Expressive, fashionable | No real-opponent data, no competitive GPU, no time to validate sim-to-real for a black-box policy; high risk of failure on the real robot on competition day | Explicitly excluded for this delivery (matches the team's decision to remove NNs) |
-| **Heavy MPC/MPPI in the control loop** | Good trajectory quality with rich costs | CPU with no GPU (Intel NUC): $K$ stochastic rollouts at 20 Hz compete for cycles with the opponent EKF and the LiDAR detector; no measured budget guarantees it | *Future* candidate, not discarded by dogma but by an unmeasured budget; tested after the MVP if time allows |
-| **Optimal transport (Wasserstein-2) / 32D Port-Hamiltonian as the core** | Elegant for swarms or manipulators with null spaces | The maze's free space is strongly non-convex (OT geodesics would cross walls); the robot is a single rigid body in $SE(2)$, not a density or an articulated arm | Discarded with justification (§0.1), not reusable without an iterative projection that cancels its analytic advantage |
-| **Pure learned ASG/SMDP (no base FSM)** | Discovers unanticipated tactics | No coverage guarantees in the available time; risk of state aliasing (partial observability + opponent) if deployed without a base policy | Implemented as an **optional improvement** on top of a deterministic FSM that can actually be certified before competing |
-| **This architecture: option FSM/ASG + topological A* + regulated control + independent physical supervisor** | Debuggable, runs on CPU, each layer is tested separately, degrades gracefully if a module fails | Requires discipline in inter-layer contracts; not the most "sophisticated" on paper | **Chosen**: maximizes `validated benefit / implementation-and-test cost` with the available time |
+| L0 acquisition/state | `hsl_perception`, fusion in `hsl_world` | `EgoState`, normalized cloud/IMU/odom | Reports estimates and health, never motion authority. |
+| L1 world | `hsl_world`, fast obstacles in `hsl_perception` | `WorldSnapshot`, `LocalObstacleSnapshot` | Keeps structural, collision and semantic information distinct. |
+| L2 opponent | `hsl_perception` | `OpponentTrack`, `OpponentBelief` | Does not claim observable yaw or exact identity without evidence. |
+| L3 tactics | `hsl_decision` | `ExecuteOption` goals | Selects effects; no driver publisher. |
+| L4 navigation | `hsl_navigation` | `PathPlan`, `MotionCandidate` | Proposes feasible motion; cannot override safety. |
+| L5 stage | `hsl_match` | `MatchState`, approved zones, events | Grants expiring stage authority; cannot declare physical command safe. |
+| L6 safety | `hsl_safety` | admitted autonomous twist, status, stop channel | Sole autonomous admission; independent of recognition and learning. |
+| L7 offline | `hsl_core.learning`, training tools | frozen policy artifacts | Cannot modify physical limits, rules or live competition state. |
 
-The decision criterion is not "what is more elegant in theory" but what can be **certified with unit and integration tests before the access lockout (R18)**. A controller with beautiful math that is never validated on hardware is worse than a simple FSM that actually was tested.
-
----
-
-## 3. Layer and block architecture
-
-```
-LiDAR + IMU + wheel odom
-        │
-        ▼
-┌───────────────────────┐      ┌────────────────────────────┐
-│ LAYER 0 · ACQUISITION  │      │ LAYER 5 · STAGE MANAGER     │
-│ deskew, TF, own state  │◄────►│ freeze / active / timeout   │
-│ (EgoState)             │      │ score_profile, match_state  │
-└──────────┬─────────────┘      └───────────────┬────────────┘
-           │                                     │ authorizes
-           ▼                                     ▼
-┌───────────────────────┐  fast     ┌──────────────────────────┐
-│ LAYER 1 · WORLD        │─────────►│ LAYER 6 · SUPERVISOR      │
-│ structural map,        │ local    │ sole writer of             │
-│ collision map,         │ obstacles│ cmd_vel_final              │
-│ topological graph      │          │ (admission, braking,      │
-└──────────┬─────────────┘          │  expiration, watchdog)    │
-           │                        └─────────────▲─────────────┘
-           ▼                                       │ nominal
-┌───────────────────────┐                          │
-│ LAYER 2 · OPPONENT     │                          │
-│ PERCEPTION             │                          │
-│ segmentation,          │                          │
-│ GPIS registration,     │                          │
-│ EKF, belief            │                          │
-│ (OpponentTrack)        │                          │
-└──────────┬─────────────┘                          │
-           ▼                                        │
-┌───────────────────────┐                           │
-│ LAYER 3 · TACTICS      │                           │
-│ per-role option        │                           │
-│ FSM/ASG (OptionGoal)   │                           │
-└──────────┬─────────────┘                           │
-           ▼                                         │
-┌───────────────────────┐                            │
-│ LAYER 4 · PLANNING &   │                            │
-│ LOCAL CONTROL          │                            │
-│ topological A*, DWA/RPP│────────────────────────────┘
-│ (MotionCandidate)      │
-└─────────────────────────┘
-
-         ┌──────────────────────────────┐
-         │ LAYER 7 · OFFLINE LEARNING    │  (outside the critical loop,
-         │ Dirichlet, per-option Q,      │   never writes to the driver
-         │ bounded evolution, shadow-mode│   directly)
-         └──────────────────────────────┘
+```mermaid
+flowchart TD
+    Sensors["Authorized sensors"] --> Ego["L0 ego state"]
+    Sensors --> Fast["L1 local geometry and coverage"]
+    Ego --> World["L1 maps and topology"]
+    Sensors --> World
+    Ego --> Track["L2 opponent track and belief"]
+    World --> Track
+    World --> Tactics["L3 options"]
+    Track --> Tactics
+    Tactics --> Nav["L4 path and control"]
+    World --> Nav
+    Nav --> Safety["L6 safety supervisor"]
+    Fast --> Safety
+    Ego --> Safety
+    Stage["L5 stage authority"] --> Tactics
+    Stage --> Safety
+    Safety --> Mux["Command mux"]
+    Mux --> Driver["Base driver"]
 ```
 
-### 3.1 Authority table (who can do what, and what is explicitly forbidden)
+**Canonical physical chain:** supervisor → `/hsl/cmd_vel_final` → mux → `/commands/velocity` → driver. Testing teleop enters `/teleop/cmd_vel`, priority 100, above autonomy 50. Independent stop watchdog enters `/hsl/cmd_vel_stop`, priority 200. Only the mux publishes `/commands/velocity`. The stop channel publishes zeros while inhibited; it publishes nothing when healthy and armed. Stop release requires rearming after a fault and a fresh candidate; it does not replay pre-fault commands. Competition profile disables teleop motion. A human stop must remain possible during permitted testing.
 
-| Block (layer) | Responsibility | Explicitly NOT authorized to |
-|---|---|---|
-| 0. Acquisition/estimation | Time, TF, `EgoState`, sensor health | Declare a pose valid just because a TF exists |
-| 1. World | Occupancy, collision map, topology | Erase obstacles "to make capture easier" |
-| 2. Opponent perception | `OpponentTrack`, belief under occlusion | Publish opponent yaw when it is not observable (§6.3) |
-| 3. Tactics (options) | Propose an effect: intercept, break LOS, advance | Publish directly to the base driver |
-| 4. Planning/control | Feasible path + `MotionCandidate` | Declare a path safe just because A* returned it |
-| 5. Stage manager | `freeze`/`active`/timeout, `score_profile` | Infer stage start from the first point cloud |
-| 6. Supervisor | Final admission, braking, watchdog — **sole producer of `cmd_vel_final`** | Promise invulnerability against an arbitrary opponent |
-| 7. Offline learning | Tune parameters/ASG *offline* | Change physical radius, minimum braking, or time sources; write during competition |
+A zero stream is not a heartbeat proving safety. The watchdog requires a newly sequenced supervisor decision heartbeat and fresh stage authority. Mutual supervisor/watchdog health leases prevent normal autonomy from continuing unnoticed if the watchdog itself fails. Driver timeout handles complete process/host communication failure; its actual semantics and bound must be measured. Separate processes remove shared interpreter GIL blocking, but not CPU, memory, middleware or OS scheduling contention.
 
----
+## 5. Frames, clocks and coherent contracts
 
-## 4. Data structures and inter-layer contracts
+Use right-handed `map`, `odom`, `base_link`, `lidar_frame`: X forward, Y left, Z up; positive yaw counterclockwise. Define `T_A_B` as mapping B coordinates into A. Only fusion owns `odom→base_link`; only localization owns `map→odom`; calibrated static extrinsics own `base_link→lidar_frame`. Do not publish duplicate TF edges.
 
-Every critical inter-layer message carries, at minimum: `seq`, `observation_stamp`, `publication_stamp`, `valid_until`, `frame_id`, `source_id`, `map_version`/`localization_epoch`, `status`, and explicit units. An isolated `confidence: float` field is **not** an acceptable contract — without a measurement timestamp, velocity, and yaw validity, an interception cannot be certified.
+Local collision checking uses `odom` to avoid discontinuous global corrections. Global graph, goals and opponent belief use `map`. Every message declares its frame and localization epoch. A discontinuous localization correction invalidates map-dependent paths, goals and tracks. An ordinary occupancy update increments `map_version`; graph rebuild increments `topology_version`. It does not automatically destroy every option if its route can be revalidated against the new map. IDs are meaningful only within their stated topology version.
 
-| Structure | Essential fields | Producer | Consumer |
+Use integer nanoseconds in the pure domain and ROS time on public ROS interfaces. Receiver-local steady time controls communication leases and hardware failure timers. Do not compare these clock domains. In simulation/replay, a clock reset increments `clock_epoch` and resets temporal state. Replay never has physical actuator access. Fresh publication cannot refresh an old measurement: retain observation/state time and last actual observation separately. A candidate must bind stage, option instance, path/map/epoch provenance and an absolute expiry. TS §§3–5 define exact fields, enums, acceptance predicates and topic ownership.
+
+## 6. Acquisition, mapping and topology
+
+### 6.1 Motion and deskew
+
+For wheel radius `r_w` and wheel separation `b_w`,
+
+\[
+v=\frac{r_w}{2}(\dot\phi_R+\dot\phi_L),\qquad
+\omega=\frac{r_w}{b_w}(\dot\phi_R-\dot\phi_L),\qquad
+\dot p=v[\cos\theta,\sin\theta]^T.
+\]
+
+Let `a=omega*dt/2` and `sinc(a)=sin(a)/a`, extended by `sinc(0)=1`. Exact integration for constant executed twist is
+
+\[
+p_{k+1}=p_k+v\Delta t\,\operatorname{sinc}(a)
+ [\cos(\theta_k+a),\sin(\theta_k+a)]^T,
+\quad \theta_{k+1}=\operatorname{wrap}(\theta_k+\omega\Delta t).
+\]
+
+This follows by integrating sine/cosine and applying the half-angle identities. The small-argument series `1-a²/6+a⁴/120` avoids cancellation. This is exact for constant twist, not for an accelerating real robot; simulated actuator dynamics must be integrated separately.
+
+Deskew each LiDAR point acquired at `t_i` to `t_r`:
+
+\[
+{}^{L_r}\bar p_i=(T_{O B}(t_r)T_{B L})^{-1}
+ T_{O B}(t_i)T_{B L}\,{}^{L_i}\bar p_i.
+\]
+
+Use point times and interpolated poses, not one untimed scan pose. Preserve 3D extrinsics/attitude until height filtering is complete; planar deskew is an explicitly validated approximation. Own-motion correction does not remove opponent motion: smear is bounded by opponent displacement over accumulation time. A 0.1–0.2 s accumulation window is a tunable starting point, not a universal constant.
+
+### 6.2 Occupancy layers and observed free space
+
+Maintain: (i) persistent structural evidence, (ii) collision occupancy including movable/unknown objects, (iii) opponent semantic identity and uncertainty, and (iv) observed-free coverage with age. A stationary opponent is not automatically promoted to a wall. Conversely, uncertain identity never removes its physical returns.
+
+For occupancy log-odds `l_c`, update with a bounded inverse-sensor model:
+
+\[
+l_{c,k}=\operatorname{clip}(l_{c,k-1}+\operatorname{logit}p(c|z_k)-l_{c,0},l_{min},l_{max}).
+\]
+
+A valid ray clears only the traversed observable segment before its first hit; it never clears the space behind an opponent. Invalid/no-return beams and blind zones need an explicit sensor model, not unconditional clearing. Obstacles too low for the sampled rays remain a coverage limitation. Unknown is not free. The collision layer includes structural walls even when object recognition subtracts them.
+
+For a circular planning approximation,
+
+\[
+r_{plan}=r_{body}+\epsilon_{pose}+\epsilon_{map}+\epsilon_{grid}+m.
+\]
+
+Each term has a named owner and occurs once. With noncircular footprints, use Minkowski inflation or orientation-aware swept polygons. `clearance_radius_m` is distance to the nearest blocking boundary; `min_width_m` is a separately defined corridor width, not an interchangeable name.
+
+### 6.3 Graph extraction and metric embedding
+
+Known free cells → distance transform → skeleton → junction clusters/dead ends/portals/frontiers → polyline edges → footprint validation. Wall classification is not necessary for collision occupancy: poles and boxes also block motion. Group adjacent skeleton branch pixels into one junction. Insert anchor nodes on pure cycles with no degree-one/three vertices. Preserve frontier endpoints as unknown continuations, not proven dead ends. Prevent diagonal corner cutting.
+
+An edge stores a navigable polyline `P_0…P_m`, length `sum ||P_{k+1}-P_k||`, minimum clearance, structural connectivity and versioned current traversability. Nodes are not uniformly spaced. Source grid cells may be uniformly spaced; LiDAR points are not. Transient blockage changes an overlay without deleting structural connectivity. The blocked edge is nonetheless excluded from motion planning while physically impassable.
+
+### 6.4 Spectral features: what they do and do not mean
+
+For symmetric nonnegative affinity `W`, `D_ii=sum_j W_ij`. Define `L_sym=D^{-1/2}(D-W)D^{-1/2}`, with inverse-square-root degree zero on isolated nodes. This yields zero isolated-node rows. For positive degrees it equals `I-D^{-1/2}WD^{-1/2}`. A graph with N nodes has N eigenvalues, not three; use selected values only as optional features. The nullity counts components under this convention. For connected nontrivial graphs, `L_sym sqrt(d)=0`; a constant null vector belongs to the combinatorial Laplacian `D-W`.
+
+The quadratic form is a sum of nonnegative weighted squared differences, so eigenvalues are nonnegative; normalized eigenvalues lie in [0,2]. A node permutation produces `P L P^T`, preserving the spectrum. Rigidly transforming the same embedded graph preserves geometric distances and thus distance-based weights. It does not guarantee identical graph extraction after resampling or localization failure.
+
+If `W_ij=1/length_ij` and all lengths scale by `s>0`, then `W'=W/s`, `D'=D/s`, and `L_sym'=L_sym` exactly. The combinatorial Laplacian scales by `1/s`. Fixed footprint, grid resolution, distance cutoffs and dimensionful kernels can break scale invariance of the *extracted* graph. Local features use an explicitly induced k-hop subgraph with recomputed degrees; they differ from a principal submatrix of the global normalized Laplacian. Missing lambda3 for N<3 is marked unavailable, never silently zero.
+
+Small lambda2 alone does not prove a narrow passage, and large lambda2 alone does not count alternative routes. Store width, exits, bridges and articulation points explicitly. Eigenvectors have arbitrary signs, and repeated eigenspaces arbitrary bases. Do not turn eigenvector sign into left/right. Steering uses the metric embedding and ego orientation (§9).
+
+### 6.5 Complete data-to-graph-to-decision closure
+
+The canonical graph pipeline is the same conceptual operation in every non-oracle profile:
+
+```mermaid
+flowchart TD
+    Observation["Real, MVSim or raycast observations"] --> Evidence["Occupancy, coverage and unknown evidence"]
+    Evidence --> Free["Known-free configuration space"]
+    Free --> Graph["Versioned sparse embedded graph"]
+    Graph --> Structure["Cuts, portals and optional spectra"]
+    Structure --> Tactics["Option features and route hypotheses"]
+    Graph --> Planning["Metric A* and polyline path"]
+    Planning --> Control["Ego-relative steering and swept validation"]
+```
+
+Real hardware and a sufficiently capable MVSim profile provide sensor observations through their adapters. The NumPy profile raycasts from world truth to produce observations, then passes those observations through the same occupancy and topology logic. An approved prior-map profile may initialize structural evidence with explicit provenance. Only an `oracle` ablation may provide truth topology directly, and its results are not evidence of deployable perception.
+
+The canonical structure is a sparse embedded multigraph `G=(V,E)`. Nodes are semantic topological events—junction regions, validated endpoints, portals, frontiers and deterministic cycle anchors—not points at a fixed spacing. Each edge retains a unique ID, endpoint IDs and a collision-validated map-frame polyline; parallel corridors therefore remain distinct. Runtime blockage is an overlay tied to observation time and map/topology versions. It never erases the structural edge, but the planner excludes the edge while its physical swept route is blocked.
+
+Spectral computation is downstream of this graph and optional. For a selected scope with `N` nodes, it creates exactly `N` eigenvalues; the complete vector may be stored for analysis, while a schema may expose selected values such as `lambda_2` or `lambda_3` only when they exist. Those values describe the declared operator and scope, not a physical direction or node identity. Left/right comes exclusively from the signed lateral coordinate after transforming a metric target into `base_link`. Dense matrices are temporary and bounded to spectral analysis; map and planning storage remain sparse.
+
+Three meanings of “graph” must never be conflated:
+
+| Structure | State space | Edge/transition meaning | Version/owner |
 |---|---|---|---|
-| `EgoState` | SE(2) pose, twist, covariance, epoch, health, slip flag | Layer 0 | All |
-| `WorldSnapshot` | grid version, transform snapshot, portals, obstacles, zones, provenance | Layer 1 | Layer 3, 4 |
-| `OpponentTrack` | `id`, $(x,y,v_x,v_y)$, 4×4 covariance matrix, `yaw_valid: bool`, `t_last_meas`, FSM state (`SEARCHING/TRACKED/COASTING/LOST`) | Layer 2 | Layer 3, 6 |
-| `OptionGoal` | `option_id`, role, sub-goal, optional heading, tolerances, `deadline`, preconditions | Layer 3 | Layer 4 |
-| `OptionFeedback` | `id`, progress, status/cause, proposed vs. applied command | Layer 4 | Layer 3, 7 |
-| `MotionCandidate` | $v,\omega$, state origin time, horizon, max age, mode | Layer 4 | Layer 6 |
-| `SafetyStatus` | veto reason, free distance, measured latency, admissible velocity, health | Layer 6 | Layer 3, log |
-| `MatchState` | stage, role, `freeze`, `deadline`, `score_profile`, motion authorization | Layer 5 | Layer 3, 6 |
+| Physical topology `G` | Embedded places/corridors | Traversable geometric connection | `topology_version`, world owner |
+| Opponent belief | Edge progress, nodes and unknown support | Finite-speed reachable probability flow | Track/belief timestamp and topology version |
+| Tactical SMDP | Abstract feature states/options | Empirical discounted outcome transition | Policy/schema version, offline owner |
 
-**Golden concurrency rule:** one producer per physical channel (e.g., if odometry fusion is used, the driver does not simultaneously publish the same `odom→base_link`); immutable snapshots read by tactics; any change of `map_version`/`localization_epoch` invalidates paths and in-flight options — an old path is never "patched" with a new transform.
+Identifiers do not cross these structures without an explicit mapping. In particular, a tactical state index is not a graph node ID, and opponent belief mass is not a structural edge cost unless a named risk transform produces that cost.
 
----
+## 7. Opponent model, registration and belief
 
-## 5. End-to-end data flow (a typical cycle)
+### 7.1 Hermite-GPIS-W prior
 
-1. **Acquisition (Layer 0):** LiDAR + IMU + wheel odometry → own-motion *deskew* (equation in §6.1) → `EgoState` published with epoch and health.
-2. **World (Layer 1), in parallel, two paths with different priority:**
-   - *Fast obstacle path*: subtracts against the structural map with an uncertainty-dependent threshold → `WorldSnapshot.local_obstacles`, goes directly to the Supervisor (Layer 6) without waiting for identification.
-   - *Topology path*: only when the map changes, recomputes the portal/width/exit graph.
-3. **Opponent perception (Layer 2):** from candidates not vetoed as background, DBSCAN → shape/volume filter → registration against the opponent's GPIS prior → constant-velocity EKF with Mahalanobis *gating* → `OpponentTrack` (with `yaw_valid=false` if the shape is axially symmetric). See §6.3-bis for occlusion handling.
-4. **Tactics (Layer 3):** at 2–5 Hz or on a critical event, generates candidate options per role (Guardian: `SEARCH_PORTAL, INTERCEPT_PORTAL, PRESSURE_ROUTE, APPROACH_CAPTURE, RECOVER_VIEW, FALLBACK_DEFEND_BASE`; Explorer: `ADVANCE_BASE, BREAK_LOS, TAKE_ALTERNATE_PORTAL, KEEP_ESCAPE_ROUTE, OBSERVE_SAFE`), evaluates feasibility + utility ($U_G$/$U_E$, Appendix A), applies hysteresis, and emits `OptionGoal`.
-5. **Planning + local control (Layer 4):** A* over the topological graph with costs $\ge0$ (Eq. 19) yields a feasible path; the regulated pursuit controller (Eq. 25) or the DWA-style arc evaluator (Eq. 26) turns it into a `MotionCandidate` at 20 Hz, already respecting the nominal braking limit.
-6. **Supervisor (Layer 6), 30–50 Hz, independent of the latency of the layers above:** if `freeze`/`match.finished` → stop; if data is stale/inconsistent → bounded stop; otherwise, applies the real braking envelope (Eq. 27–28) to the `MotionCandidate` and publishes `cmd_vel_final` with a short expiration. **This is the only path that reaches the base driver.**
-7. **Stage manager (Layer 5):** produces `CAPTURE_ESTIMATE`, `REACHED_BASE`, `TIMEOUT`, `ABORT` events per the §6 predicate (official rule), independent of the organizer's real referee — the system **estimates**, it does not certify.
-8. **Offline learning (Layer 7):** consumes logs from complete matches (not individual frames), never writes directly to Layer 3/4/6 during competition; only produces frozen artifacts (`artifacts/policies/`) that are loaded as configuration before `freeze`.
+The prior is an offline fitted 3D implicit field in a documented robot-model frame, not a live CAD parser and not necessarily a global signed-distance function. Inputs may be a verified complete mesh or aligned real scans with normals and units. A base-only mesh may omit shelves, sensor, mounting and other visible geometry. No specific mesh path in rev1 is considered verified.
 
----
+The training pipeline samples surface values, derivative observations and signed off-surface anchors, fixes the model-to-base-frame transform, fits a sufficiently smooth positive-definite compact kernel, and evaluates held-out views. Surface values alone with zero prior mean could yield an identically zero field; derivative/offset data are therefore material, not decoration. Store kernel version, support scale, observation operators, coefficients, noise, coordinate normalization, training hashes, validation and covariance factors where predictive uncertainty is used. Compact support does not imply that a dense factorization is cheap.
 
-## 6. Core mathematics per block (with the derivation that validates each formula)
+TS §8 derives the Hermite covariance blocks and online registration Jacobian. Online registration estimates planar translation/yaw while evaluating 3D points; it rejects unsupported points and unobservable solutions. Outside kernel support, zero mean is not evidence of a surface. Do not use GPIS as the emergency obstacle detector.
 
-### 6.1 Kinematics and acquisition
+### 7.2 Tracking and observability
 
-Nominal differential model:
-$$\dot x=v\cos\theta,\quad \dot y=v\sin\theta,\quad \dot\theta=\omega,\qquad v=\tfrac{r_w}{2}(\dot\phi_R+\dot\phi_L),\ \omega=\tfrac{r_w}{b}(\dot\phi_R-\dot\phi_L).$$
+Registration residuals use field units consistently:
 
-Exact constant-velocity integration over $\Delta t$ (avoids Euler discretization, which accumulates curvature error):
-$$
-q_{k+1}=\begin{cases}
-\left(x+\tfrac v\omega[\sin(\theta+\omega\Delta t)-\sin\theta],\ y-\tfrac v\omega[\cos(\theta+\omega\Delta t)-\cos\theta],\ \theta+\omega\Delta t\right), & |\omega|>\epsilon\\
-(x+v\Delta t\cos\theta,\ y+v\Delta t\sin\theta,\ \theta), & |\omega|\le\epsilon
+\[
+E(\xi)=\sum_j\rho\left(f(z_j(\xi))/\sigma_{f,j}\right),\quad
+\sigma_{f,j}^2=\sigma_{GP,j}^2+
+\nabla f(z_j)^T\Sigma_{z,j}\nabla f(z_j)+\sigma_{model}^2.
+\]
+
+An axisymmetric body has little or no yaw information. Publish `yaw_valid=false`; do not infer body heading from velocity without an explicit behavioral assumption. Invalid yaw does not automatically invalidate position. A raw cluster centroid is not a replacement for the robot-frame origin: use a calibrated visible-surface model with increased error bounds or reject the pose measurement.
+
+The minimal opponent kinematic state is `[x,y,vx,vy]`. For a continuous white-acceleration model,
+
+\[
+F=\begin{bmatrix}I&\Delta t I\\0&I\end{bmatrix},\qquad
+Q=q_a\begin{bmatrix}\Delta t^3I/3&\Delta t^2I/2\\\Delta t^2I/2&\Delta t I\end{bmatrix}.
+\]
+
+Use `q_a` in m²/s³. Position measurements make this a linear Kalman filter; the retained filename `ekf_opponent.py` does not require nonlinear EKF mathematics. Gate all initialized-track updates with innovation covariance and use a Joseph covariance update. Initial acquisition uses shape/association checks and repeated support, not a nonexistent prior-track gate.
+
+### 7.3 Occlusion and finite-speed belief
+
+Lifecycle: `SEARCHING → TRACKED → COASTING → OCCLUDED_BELIEF → LOST`, with validated reacquisition. Coasting and lost thresholds are configuration, not new physical truths. Separate track-state prediction time, last measurement time and expiry. `LOST` withdraws a precise pose but may retain broad reachable support.
+
+A free-plane CV prediction may cross walls; do not repair it by projecting to one corridor and keeping the same covariance. Transfer probability into multiple reachable corridor/edge-position hypotheses, including unknown-space mass. A node-only diffusion can teleport across long edges; the belief discretization must include edge progress or travel-time history.
+
+For initial speed upper bound `v0<=vmax`, acceleration bound `a>0`, `t_a=(vmax-v0)/a`, the maximum path length is
+
+\[
+s_{max}(t)=\begin{cases}v_0t+\tfrac12at^2,&t\le t_a,\\
+v_0t_a+\tfrac12at_a^2+v_{max}(t-t_a),&t>t_a.
 \end{cases}
-$$
+\]
 
-Point-cloud *deskew* (own-motion correction during the sweep, essential because the MID-360 is not an instantaneous scan):
-$${}^{L_r}\bar p_i=[{}^OT_B(t_r){}^BT_L]^{-1}\,{}^OT_B(t_i){}^BT_L\,{}^{L_i}\bar p_i.$$
-Sanity check: at rest this is the identity; with a fixed wall and the robot turning, corrected points must coincide again with the same wall. **Important limit I confirmed**: this *deskew* corrects the robot's own motion, **not** the opponent's — if the rival moves fast during the accumulation window, a residual *smear* bounded by $v_{E,max}\cdot T$ persists, so long online accumulation windows must not be used (unlike the offline prior of the robot's own shape in the qualification stage).
+If initial speed is unknown, `vmax*t` is the safe speed-bound envelope; do not add an acceleration term beyond an already enforced maximum speed. Expand from the initial uncertainty set. On known free space, geodesic distance ≤ this envelope is a necessary reachable-set condition, not a complete nonholonomic reachability solution. A skeleton can overestimate shortest free-space distance and under-approximate reachability; use conservative cell connectivity or documented approximation plus unknown mass when safety-relevant.
 
-### 6.2 Maps and topology
+Negative observations update `b_j^+ ∝ (1-P_D(j)) b_j^-` only when a fresh, valid scan actually covers region j. Occluded cells have `P_D≈0`. With equal priors and likelihoods 0.05 and 1, the second region posterior is `1/1.05≈0.95238`, not an automatic 0.98 or 1. Repeated correlated scans must not be treated as independent perfect evidence. Probability does not become certainty merely because alternatives were not seen.
 
-Log-odds occupancy with clipping:
-$$l_{c,k}=\mathrm{clip}\big(l_{c,k-1}+\log\tfrac{p(c\mid z_k)}{1-p(c\mid z_k)}-l_{c,0},\ l_{min},l_{max}\big).$$
+## 8. Competition predicates and stage lifecycle
 
-Planning-radius inflation, summing each error source **exactly once**:
-$$r_{plan}=r+\epsilon_p+\epsilon_m+\epsilon_t+\epsilon_{grid}.$$
+Let `r=p_E-p_G`, `d=||r||`, and `e_G=[cos(theta_G),sin(theta_G)]`. For distinct frame origins,
 
-Topological graph: skeleton/medial axis of the thresholded free space → nodes at intersections/width changes/target zones → edges valid only if the full footprint can traverse them (a swept check, not just *k*-NN between centers, which could cross a wall) → components/articulation points/bridges via DFS in $O(|V|+|E|)$. A "geometric chokepoint" (narrow width) and a "topological chokepoint" (vulnerable connectivity, graph bridge) **are not the same thing**: a narrow corridor may have an alternate route; a wide portal may be the only link. Both are stored as separate *features*.
+\[
+C=(d<0.45)\land(e_G^Tr\ge d\cos(\pi/4))\land LOS.
+\]
 
-### 6.3 Opponent perception (reuses and adapts the qualification-stage pipeline)
+The distance boundary is strict; the angle boundary is inclusive. The rulebook illustration supports the directed guardian-forward interpretation. At coincident origins bearing is undefined and physical overlap dominates: return invalid geometry rather than divide by zero or claim certified capture. LOS is TRUE/FALSE/UNKNOWN in estimation; UNKNOWN cannot certify capture. The simulator's ideal predicate uses obstacle geometry and reports any adopted LOS interpretation.
 
-From `DESIGN_OVERVIEW.md`: the qualification system already solves, with a **fixed** sensor, the shape/pose separation via an implicit Hermite-GPIS-W prior (Gaussian Process Implicit Surface with a compact-support Wendland kernel) built offline, and online 3-DOF Gauss-Newton registration ($x,y,\psi$) against that prior, followed by EKF+FSM (`SEARCHING/ACTIVE_TRACKING/COASTING`). **This is reused as the base of the opponent tracker**, with mandatory changes:
+With bounded relative position error `epsilon_r<d_hat` and guardian yaw error `epsilon_theta`, sufficient estimated conditions are
 
-- The sensor is now **mobile**: the fixed-background map (OBB shells) cannot veto in sensor coordinates without composing with `EgoState`; and the fixed ground alignment must be recomputed from extrinsics and own attitude at every instant, not as a universal fixed transform.
-- Registration cost with dimensionally consistent uncertainty:
-$$E(\xi)=\sum_j\rho\!\left(\frac{f(z_j)}{\sigma_{f,j}}\right),\qquad \sigma_{f,j}^2=\sigma_{GP,j}^2+\nabla f(z_j)^T\Sigma_{z,j}\nabla f(z_j)+\sigma_{model}^2,$$
-  where $\Sigma_{z,j}\nabla f$ transports the metric noise into the implicit-field units through the gradient — directly adding variances in different units without this transport is a dimensional error.
-- **Yaw is not always observable**: for an approximately axially symmetric shape, the yaw column of the registration Jacobian is nearly zero and $J^TWJ$ is ill-conditioned. The system **must** publish `yaw_valid=false` instead of an artificially small covariance. Recommended minimal opponent state: $s_E=[x_E,y_E,v_{x,E},v_{y,E}]^T$ (position + velocity, orientation not mandatory).
-- Constant-velocity filter with continuous white-acceleration noise:
-$$F=\begin{pmatrix}I_2&\Delta t\,I_2\\0&I_2\end{pmatrix},\quad Q=q_a\begin{pmatrix}\Delta t^3I_2/3&\Delta t^2I_2/2\\\Delta t^2I_2/2&\Delta t\,I_2\end{pmatrix},$$
-  with the standard update $\nu=z-H\hat s^-$, $S=HP^-H^T+R$, $K=P^-H^TS^{-1}$, and **gating** $\nu^TS^{-1}\nu\le\chi^2_{2,1-\alpha}$ applied to **every** measurement (an excellent registration score does not exempt a measurement from the kinematic check).
+\[
+\hat d+\epsilon_r<0.45,\quad
+|\hat\beta|+\epsilon_\theta+\arcsin(\epsilon_r/\hat d)\le\pi/4,
+\]
 
-### 6.3-bis Occlusion handling and anti-flanking behavior (topological belief tracker)
+plus robust obstacle-free LOS for the uncertainty tube. Gaussian covariance is not a hard bound unless a confidence interpretation and risk level are explicitly attached. For physical radii `rG,rE`, residual clearance m and distance-estimation error epsilon (not already included in radii), a nominal range can satisfy
 
-**Why this matters:** losing sight of the opponent around a corner is the classic ambush/flanking scenario. If the robot simply "forgets" the opponent once LOS is lost, or predicts it in a straight line through the wall, the opponent can exploit that blind spot to circle through an alternate corridor and win the stage. This subsection replaces the single-line occlusion-belief sketch of the original design (the pairwise Bayes-filter formula below §6.3) with a fully specified three-phase mechanism, and defines the corresponding anti-flanking tactics referenced in §6.5 and §5.
+\[
+r_G+r_E+m+\epsilon<\hat d_*<0.45-\epsilon
+\]
 
-**Two memory windows must not be confused.** (1) *LiDAR accumulation memory* (short, physical, $\sim0.1$–$0.2$ s): as already noted in §6.1, this window must stay short, or the opponent's shape smears into an elongated blob and GPIS-W registration diverges. (2) *Tactical belief memory* (long, probabilistic, $\sim5$–$30$ s): this lives in the **topological graph**, not in the point-cloud buffer, and is **not** cleared when LOS is lost. Conflating the two — e.g., trying to extend the short LiDAR window to "remember longer" — is the wrong mechanism and was explicitly avoided.
+only if `rG+rE+m+2epsilon<0.45`. This is sufficient for the circular robust construction, not a proof that every possible polygonal capture is impossible when it fails.
 
-**Phase 1 — Confined coasting ($0<\Delta t\le0.5$ s).** At the instant LOS is lost ($t_{loss}$), the tracker transitions `TRACKED → COASTING`. Constant-velocity extrapolation in the free Cartesian plane ($p(t)=p_0+v\Delta t$) is **forbidden**, since it can place the estimate inside a wall. Instead, the EKF's pre-loss velocity estimate $\vec v_E$ is projected onto the centerline of the corridor the opponent just entered; for the first $0.5$ s the filter has high confidence the opponent is within the first $\sim30$ cm of that corridor.
+Arrival is the first contour contact with the guardian start-zone contour from an initially outside configuration. Filled-polygon overlap alone is not the same predicate for arbitrary initial conditions. Use continuous swept collision/event detection; a footprint can enter and leave a small zone within one simulation step. Starting inside is an invalid initial condition or an organizer-defined special case, not an invented successful event.
 
-**Phase 2 — Diffusion over the geodesic reachable set ($0.5\text{ s}<\Delta t\le5.0\text{ s}$).** The opponent is physically bounded by $v_{E,max}\approx0.65$ m/s and $a_{E,max}\approx0.8$ m/s². The set of positions where the opponent can physically be is the **geodesic reachable set**:
-$$\mathcal R_E(\Delta t)=\Big\{x\in\mathcal W_{free}\ \Big|\ D_{geo}(x,p_{loss})\le v_{E,max}\Delta t+\tfrac12 a_{E,max}\Delta t^2\Big\},$$
-where $D_{geo}$ is the shortest-path (geodesic) distance in the free-space graph, not the Euclidean distance — this is what keeps belief mass confined to actual corridors instead of leaking through walls, and is the direct generalization of the pairwise belief-propagation sketch $b^-_{k+1}(j)=\sum_iP_{ij}b_k(i)$ already present in §6.3, now made concrete over the topological graph's portal nodes. At a branch point, probability mass splits across reachable branches (e.g., a 50/50 split at a T-junction if both arms are equally consistent with $\mathcal R_E(\Delta t)$ and prior behavior).
+The stage manager owns `INIT, FREEZE, ACTIVE, TERMINAL`; safety owns a separate hold/stop state. Internal `CAPTURE_ESTIMATE` and `ARRIVAL_ESTIMATE` may latch a local event hold pending adjudication, but do not assign official points. A safety fault does not automatically mean official `ABORT`. Preserve event times and uncertainty; unresolved simultaneous capture/arrival is `AMBIGUOUS`, with organizer resolution. TS §10 supplies transition priorities and reset semantics.
 
-**Phase 3 — Bayesian update from negative information.** Not seeing the opponent where it should be visible is as informative as seeing it. For a region $j$ swept by the current LiDAR field of view, with a null observation $z=\varnothing$:
-$$b^+(j)=\frac{P(z=\varnothing\mid x\in j)\,b^-(j)}{\sum_kP(z=\varnothing\mid x\in k)\,b^-(k)}.$$
-If corridor $j$ is inside the LiDAR's field of view and is empty, $P(z=\varnothing\mid x\in j)\approx0.05\Rightarrow b^+(j)\to0$; if corridor $k$ is occluded by a wall, $P(z=\varnothing\mid x\in k)\approx1.00\Rightarrow b^+(k)\to1.00$ after renormalization. This is the same "no-detection likelihood $\approx1-P_D(j)$" principle already stated in §6.3 for a single region, generalized here to redistribute mass across the whole reachable set rather than leaving it static. After $\Delta t>15$ s with no re-detection, the state degrades to `LOST` and belief mass is treated as uniform over $\mathcal R_E$ for planning purposes (no false confidence in a stale estimate).
+## 9. Planning, options and local control
 
-State machine summary: `TRACKED → COASTING (≤0.5 s, corridor-confined) → OCCLUDED_BELIEF (diffusion + negative information over the topological graph) → LOST (>15 s)`, with `TRACKED` re-entered instantly on any gated re-detection (§6.3). Implementation lives in `hsl_core/perception/topological_belief.py` (see repository structure document, §1) as a pure-Python module consuming the topological graph from §6.2 and the `visible_polygons` swept region from the current LiDAR frame; it has no ROS dependency, consistent with the core/adapter separation of the whole codebase.
+### 9.1 Path and interception
 
-### 6.4 Capture and arrival geometry (official predicates, not approximations)
+Use `c_e=length_e*(1+lambda_o*phi_o+lambda_r*phi_r)`, with all penalties nonnegative. Then `c_e>=length_e>=||p_v-p_u||`; triangle inequality gives consistent Euclidean A* heuristic. A* optimizes this graph cost, not game outcome. If costs are seconds, use distance/vmax or zero as heuristic. Store polyline paths and revalidate smoothing; straight shortcuts through walls are prohibited.
 
-$$C(q_G,q_E,\mathcal O)=[d<0.45]\ \land\ [e_G^Tr\ge d\cos(\pi/4)]\ \land\ [\mathrm{LOS}(p_G,p_E,\mathcal O)],\qquad r=p_E-p_G,\ d=\lVert r\rVert.$$
+Free-space interception solves
 
-Conditional certification under bounded error $\epsilon_r$ (radial) and $\epsilon_\theta$ (own angular):
-$$\hat d+\epsilon_r<0.45,\qquad |\hat\beta|+\epsilon_\theta+\arcsin(\epsilon_r/\hat d)\le\pi/4.$$
+\[
+(\|v_E\|^2-s_G^2)t^2+2r^Tv_Et+\|r\|^2=0.
+\]
 
-**Geometric compatibility between "no collision" and "capture certifiable"**: with inflated radii $r_G,r_E$, physical margin $m$, and error $\epsilon_r$, a valid operating point $d_*$ exists only if
-$$r_G+r_E+m+\epsilon_r<d_*<0.45-\epsilon_r \iff r_G+r_E+m+2\epsilon_r<0.45.$$
-This is a **design** constraint, not merely a software one: if the inflated footprint is too large, capture becomes geometrically impossible to certify without colliding, and no algorithm fixes that — the real footprint must be measured and the margin calibrated, not "shrinking the opponent out of the map" to force the event.
+Handle linear/degenerate cases and select the least positive real root within a horizon. Maze interception compares route-time intervals, including acceleration, turns and uncertainty. `upper(TG)+buffer < lower(TE)` supports earlier arrival for that hypothesis; it is not a capture proof. A target must be a collision-free standoff pose, not the opponent's occupied center.
 
-Arrival (R14): event on the **first contour contact** from outside the zone (full footprint, not the center reaching a waypoint); the estimated simulator/referee must check the swept path between simulation steps, not just the final state, so a brief contact is not missed.
+### 9.2 Options and deterministic tactics
 
-### 6.5 Global planning and per-role tactics
+An option is `(initiation predicate, controller/realizer, termination predicate, timeout, invariant)`. Options never own the final command channel. `OptionKind` identifies the reusable behavior; `option_instance_id` identifies one execution. One ROS action is authoritative; an option-goal topic is diagnostic only. Reject inadmissible goals before acceptance; cancel and revoke the previous instance before activating a replacement.
 
-Non-negative edge cost (mandatory, see error E6):
-$$c_{ij}=\ell_{ij}\big[1+\lambda_o\phi_o(j)+\lambda_r\phi_r(j)\big],\quad \lambda_o,\lambda_r\ge0.$$
-With $c_{ij}\ge\ell_{ij}$ and the triangle inequality, $h(i)=\lVert p_i-p_g\rVert$ is an admissible and consistent heuristic for A* — this is what guarantees optimality *on that graph and those costs*, not in the full game.
+Guardian options: `SEARCH_PORTAL`, `INTERCEPT_PORTAL`, `PRESSURE_ROUTE`, `APPROACH_CAPTURE`, `RECOVER_VIEW`, `FALLBACK_DEFEND_BASE`. Explorer options: `ADVANCE_BASE`, `BREAK_LOS`, `TAKE_ALTERNATE_PORTAL`, `KEEP_ESCAPE_ROUTE`, `OBSERVE_SAFE`. Both share `HOLD_SAFE`. TS §11 defines each initiation, target, effect, termination and failure.
 
-Interception in free space (general form, not the degenerate collinear case of E7):
-$$(\lVert v_E\rVert^2-s_G^2)t^2+2r^Tv_Et+\lVert r\rVert^2=0,$$
-minimum positive real root; for the maze this is replaced by topological route times $\hat T_G(c)=T_{route,G}(c)+T_{alignment}(c)$, $\hat T_E^{(h)}(c)=T_{route,E}^{(h)}(c)$ evaluated per portal hypothesis $c$ and opponent-behavior hypothesis $h$.
+Rank feasible options using explicit geometry, belief and role. Prefer lexicographic safety/feasibility and urgent threat constraints before weighted utility. For bounded features, utility can include base-distance reduction, capture opportunity/risk, visibility gain, alternative exits and duration. An unspecified “large capture weight” does not mathematically guarantee dominance. Use utility hysteresis in utility units and minimum dwell time, with immediate preemption for safety, expiry or invalid preconditions.
 
-Option-selection utility (deterministic initial policy, no training):
-$$U_E(o)=-w_c\hat P_{cap}(o)+w_g\Delta D_{base}(o)/D_*+w_l\hat P_{breakLOS}(o)+w_x\min(n_{exits}(o),3)/3-w_t\tau_o/T_*,$$
-$$U_G(o)=w_c\hat P_{cap}(o)+w_i\sum_hb_h\,\mathrm{clip}\!\Big(\tfrac{\hat T_E^{(h)}(c_o)-\hat T_G(c_o)}{T_*},-1,1\Big)+w_v\hat P_{observe}(o)-w_t\tau_o/T_*.$$
-$w_c$ dominates by design: a small route saving must never outweigh a large threat of capturing/being captured. If the probabilistic estimate is not yet calibrated, an ordinal risk *ranking* is used instead of presenting the numbers as reliable probabilities.
+Corner peeking uses feasible sensor viewpoints, not a raw wall vertex. Base defense uses coverage of valid approach paths, not a universal 0.50 m offset. Neither guarantees preventing arrival. Explorer timeout survival is a legitimate outcome; any shorter-time preference must reflect the actual score profile.
 
-**Anti-flanking tactics for the Guardian role** (using the belief mechanism of §6.3-bis): when the Explorer turns a corner, the Guardian is forbidden to blindly chase along the same line. Three options are evaluated against the topological graph:
+### 9.3 Control
 
-- **Tactic A — `RECOVER_VIEW` (tangential corner clearing / corner peek):** if the Guardian is close ($<1.5$ m), the planner does not route to the center of the opponent's corridor; it routes to the corridor's outer vertex, orienting the LiDAR axis to maximize the visible-area derivative $\mathrm d\mathcal A_{vis}/\mathrm dt$, exposing the field of view at the shortest possible distance before the opponent completes its acceleration.
-- **Tactic B — `INTERCEPT_PORTAL` (bottleneck interception, anti-flanking):** if the corner leads into a longer loop that could bring the opponent back to the Guardian's base from behind, the Guardian does **not** chase through the corner. It consults the global topological graph; if the alternate loop must converge on a chokepoint/portal before the base, the Guardian takes the shorter geodesic route to that portal instead of the opponent's route. Since $D_G<D_E$ at equal maximum speed, $T_G=D_G/v_{max}<T_E=D_E/v_{max}$: the Guardian reaches the portal first, stops perpendicular to it, and waits facing the corridor — turning the flanking attempt into an automatic capture opportunity.
-- **Tactic C — `FALLBACK_DEFEND_BASE`:** if uncertainty grows because the maze has multiple symmetric cycles and $\mathcal R_E(\Delta t)$ touches two possible approaches to the base, the Guardian cancels the chase and positions at its own start-zone threshold at $\approx0.50$ m with a full-sweep sensor. Since the Explorer must physically touch the base contour to win (R14), it is forced to enter the Guardian's final visible zone regardless of which corridor it used, neutralizing any advantage gained by cornering.
+Transform a lookahead point by `p_L=R(theta)^T(p_goal-p_ego)`. Positive `y_L` means left; negative means right. With `L²=x_L²+y_L²>0`, use `kappa=2*y_L/L²` and `omega=v*kappa` **after** selecting v. Bound speed by configured speed, wheel feasibility, yaw rate, lateral acceleration `sqrt(a_lat_max/|kappa|)` when applicable, braking and goal approach. Handle near-zero lookahead and targets behind the robot using a swept-checked rotate-in-place phase.
 
-These three tactics are added to the Guardian option set already listed in §5 (`SEARCH_PORTAL, INTERCEPT_PORTAL, PRESSURE_ROUTE, APPROACH_CAPTURE, RECOVER_VIEW, FALLBACK_DEFEND_BASE`); no new layer or contract is required — `INTERCEPT_PORTAL` and `RECOVER_VIEW` were already present, `FALLBACK_DEFEND_BASE` is the one addition, selected through the same $U_G$ utility with the topological-belief threat estimate feeding $\hat T_E^{(h)}$.
+Bounded arc evaluation samples commands reachable from measured twist under acceleration limits and evaluates executed trajectory plus stopping tail. Regulated pursuit is the MVP; arc search is enabled only within measured compute budget. Reverse is disabled until rear coverage and reverse braking pass acceptance. Regardless of nominal control, L6 reevaluates the actual outgoing command.
 
-### 6.6 Local control and physical safety (hard authority boundary)
+## 10. Safety admission and failure containment
 
-Regulated pursuit: $\kappa=2y_L/L^2$, $\omega=v\kappa$, $v\le\min(v_{max},\ \omega_{max}/(|\kappa|+\epsilon),\ v_{brake})$.
+For speed magnitude `s>=0`, bounded total response delay tau and guaranteed braking magnitude `b_min>0`, constant-speed latency followed by braking travels
 
-Window of reachable arcs over $\Delta t$ (for DWA-style evaluation when regulated pursuit is not enough, e.g. near the opponent):
-$$\mathcal U_k=\{(v,\omega): |v-v_k|\le a_{max}\Delta t,\ |\omega-\omega_k|\le\alpha_{max}\Delta t\}\cap\mathcal U_{hardware}.$$
+\[
+d_{stop}=s\tau+s^2/(2b_{min}).
+\]
 
-Braking distance with total latency $\tau$ (sensor+queue+processing+transport+mechanical response) and **measured** minimum deceleration $b_{min}$:
-$$v\tau+\frac{v^2}{2b_{min}}\le d-m \;\Rightarrow\; v_{brake}=\max\Big\{0,\ -b_{min}\tau+\sqrt{b_{min}^2\tau^2+2b_{min}\max(0,d-m)}\Big\}.$$
-Against an opponent that may keep advancing during the robot's own braking, a more conservative bound adds $v_E(\tau+v/b_{min})$: **stopping does not universally guarantee no contact** if the other body keeps moving — this is reported as risk reduction within a validated envelope, not an absolute guarantee.
+If clearance along the validated stopping sweep is d and an additional, not-yet-accounted margin is m, require `d_stop<=d-m`. Solving gives
 
-Distance CBF to a fixed obstacle, **corrected sign** (E1): $h(p)=\lVert p-o\rVert^2-R^2$,
-$$\dot h=2(p-o)^Te(\theta)v,\qquad 2(p-o)^Te(\theta)v+\gamma h\ge0.$$
-Under $h(0)\ge0$ and the continuous inequality, $h(t)\ge e^{-\gamma t}h(0)\ge0$: this is the **conditional** proof of safe-set invariance; it does not by itself cover discrete commands, saturation, moving obstacles, or an infeasible QP. This is why the CBF-QP is left as a post-MVP extension and **not** a requirement for the first delivery — the primary safety path is the explicit braking envelope above, simpler to certify with hardware tests.
+\[
+s_{lim}=\max(0,-b_{min}\tau+\sqrt{b_{min}^2\tau^2+2b_{min}\max(0,d-m)}).
+\]
 
-**Supervisor evaluation order** (sole writer of `cmd_vel_final`): physical/health stop → `freeze`/match state → temporal validity of sensors/estimation → hardware limits → swept collision + braking → final command. The *watchdog* covers both node death and full-process death (driver timeout + independent supervisor process).
+A stable equivalent for positive effective clearance is `2*b_min*(d-m)/(sqrt((b_min*tau)^2+2*b_min*(d-m))+b_min*tau)`. This scalar result is exact only for the stated model. If the robot can accelerate during delay, include `s*tau+0.5*a_plus*tau²+(s+a_plus*tau)²/(2*b_min)`. Treat actual measured speed, command following error and current acceleration explicitly; sending a low command cannot instantly lower actual speed.
 
----
+Moving-object advance over the reaction and stopping horizon must also be included or swept dynamically. Blind regions are unknown; the horizon must fit within observed/validated coverage. Rotating a noncircular footprint can collide at v=0. A radial minimum by itself does not encode these cases.
 
-## 7. Statistical/evolutionary learning layer (optional, offline, no NN)
+**Per-cycle order:** hard faults/stop latch → stage and leases → schema, freshness and frame coherence → hardware/wheel/acceleration admissibility → full stopping sweep against geometry and coverage → command publication and fresh decision heartbeat. Numerical failure, infeasibility or overrun causes stop. Recheck modified commands; a normal acceleration limiter must never undo an emergency stop request. The measured actuator response to that request defines the stopping model.
 
-This instantiates the correct ideas from audit1.md (Dirichlet-Multinomial, pruning, state fusion, bounded evolution) already corrected in §0.2–0.3:
+A distance CBF for a fixed obstacle has correct sign `h_dot+gamma*h>=0`, where `h=||p-o||²-R²` and `h_dot=2(p-o)^T e(theta)v`. Integration gives `h(t)>=exp(-gamma*t)h(0)` under continuous satisfaction and appropriate regularity. This proof excludes sampled-data error, moving obstacles, infeasibility and actuator mismatch; the CBF-QP is not a required MVP safety mechanism.
 
-- **Transition model**: $p_{i,:}^o\mid\mathcal D\sim\mathrm{Dir}(\alpha_1+n_1,\dots,\alpha_K+n_K)$, mean $\mathbb E[p_j]=(\alpha_j+n_j)/A$, variance $\bar p_j(1-\bar p_j)/(A+1)$. Learning $p$ **does not** by itself optimize a policy; a value/reward over durative options is needed:
-$$Q(s,o)\leftarrow Q(s,o)+\alpha_{lr}\Big[R_o+\gamma^n\max_{o'}Q(s',o')-Q(s,o)\Big],\quad R_o=\sum_{j=0}^{n-1}\gamma^j r_{t+j}.$$
-- **Count every outcome**, including aborts and supervisor interventions — reinforcing only successes is survivorship bias.
-- **State fusion (lumpability)** only if, for every relevant option, **both** the aggregated transition kernel **and** the per-class expected reward/duration coincide (Theorem 20.6.1, not just equality of $P$ — see the correction in §0.3).
-- **Spectral signatures**: an experiment *after* the MVP, never a substitute for collision checking or a unique zone identifier (E3, E4). Concatenated as an auxiliary *feature* to already-explicit geometric characteristics of the topological graph, and validated on held-out data; removed if it does not help.
-- **Bounded evolution**: tune 5–10 tactical parameters (interception horizon, hysteresis, dead-end penalty, etc.), never footprint, minimum braking, or physical margins. Evaluate against a fixed bank of opponents (not just the latest champion, to avoid rock-paper-scissors strategic cycles).
-- **Deployment rule**: during competition, ASG nodes and policy realizers are **frozen**; learning runs offline and is only promoted to competition if it beats the base FSM on held-out tests with unseen maps/opponents (`policy=shadow` before `policy=learned`).
+Guarantees are conditional on conservative coverage, state error, latency, braking and obstacle-motion bounds. An opponent may deliberately drive into a stopped robot. The design reduces that risk; it cannot promise universal noncontact.
 
----
+## 11. Simulation, calibration and model artifacts
 
-## 8. Simulation and sim-to-real validity
-
-Two levels of fidelity, deliberately **not** just one:
-
-| Level | What it's for | What it does NOT validate |
-|---|---|---|
-| Lightweight kinematic tactical simulator (NumPy) | Thousands of episodes for rules/options/learning | Real Livox returns, real GPIS, friction |
-| MVSim + ROS + sensors | Interfaces, both vehicles, dynamics, collisions | Exact equivalence with the MID-360's non-repetitive scan pattern |
-| Replay of real bags + robot | Perception, synchronization, physical behavior | Universal generalization |
-
-A custom adapter (`SimulationAdapter.reset/step/observe/ground_truth_for_referee`) translates to the real APIs of the installed MVSim version — methods such as `.captured()` are not assumed since they are undocumented (E8). The policy/estimator only ever see `observe()`; ground truth is reserved for the referee and metrics — **forbidden** for tactics to subscribe to the opponent's true simulated pose without going through the detection/occlusion model, or training will learn an advantage that does not exist in real competition.
-
-Minimum scenarios to cover: straight corridor, T-junction, crossroads, cycle, dead end, narrow corridor, two routes to base, minimum obstacle (0.1×0.1×0.15 m), thin wall, posts, obstacles adjacent to the robot, base near a corner — varying start pose, role, noise, frame drops, and time offset. If the policy is trained with perfect detection during occlusion, it will learn to exploit an advantage it will not have on competition day.
-
----
-
-## 9. Hardware constraints and computational budget
-
-All values are **initial targets to be measured**, not certified performance:
-
-| Function | Candidate frequency | Degradation if not met |
-|---|---|---|
-| Own state | ≥30–50 Hz ideal | Stop if there is no admissible continuity/age |
-| Opponent detector | 5–10 Hz | Process only the latest frame, cap candidates |
-| Fast obstacles | Every valid cloud | Brake when the observation expires |
-| Local control | 20 Hz | Reduce horizon, always keeping the braking check |
-| Supervisor | 30–50 Hz + base timeout | Independent of tactics/learning load |
-| Global path (A*) | 1–2 Hz or event-driven | Keep the previous path if still valid |
-| Tactics | 2–5 Hz + critical events | Fall back to the base policy on compute timeout |
-| Learning | Offline/*shadow* | **Disabled** in the competition binary |
-
-Hard constraints from R11 (no extra compute/sensor, only what is provided — likely a NUC or equivalent with no dedicated GPU): this rules out, by budget (not theoretical impossibility), MPPI with hundreds of high-frequency rollouts and any neural-network inference in the critical loop. Measured with end-to-end `p50/p95/p99` latency, not just the average — a WCET is not "the maximum observed in a short test." Avoid BLAS/OpenMP thread over-subscription relative to the NUC's real core count. Compute priority: control/supervisor above logging and detailed recording.
-
-Recommended initial test speed 0.15–0.25 m/s, increasing only after validating detection and braking on real hardware — **do not** start from a historical spec-sheet figure (e.g. "0.7 m/s") as the competition speed without having measured $b_{min}$ on real battery, load, and floor.
-
----
-
-## 10. Acceptance-gate plan (mandatory implementation order)
-
-| Gate | Content | Exit criterion | If it fails |
+| Execution profile | What the controller receives | Validates | Does not validate |
 |---|---|---|---|
-| G0 | Inventory, topics, TF, time, command, shutdown | Reproducible SSH start/stop | Autonomous navigation is not started |
-| G1 | Footprint, minimum objects (0.1×0.1×0.15 m), braking (Eq. 27–28) | All test obstacles detected at a compatible distance | Reduce speed or fix the fast path |
-| G2 | Odom/map, path, pursuit, added obstacle | Contact-free paths; recovery tested | Keep only base navigation |
-| G3 | Opponent tracking (static/moving, corner) | Error and interval (18) compatible | Capture only in a low-speed regime |
-| G4 | Both roles, FSM, belief under occlusion, referee | Complete match with correct `freeze`+timeout+roles | Trim to reliable options |
-| G5 | Tactical improvement (ASG/parameters), `shadow mode` | Reproducible improvement without degrading navigation | The base FSM is deployed |
-| G6 | Final release: hash, SSH startup, reset, logging | Cold start + two complete stages | *Rollback* to the previous version |
+| `kinematic`, `observed_map` | Noisy raycast observations and synthetic, occlusion-aware detections | Rules, options, belief and mapping/topology logic | Real cloud recognition or contact dynamics |
+| `kinematic`, `approved_map` | Explicitly approved-style prior map plus synthetic detections | Tactics with a prior; same graph code | Online map discovery performance |
+| `kinematic`, `oracle` | Truth-labeled ablation inputs | Upper-bound diagnostic only | Competition performance; never training default |
+| `mvsim` | Version-verified sensor topics, odometry and dynamics | ROS wiring, dynamics, supported sensor pipeline | Exact MID-360 equivalence without evidence |
+| `real` | Authorized actual sensors | Hardware acceptance within tested envelope | Universal generalization |
+| `replay` | Recorded observations and clock | Deterministic estimator regression | Closed-loop counterfactual behavior after changed commands |
 
-**Critical path: G0→G1→G2→G3/G4→G6. G5 never blocks delivery.** Suggested code implementation order: `rules.py` (capture/arrival predicates), `types.py` (contracts), driver adapter, supervisor, navigation, opponent tracker, options, evaluation. Reserve at least 25–30% of total time for integration and regressions; with less than 3 days available, spectral signatures, evolution, and ASG are excluded from scope.
+The NumPy simulator can generate sparse 2D hit points from rays. The same map→graph extraction applies; no dense 3D cloud is required for topology. Synthetic opponent measurements enter at the detector boundary and bypass GPIS only in that explicitly labeled fidelity profile. MVSim needs suitable verified 3D observations before it can validate full GPIS recognition; planar scans are insufficient to establish 3D model fidelity. No throughput claim is accepted without measurement.
 
----
+World truth, observation generation and referee are separate capabilities. Policies receive no truth handle and no unobserved wall map except in declared prior/oracle profiles. Runtime namespace checks and forbidden-import checks both matter. In two-robot simulation, namespace every policy and expose only each robot's own observations. Physical output is absent in simulation/replay.
 
-## 11. Residual risks the architecture reduces but does not eliminate
+Maintain separate `hardware.yaml` (controller assumptions), simulator dynamics/sensor profiles (plant), perception configuration, and measurement artifacts. Share geometry deliberately, but do not automatically copy randomized true friction into the controller's knowledge. Calibration records include robot identity, floor, battery/load range, methods, samples, uncertainty and valid operating range. Invalidation of a bound disables the corresponding high-speed mode; one new b_min number does not eliminate all sim-to-real error.
 
-| Risk | Mitigation in this architecture | What remains unguaranteed |
+GPIS pipeline and artifacts: `tools/train_gpis_prior.py` → `artifacts/models/opponent_gpis/{model.npz,manifest.json,validation.json}`. These are target paths to implement. Store models separately from physical safety calibration and learned tactics. No untrusted executable pickle is required. Exact schemas and promotion checks are in TS §§8, 14–15.
+
+### 11.1 Fidelity boundaries and permitted bypass points
+
+The controller-facing boundary is observations, not simulator truth. All profiles share rule evaluation, filter lifecycle, belief propagation, tactics, navigation and safety. A profile may replace only the capability it explicitly models:
+
+| Profile/input | May bypass | Still required | Invalid conclusion |
+|---|---|---|---|
+| Synthetic detection | GPIS segmentation/registration only | Measurement covariance, association, filter, occlusion belief | GPIS accuracy |
+| Approved structural map | Online structural discovery only | Runtime collision layer, topology validation, planning, safety | Permission to hard-code unknown competition data |
+| Oracle ablation | Declared estimator components for upper-bound analysis | Separate result labels and no physical output | Deployable performance |
+| Replay | Live sensor transport | Original time semantics and estimator/control inputs | Closed-loop outcome after changed commands |
+
+A bypass terminates at one named adapter and emits the same typed record, with fidelity and provenance fields preserved. It may not expose a truth object that downstream code can query opportunistically. This makes comparisons interpretable and prevents a simulator-only shortcut from becoming an undeclared runtime dependency.
+
+## 12. Offline learning and bounded evolution
+
+There are three distinct graphs/tables: physical connectivity `G`, opponent location belief `b`, and abstract tactical option transitions `P(s'|s,o)`. Their node IDs are not interchangeable. The tactical state includes role, local structural features, goal relation, opponent belief features and remaining-time bucket. It is an approximate belief abstraction, not automatically a Markov state.
+
+For each `(s,o)`, store counts `n_j`, prior `alpha_j>0`, duration and reward statistics. Posterior mean is `(alpha_j+n_j)/A`, variance `pbar_j*(1-pbar_j)/(A+1)`. Parameter certainty does not remove physical outcome randomness. Failure, cancellation, timeout and supervisor intervention are outcomes, not deleted samples. Counts only increase in the stationary conjugate model; other categories' probabilities can fall as the denominator grows. Forgetting factors for nonstationarity are a different model and require separate labeling.
+
+For option duration tau, use continuous-time discount `exp(-beta*tau)` and actual integrated discounted reward, or an explicitly fixed-timestep SMDP equivalent. Terminal transitions have no bootstrap. Optional state fusion requires, for each option and class C, equality of `E[discounted reward]` and `E[exp(-beta*tau)*1{S' in C}]`. Equal destination probabilities and mean duration alone fail because exponential expectation depends on the duration distribution and its association with destination.
+
+Bounded evolution optimizes a small versioned vector of tactical weights, horizons and hysteresis. Use projected mutations within approved bounds, held-out maps, both roles and a fixed opponent bank. A Gaussian mutation is not automatically CMA-ES. Keep official scoring, surrogate training rewards and diagnostic fitness separate. Safety parameters, capture thresholds, sensor truth access and runtime contracts are immutable. Hard safety feasibility filters cannot be traded for a higher reward. L7 stays out of the critical runtime and competition updates remain disabled.
+
+## 13. Repository alignment and release workflow
+
+Retain `kobuki/` as inherited hardware code, with only the reported controlled mux output-topic compatibility change. Do not switch upstream branches based solely on the repository report's claim of ABI compatibility. Record actual tested commit hashes and dependency/image digests. The changelog §9 supersedes its earlier base-image description: the reported base is `nickodema/kobuki:humble-22.04-100625`; availability and successful build were not rechecked here.
+
+Use repository-root `docker/Dockerfile` and chain `/opt/ros/humble/setup.bash`, `/workspace_kobuki/install/setup.bash`, `/workspace_hsl26/install/setup.bash`. Development editable installs and bind mounts are acceptable; release images contain frozen code and artifacts. A tag is not an immutable digest. Conda/venv runs core and lightweight simulation; Linux/WSL2 Docker runs ROS/MVSim integration; the robot runs the onboard profile.
+
+TS defines required additions: typed local obstacles/coverage, belief, zone, path, temporal metadata, option results and supervisor heartbeat; pure-core safety evaluator; independent stop watchdog; contract adapters; model-training and calibration tools; migration tests. Do not claim existing message schemas already conform. Introduce the interface revision atomically across producers/consumers and reject mixed schema versions.
+
+## 14. Acceptance gates and residual risks
+
+| Gate | Required evidence | Stop condition |
 |---|---|---|
-| Ambiguous localization in repeated symmetric corridors (R2) | Keep multiple hypotheses, reduce speed, seek a discriminating observation | No global guarantee without distinguishable evidence in the environment |
-| A stationary opponent absorbed as part of the background | Separate map layers (structural vs. collision vs. detection), temporal memory | Identification may remain ambiguous |
-| Stopping in front of an aggressive opponent | Short-horizon prediction, evasion available, kinematic limits | Stopping does not guarantee no contact if the opponent keeps advancing |
-| Saturated CPU on the NUC | Latest-sample queues, per-cycle candidate limits, fixed priorities | Requires thermal/load testing on the final hardware |
-| Geometrically infeasible capture due to a miscalibrated footprint | Explicit check of interval (18) before competing | If the interval is empty, the estimate must be improved or it must be accepted that capture cannot be certified |
-| Overfitting of offline learning | Baseline FSM, held-out maps/opponents, automatic rollback | The sim-to-real gap never fully disappears |
+| G0 | Container/interface build, topic/TF ownership, clock handling, startup zero, mux stop priority, driver timeout | Any unauthorized physical writer or uncertain timeout blocks autonomy. |
+| G1 | Measured footprint, low/minimum obstacles, blind zones, reverse/rotation coverage as enabled, braking and latency under load | Restrict speed/modes or fix sensing; never shrink geometry to pass. |
+| G2 | Navigation through turns, cycle/junction topology, unknown-space handling, obstacle insertion and recovery | Retain a tested lower-complexity controller. |
+| G3 | Robot-origin error, yaw observability, stationary rival, occlusion/reacquisition and confidence calibration | Disable unsupported capture certification; reduce operating envelope. |
+| G4 | Both roles, options/actions, freeze, expiry, reset, arrival/capture ambiguity and timeout | No competition deployment until complete stage behavior works. |
+| G5 | Held-out learned-policy improvement with unchanged safety and robust uncertainty evidence | Deploy deterministic FSM; optional gate does not block MVP. |
+| G6 | Frozen release, cold start, complete two-stage rehearsal, hashes, approved metadata and rollback | Return to last accepted release. |
 
-**Delivery decision:** deploy the simplest version that passes G0–G4 and G6. Add the learning layer (Layer 7) only if it passes G5 on held-out tests.
+Target rates are initially ego 30–50 Hz, supervisor 50 Hz, control 20 Hz, detection 5–10 Hz, tactics 2–5 Hz, topology event-driven up to approximately 2 Hz. They are scheduling targets, not hard real-time claims. Report p50/p95/p99, worst observed, dropped samples and deadline violations; an observed maximum is not a proven WCET. Budget for logging and thermal/CPU stress. Driver loss, supervisor loss and stale perception require separate fault-injection tests.
+
+Residual risks include repeated-corridor localization ambiguity, undetected low objects, stationary-opponent confusion, imperfect semantic goal information, model mismatch, opponent-driven collision and release-environment drift. The authorized response is degradation, hold or reduced capability with diagnostics, not fabricated certainty.
+
+## 15. Traceability and sources
+
+| rev1 question group | Architecture | Detailed blueprint |
+|---|---|---|
+| Packages, classes, messages and naming | §§4–5, 13 | TS §§2–6, 16.1–16.9 |
+| Braking, watchdog, mux and process isolation | §§4, 10 | TS §§5, 12, 17 |
+| NumPy versus MVSim and GPIS bypass | §11 | TS §14 |
+| Robot parameters versus simulator truth | §§10–11 | TS §§14–15 |
+| GPIS prior source, training and storage | §7 | TS §8 |
+| Goal designation variability | §§3, 8 | TS §§6, 10 |
+| Graph extraction, spacing and occlusion | §6 | TS §§7, 9 |
+| Eigenvalues, locality, invariance and left/right | §§6.4, 9.3 | TS §§7, 12 |
+| Tactics, probabilities, genetic search and rewards | §§9, 12 | TS §§11, 15 |
+| State machines, sequences, tests and migration | §§8, 13–14 | TS §§10–13, 16–18 |
+
+The companion blueprint §16.5–16.9 additionally fixes the class, adapter and tool contracts for offline learning, secondary ROS nodes, the kinematic simulator and calibration/model scripts. Its file-to-contract registry distinguishes behavior-bearing modules from declarative IDL, launch, configuration and scenario files. The numbered phase documents derive their gates from this baseline and do not change its runtime semantics.
+
+Primary supplied source: official rulebook, pp. 3–6; supplied repository report and changelog for reported implementation state; rev1 as a reviewed proposal. External checks consulted on 2026-09-24: [ROS 2 time design](https://design.ros2.org/articles/clock_and_time.html), [ROS 2 Humble QoS](https://docs.ros.org/en/humble/Concepts/Intermediate/About-Quality-of-Service-Settings.html), and [MVSim project documentation](https://mvsimulator.readthedocs.io/en/latest/). These support clock/QoS separation and simulator capability checking; they do not certify the team's installed versions. Mathematical conclusions above follow the displayed assumptions and derivations. Implementation acceptance must attach its own measured evidence.
