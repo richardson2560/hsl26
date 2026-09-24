@@ -1,0 +1,52 @@
+{
+  "phase": "P1.6",
+  "status": "PASS_WITH_RUNTIME_SCOPE_BLOCKED",
+  "source_of_truth": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+  "audit_of_p1_5": {
+    "verdict": "confirmed_with_corrections",
+    "confirmed": [
+      "revision-2 metadata and validity rejection",
+      "base_link versus odom frame separation",
+      "deep-copy replay-resistant cache",
+      "deterministic ROS-free fixtures"
+    ],
+    "corrected": [
+      "added encode_safety_status",
+      "added encode_supervisor_heartbeat",
+      "enforced shared stage identity across safety inputs"
+    ],
+    "explicit_scope": "free_distance_m remains an external scalar only for the Phase-1 forward 1D safety scope"
+  },
+  "implemented": {
+    "supervisor": [
+      "monotonic completed-decision sequence",
+      "watchdog-health gate",
+      "zero fallback for missing payload and evaluator exception",
+      "pure orchestration seam suitable for a ROS timer"
+    ],
+    "watchdog": [
+      "DISARMED startup with highest-priority stop",
+      "READY to ACTIVE transition only with fresh progressing heartbeat",
+      "stage/config identity checks",
+      "steady-time heartbeat lease",
+      "fault latch and authorized near-zero rearm",
+      "no nonzero command generation"
+    ],
+    "deployment": [
+      "separate console entry points",
+      "separate-process launch description"
+    ]
+  },
+  "verification": {
+    "command": "pytest -q hsl_core/tests ros_ws/src/hsl_safety/test/test_adapters.py ros_ws/src/hsl_safety/test/test_p16_runtime.py",
+    "result": "53 passed",
+    "compile": "python -m compileall -q hsl_core/hsl_core ros_ws/src/hsl_safety/hsl_safety ros_ws/src/hsl_safety/launch",
+    "diff_check": "git diff --check"
+  },
+  "blocked": [
+    "ROS 2 Humble generated message runtime",
+    "rclpy executor and timer integration",
+    "native launch tests",
+    "physical mux and driver response"
+  ]
+}

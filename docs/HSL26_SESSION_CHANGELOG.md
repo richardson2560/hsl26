@@ -571,6 +571,71 @@ of domain records, adapters, result types and fixtures; compatibility
 fallbacks were deliberately not added because they would conceal revision-2
 contract violations.
 
+## 17. P1.4 braking and pure safety evaluator
+
+Implemented the specification-defined constant-speed delay braking model,
+stable admissible-speed inversion, delay-acceleration model and inverse, plus
+validated differential-drive wheel-rate limits in
+`hsl_core/hsl_core/control/braking.py`. All calculations document SI units
+and reject nonfinite, negative, or nonphysical configuration values.
+
+Added `LimitsProfile`, `TimingProfile`, `SafetySnapshot`,
+`SafetyEvaluation` and `SafetySupervisor` in
+`hsl_core/hsl_core/control/safety.py`. The evaluator supports only the
+explicitly permitted conservative forward scalar corridor. It requires finite
+clearance, matching frame and clock/localization epochs, fresh candidate/ego
+and obstacle timestamps, valid coverage and option identity. It returns
+`ADMIT`, `LIMIT` or zero `STOP`, reports `BRAKING_INFEASIBLE` for an already
+unsafe stopping state, and forces zero on compute overrun. Reverse motion,
+independent rotation and full swept-footprint/dynamic-obstacle checking remain
+disabled until their separate evidence exists.
+
+Added adversarial numerical and safety tests in
+`hsl_core/tests/test_braking.py` and `hsl_core/tests/test_safety.py`, plus
+`artifacts/reports/phase1/P1.4_safety_report.json`. The pure-core suite
+initially passed 24 tests, including future-timestamp, stale-lease, identity,
+overrun and already-infeasible stopping-state cases.
+
+## 18. Independent P1.4 audit follow-up
+
+Re-audited the attached P1.4 findings and confirmed the admitted-command
+stopping distance was previously reported from ego speed rather than the
+command speed, and that candidate freshness did not consume
+`candidate_lease_s`. Both are corrected. Invalid negative candidate/ego speeds
+are now represented as evaluable safety inputs and force `LIMITS_INVALID`
+instead of crashing snapshot construction. Steady-clock regression now forces
+`COMPUTE_OVERRUN`, and the configured acceleration-during-response bound is
+used by the supervisor's stopping and admissible-speed calculations.
+
+Added adversarial tests for these cases and for invalid sequence, boolean and
+coverage metadata. The pure-core suite now passes 30 tests.
+
+Overrun and steady-clock-regression STOP results now preserve the computed ego
+stopping-distance diagnostic instead of reporting a misleading zero.
+
+## 19. P1.5 ROS adapters and deterministic mocks
+
+Replaced the bootstrap safety conversion module with the explicit revision-2
+boundary adapter in `ros_ws/src/hsl_safety/hsl_safety/adapters.py`.
+`AdapterContext` validates receiver-local ROS/steady time, schema, validity,
+epochs, leases, per-record frames and option identity. `decode_safety_snapshot`
+accepts the normative frame split (`MotionCandidate` in `base_link`,
+`EgoState`/`LocalObstacleSnapshot` in `odom`) and
+`validate_authority_context` permits empty frames only for metadata-only
+authority records. `ValidatedCache` rejects stale or replayed sequence/time
+pairs before replacement.
+
+Added ROS-free deterministic fixtures for controllable ROS and steady clocks,
+source sequence/session and epoch restarts, ego-local/obstacle/candidate/
+match/execution/watchdog-health records, and separate autonomy/watchdog/mux
+observation sinks. Mocks are test-only and are not added to production launch
+files or physical command paths.
+
+Removed the obsolete bootstrap `conversions.py` and its bootstrap conversion
+tests so stale field names cannot be reused. Added strict P1.5 adapter/mock
+tests and evidence in
+`artifacts/reports/phase1/P1.5_adapter_mock_report.json`.
+
 ## 14. Independent audit and adversarial verification
 
 An independent audit of P1.2/P1.3 identified and corrected five concrete
@@ -599,3 +664,31 @@ and no ROS imports or internal wall-clock reads were found in the pure core.
 Remaining limitations are explicitly retained: rosidl/colcon generation,
 runtime sequence/session caches, production-scale geometric tolerance policy,
 sensor deskew and full world/stage integration.
+
+## 20. P1.6 supervisor and watchdog boundary
+
+Audited the external P1.5 verdict against the revision-2 specification. The
+reported scope is valid, but the missing output encoders were a real P1.6
+dependency. Added strict `encode_safety_status` and
+`encode_supervisor_heartbeat` adapters with copied metadata, validated enum and
+identity fields, and exact nanosecond duration serialization.
+
+Implemented ROS-independent, deterministic P1.6 runtime seams in
+`ros_ws/src/hsl_safety/hsl_safety/supervisor_node.py` and
+`ros_ws/src/hsl_safety/hsl_safety/watchdog.py`. The supervisor advances a
+monotonic decision sequence, gates evaluation on watchdog health, and emits a
+zero result for missing payloads, exceptions or evaluator failures. The
+watchdog starts `DISARMED`, asserts stop output until fresh progressing
+identity-bound heartbeats and stage authority are present, rejects stale or
+replayed heartbeats, latches faults, and requires an authorized near-zero
+rearm with dwell before returning to `READY`. It never produces a nonzero
+twist.
+
+The adapter now also rejects candidate/ego/obstacle records with inconsistent
+stage identities. Added separate-process launch and console entry point
+declarations. P1.6 runtime tests cover startup zeros, health gating, exception
+fallback, heartbeat ordering, stale leases, stage/config mismatches, fault
+latching, controlled rearm, encoder round trips and invalid output values.
+The combined pure-core/P1.5/P1.6 run passes 53 tests. Native ROS 2 execution,
+generated-message serialization and launch tests remain `BLOCKED` because the
+pinned ROS 2 Humble environment is unavailable on this Windows host.

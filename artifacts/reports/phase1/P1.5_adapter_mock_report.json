@@ -1,0 +1,52 @@
+{
+  "phase": "P1.5",
+  "status": "PASS_WITH_EXPLICIT_SCOPE",
+  "source_of_truth": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+  "implemented": {
+    "adapter": [
+      "AdapterContext",
+      "decode_safety_snapshot",
+      "validate_authority_context",
+      "ValidatedCache"
+    ],
+    "deterministic_mocks": [
+      "DeterministicClock",
+      "DeterministicMockScenario",
+      "MockPublisher",
+      "MockOutputSink"
+    ],
+    "rejection_boundaries": [
+      "revision/schema and validity",
+      "clock/localization epoch",
+      "per-record frame",
+      "future publication and expired leases",
+      "candidate sequence and option identity",
+      "metadata-only empty frame",
+      "stale/replayed cache replacement",
+      "authority, match and watchdog health"
+    ]
+  },
+  "frame_contract": {
+    "motion_candidate": "base_link",
+    "ego_local": "odom",
+    "local_obstacle_snapshot": "odom",
+    "metadata_only_authority_records": "empty frame_id permitted"
+  },
+  "scope_boundary": {
+    "supported": "ROS-free generated-message-shaped adapter tests and deterministic supervisor-boundary fixtures.",
+    "excluded": "Generated rosidl runtime, ROS executors, launch tests, physical driver, mux and watchdog processes.",
+    "reason": "The pinned ROS 2 environment is unavailable; runtime integration belongs to P1.6/P1.7."
+  },
+  "verification": {
+    "adapter_command": "$env:PYTHONPATH='hsl_core;ros_ws/src/hsl_safety'; python -m pytest ros_ws/src/hsl_safety/test -q",
+    "adapter_result": "11 passed",
+    "core_command": "Set-Location hsl_core; python -m pytest tests -q",
+    "core_result": "30 passed",
+    "compile": "python -m compileall -q hsl_core/hsl_core ros_ws/src/hsl_safety/hsl_safety ros_ws/src/hsl_safety/test",
+    "diff_check": "git diff --check"
+  },
+  "known_limitations": [
+    "The ROS generated-message build and launch-test layer remains unexecuted because ROS 2 Humble is unavailable on the host.",
+    "Adapters for world, decision, navigation and match packages remain future work until their immutable domain records exist."
+  ]
+}

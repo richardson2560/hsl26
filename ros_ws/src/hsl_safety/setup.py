@@ -1,4 +1,5 @@
 # ros_ws/src/hsl_safety/setup.py
+# ros_ws/src/hsl_safety/setup.py
 from setuptools import setup
 import os
 from glob import glob
@@ -21,4 +22,10 @@ setup(
     description='Safety supervisor for HSL26',
     license='Proprietary',
     tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'safety_supervisor = hsl_safety.supervisor_node:main',
+            'safety_watchdog = hsl_safety.watchdog:main',
+        ],
+    },
 )

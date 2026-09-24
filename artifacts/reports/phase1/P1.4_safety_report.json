@@ -1,0 +1,49 @@
+{
+  "phase": "P1.4",
+  "status": "PASS_WITH_EXPLICIT_SCOPE",
+  "source_of_truth": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+  "implemented": {
+    "braking": [
+      "stopping_distance",
+      "admissible_speed",
+      "stopping_distance_accelerating",
+      "admissible_speed_accelerating",
+      "wheel_rates",
+      "wheel_rates_within_limits"
+    ],
+    "safety": [
+      "LimitsProfile",
+      "TimingProfile",
+      "SafetySnapshot",
+      "SafetyEvaluation",
+      "SafetySupervisor.evaluate"
+    ],
+    "decision_policy": [
+      "ADMIT only for version-valid, covered, forward zero-yaw commands",
+      "LIMIT only after recomputing the scalar stopping envelope",
+      "STOP for stale/future data, identity mismatch, unavailable coverage, invalid limits, compute overrun, or infeasible current stopping state"
+    ]
+  },
+  "scope_boundary": {
+    "supported": "Conservative one-dimensional forward corridor with explicit finite clearance and leases.",
+    "disabled": "Reverse motion, independent rotation, dynamic obstacle swept volumes, polygon footprint sweeps, ROS adapters, and watchdog process integration.",
+    "reason": "The technical specification requires separate geometry, coverage, and braking evidence before enabling those modes."
+  },
+  "verification": {
+    "command": "Set-Location hsl_core; python -m pytest tests -q",
+    "result": "30 passed",
+    "compile": "python -m compileall -q hsl_core/hsl_core",
+    "diff_check": "git diff --check",
+    "units": {
+      "distance": "m",
+      "speed": "m/s",
+      "acceleration": "m/s^2",
+      "response_bound": "s",
+      "wheel_rate": "rad/s"
+    }
+  },
+  "known_limitations": [
+    "The current domain records and ROS adapters still require the coordinated revision-2 migration recorded in LIMIT-005.",
+    "The evaluator does not claim collision safety for angular motion or finite-size swept footprints."
+  ]
+}
