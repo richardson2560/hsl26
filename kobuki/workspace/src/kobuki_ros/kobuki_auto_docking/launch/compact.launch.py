@@ -1,3 +1,4 @@
+# kobuki/workspace/src/kobuki_ros/kobuki_auto_docking/launch/compact.launch.py
 # Copyright 2022 Waipot Ngamsaad
 # All rights reserved.
 #

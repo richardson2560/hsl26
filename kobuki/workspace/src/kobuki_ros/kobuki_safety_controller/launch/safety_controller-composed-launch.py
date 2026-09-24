@@ -1,3 +1,4 @@
+# kobuki/workspace/src/kobuki_ros/kobuki_safety_controller/launch/safety_controller-composed-launch.py
 # Copyright 2020 Open Source Robotics Foundation, Inc.
 # All rights reserved.
 #

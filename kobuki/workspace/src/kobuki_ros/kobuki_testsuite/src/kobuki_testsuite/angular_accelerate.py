@@ -1,3 +1,4 @@
+# kobuki/workspace/src/kobuki_ros/kobuki_testsuite/src/kobuki_testsuite/angular_accelerate.py
 #!/usr/bin/env python
 #       
 # License: BSD

@@ -1,3 +1,4 @@
+# kobuki/workspace/src/kobuki_ros/kobuki_testsuite/setup.py
 #!/usr/bin/env python
 
 from distutils.core import setup

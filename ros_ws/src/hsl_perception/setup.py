@@ -1,3 +1,4 @@
+# ros_ws/src/hsl_perception/setup.py
 from setuptools import setup
 import os
 from glob import glob

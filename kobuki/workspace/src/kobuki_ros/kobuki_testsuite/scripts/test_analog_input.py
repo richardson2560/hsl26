@@ -1,3 +1,4 @@
+# kobuki/workspace/src/kobuki_ros/kobuki_testsuite/scripts/test_analog_input.py
 #!/usr/bin/env python
 
 # Software License Agreement (BSD License)

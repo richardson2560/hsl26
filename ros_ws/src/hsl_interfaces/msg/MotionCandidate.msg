@@ -4,4 +4,6 @@ float64 angular_velocity
 builtin_interfaces/Time valid_until
 float64 horizon
 string source_id
+uint32 map_version
+string localization_epoch
 uint8 mode

@@ -441,3 +441,27 @@ An additional packaging conflict was corrected at the same time:
 The corrected files were validated with static parsing, package metadata
 commands, topic/configuration checks, and `git diff --check`. A full ROS 2
 build and Docker build still require the target container environment.
+
+## 10. Operational workflow documentation
+
+The repository now documents the intended hybrid development workflow in the
+root `README.md`, the Phase 1 technical design, and the implementation
+roadmap:
+
+- Conda/venv is the fast path for `hsl_core`, the lightweight kinematic
+  simulator, and offline Layer 7 training.
+- Docker Desktop with WSL2 or Linux is the supported path for ROS 2 Humble,
+  `colcon`, Kobuki/Livox, MVSim, and integration tests.
+- The four execution modes are explicitly separated: lightweight kinematic
+  simulation, MVSim, real hardware, and rosbag replay.
+- Docker build and ROS test commands are recorded using the pinned HSL25
+  hardware image.
+- Simulation launch commands and the offline training command are documented
+  as operational targets, with an explicit warning that current launch files
+  remain scaffolds until node wiring and acceptance evidence exist.
+- Policy artifacts require provenance and SHA-256 integrity metadata, and
+  online adaptation remains disabled for competition execution.
+
+This documentation change does not claim that the simulator, launch graph, or
+training CLI is already production-ready; it establishes the reproducible
+workflow and the evidence required before those surfaces can be marked done.

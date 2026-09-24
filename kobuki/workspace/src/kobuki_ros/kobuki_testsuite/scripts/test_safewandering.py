@@ -1,3 +1,4 @@
+# kobuki/workspace/src/kobuki_ros/kobuki_testsuite/scripts/test_safewandering.py
 #!/usr/bin/env python
 import roslib; roslib.load_manifest('kobuki_testsuite')
 import rospy

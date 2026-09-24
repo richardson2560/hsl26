@@ -1,3 +1,4 @@
+# kobuki/workspace/src/kobuki_ros/kobuki_testsuite/scripts/gyro_perf.py
 #!/usr/bin/env python
 #AUTHOR: Younghun Ju <yhju@yujinrobot.com>, <yhju83@gmail.com>
 
