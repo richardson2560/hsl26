@@ -4,14 +4,21 @@ cmd_vel_mux:
     # The physical Kobuki driver consumes this sole output.
     output: "/commands/velocity"
     subscribers:
-      # Priority 1 (highest): emergency manual teleoperation.
+      # Priority 1 (highest): watchdog stop. The source is zero-only.
+      watchdog_stop:
+        topic: "/hsl/cmd_vel_stop"
+        timeout: 0.10
+        priority: 200
+        short_desc: "HSL26 independent stop watchdog"
+
+      # Priority 2: authorized emergency manual teleoperation.
       emergency_teleop:
         topic: "/teleop/cmd_vel"
         timeout: 0.2
         priority: 100
         short_desc: "Emergency manual teleoperation"
 
-      # Priority 2: HSL26 Layer 6 safety supervisor.
+      # Priority 3: HSL26 Layer 6 safety supervisor.
       autonomous_supervisor:
         topic: "/hsl/cmd_vel_final"
         timeout: 0.15

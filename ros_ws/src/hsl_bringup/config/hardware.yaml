@@ -18,8 +18,17 @@ hardware:
     logical_wheel_odom_topic: /wheel_odom
   command_mux:
     output_topic: /commands/velocity
+    watchdog_stop_topic: /hsl/cmd_vel_stop
     autonomous_topic: /hsl/cmd_vel_final
     emergency_teleop_topic: /teleop/cmd_vel
+    priorities:
+      watchdog_stop: 200
+      emergency_teleop: 100
+      autonomous_supervisor: 50
+    timeouts_s:
+      watchdog_stop: 0.10
+      emergency_teleop: 0.20
+      autonomous_supervisor: 0.15
   limits:
     max_linear_velocity_mps: 0.5
     max_angular_velocity_rps: 2.0

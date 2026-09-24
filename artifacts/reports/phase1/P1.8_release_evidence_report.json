@@ -1,0 +1,56 @@
+{
+  "phase": "P1.8",
+  "status": "PASS_WITH_RELEASE_BLOCKERS",
+  "source_of_truth": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+  "tasks": {
+    "P1.8a_reproducibility": {
+      "status": "PASS",
+      "evidence": "artifacts/releases/P1_release_candidate_manifest.json",
+      "details": [
+        "source revision and dirty state recorded",
+        "environment versions recorded",
+        "exact verification commands recorded",
+        "SHA-256 hashes recorded for normative and safety-boundary files"
+      ]
+    },
+    "P1.8b_status_separation": {
+      "status": "PASS",
+      "details": [
+        "software-contract results are separated from ROS-runtime results",
+        "physical response is marked BLOCKED",
+        "real motion profile remains DISARMED"
+      ]
+    },
+    "P1.8c_operational_runbook": {
+      "status": "PASS",
+      "evidence": "docs/runbook_competition.md",
+      "details": [
+        "safe startup",
+        "normal and emergency stop",
+        "controlled rearm",
+        "fault response matrix",
+        "evidence capture"
+      ]
+    },
+    "P1.8d_g0_review": {
+      "status": "BLOCKED",
+      "reason": "G0 cannot be closed until ROS build/launch/graph and physical timeout evidence are available."
+    }
+  },
+  "gate_summary": {
+    "pure_core_and_boundary_tests": "PASS",
+    "ros_generated_build": "BLOCKED",
+    "native_launch": "NOT_RUN",
+    "live_graph_authority": "NOT_RUN",
+    "process_fault_injection": "NOT_RUN",
+    "driver_timeout": "BLOCKED",
+    "physical_stop": "BLOCKED",
+    "release_candidate": "BLOCKED_FOR_RELEASE"
+  },
+  "verification": {
+    "command": "pytest -q hsl_core/tests ros_ws/src/hsl_safety/test",
+    "result": "59 passed",
+    "compile": "PASS",
+    "diff_check": "PASS"
+  }
+}

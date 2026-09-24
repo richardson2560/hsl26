@@ -1,0 +1,114 @@
+{
+  "manifest_version": 1,
+  "release_id": "hsl26-phase1-g0-candidate-2026-09-25",
+  "created_at": "2026-09-25T01:01:35+03:00",
+  "source_of_truth": [
+    "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "docs/HSL26_PHASE1_IMPLEMENTATION_PLAN.md"
+  ],
+  "source_revision": {
+    "head": "23a89fcd244ba594966761285efcaba55a98beba",
+    "working_tree": "DIRTY",
+    "release_is_immutable": false,
+    "reason": "P1.8 documentation and evidence artifacts are working-tree changes pending review and commit."
+  },
+  "release_decision": {
+    "status": "BLOCKED_FOR_RELEASE",
+    "software_contract_scope": "PASS",
+    "real_motion_scope": "DISARMED",
+    "blocking_reasons": [
+      "ROS 2 Humble/colcon and generated-message runtime unavailable on the current host",
+      "native launch and live graph authority tests not executed",
+      "Kobuki driver timeout and physical stop response are unmeasured",
+      "working tree is dirty and therefore not immutable"
+    ]
+  },
+  "gate_matrix": [
+    {
+      "gate": "P1.1 migration audit",
+      "status": "PASS_WITH_OPEN_RUNTIME_ITEMS",
+      "evidence": "artifacts/reports/phase1/P1.1_migration_manifest.json"
+    },
+    {
+      "gate": "P1.2 revision-2 IDL",
+      "status": "PASS_STATIC_NOT_BUILT",
+      "evidence": [
+        "artifacts/reports/phase1/P1.2_contract_report.json",
+        "artifacts/reports/phase1/P1.2_encoding_fixtures.json"
+      ]
+    },
+    {
+      "gate": "P1.3 pure core",
+      "status": "PASS",
+      "evidence": "artifacts/reports/phase1/P1.3_core_foundation_report.json"
+    },
+    {
+      "gate": "P1.4 safety evaluator",
+      "status": "PASS_WITH_EXPLICIT_SCOPE",
+      "evidence": "artifacts/reports/phase1/P1.4_safety_report.json"
+    },
+    {
+      "gate": "P1.5 adapters and mocks",
+      "status": "PASS_WITH_EXPLICIT_SCOPE",
+      "evidence": "artifacts/reports/phase1/P1.5_adapter_mock_report.json"
+    },
+    {
+      "gate": "P1.6 supervisor/watchdog",
+      "status": "PASS_WITH_RUNTIME_SCOPE_BLOCKED",
+      "evidence": "artifacts/reports/phase1/P1.6_supervisor_watchdog_report.json"
+    },
+    {
+      "gate": "P1.7 mux/fault integration",
+      "status": "PASS_WITH_RUNTIME_SCOPE_BLOCKED",
+      "evidence": "artifacts/reports/phase1/P1.7_mux_fault_report.json"
+    },
+    {
+      "gate": "G0 software release",
+      "status": "BLOCKED",
+      "reason": "Required ROS build, launch, live graph and process-fault evidence are unavailable."
+    },
+    {
+      "gate": "G0 physical response",
+      "status": "BLOCKED",
+      "reason": "Driver timeout and physical stopping response require authorized hardware trials."
+    }
+  ],
+  "verification": {
+    "command": "pytest -q hsl_core/tests ros_ws/src/hsl_safety/test",
+    "result": "59 passed",
+    "additional_commands": [
+      "python -m compileall -q hsl_core/hsl_core ros_ws/src/hsl_safety/hsl_safety tools",
+      "git diff --check",
+      "python -c \"import json; json.load(open('artifacts/reports/phase1/P1.7_mux_fault_report.json'))\""
+    ],
+    "environment": {
+      "os": "Windows",
+      "python": "3.14.7",
+      "pytest": "9.1.1",
+      "ros2": "unavailable"
+    }
+  },
+  "hashes_sha256": {
+    "docs/HSL26_TECHNICAL_SPECIFICATION.md": "492303bfe8e28d107344fae1554f4a58f36bc308a79abb4664d75df25562c343",
+    "docs/HSL26_PHASE1_IMPLEMENTATION_PLAN.md": "4eddae31aaca78e75e9f01eaba49af716e24377a8827055c13f8597bfdade2da",
+    "ros_ws/src/hsl_interfaces/CMakeLists.txt": "b2a9100d8f0cd37416224424eff59062ae787bbc818f3891d0a01b2858882454",
+    "ros_ws/src/hsl_safety/hsl_safety/adapters.py": "0d1f42323d78332604e55613f3d95734b3fdba42f780f73a58c97cab16d1e1a5",
+    "ros_ws/src/hsl_safety/hsl_safety/supervisor_node.py": "c63cc4bef9411ca82938daca09853c6a347fa10f28292c80fd26224ffa553d79",
+    "ros_ws/src/hsl_safety/hsl_safety/watchdog.py": "7fad19f5524db9f8ef93f4a4b0482913b386d934ed29117cfac807f7f189ee1c",
+    "ros_ws/src/hsl_safety/hsl_safety/mux_contract.py": "c067f3942871babe52c85072385f4d1886912bbd71108675af60dd425c896c59",
+    "kobuki/workspace/src/cmd_vel_mux/config/cmd_vel_mux_params.yaml": "918a3d3dfbaceb7b9e44d60b6d4825218b285447fba8c8c64555d0510ada6dcb",
+    "ros_ws/src/hsl_bringup/config/hardware.yaml": "c08ffeaa18b7f58772d14e3b6a05505150a147d7d215858902f5ccfc5d749a48"
+  },
+  "handoff_to_phase2": {
+    "allowed": "pure software work may continue",
+    "required_before_real_motion": [
+      "build revision-2 interfaces in pinned ROS 2 environment",
+      "run native mux and launch tests",
+      "capture live graph with exactly one physical publisher",
+      "measure mux/driver timeout",
+      "measure physical stop response",
+      "resolve all open authority and epoch fault traces"
+    ],
+    "first_vertical_slice": "normalized sensor input -> ego-local state -> timestamped local obstacle/coverage snapshot -> supervisor at restricted test speed"
+  }
+}

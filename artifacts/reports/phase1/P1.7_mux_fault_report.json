@@ -1,0 +1,60 @@
+{
+  "phase": "P1.7",
+  "status": "PASS_WITH_RUNTIME_SCOPE_BLOCKED",
+  "source_of_truth": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+  "audit_findings": {
+    "previous_configuration": [
+      "watchdog stop input was absent",
+      "priority ordering did not include the normative stop=200 contract"
+    ],
+    "legacy_writers": "Historical Kobuki writers were found in ignored tutorial, docking and test packages; they are not accepted as active HSL26 authority without a live graph check."
+  },
+  "implemented": {
+    "mux_contract": {
+      "physical_output": "/commands/velocity",
+      "inputs": [
+        {
+          "name": "watchdog_stop",
+          "topic": "/hsl/cmd_vel_stop",
+          "priority": 200,
+          "timeout_s": 0.1,
+          "zero_only": true
+        },
+        {
+          "name": "emergency_teleop",
+          "topic": "/teleop/cmd_vel",
+          "priority": 100,
+          "timeout_s": 0.2
+        },
+        {
+          "name": "autonomous_supervisor",
+          "topic": "/hsl/cmd_vel_final",
+          "priority": 50,
+          "timeout_s": 0.15
+        }
+      ]
+    },
+    "tests": [
+      "zero-only cold start",
+      "stop overrides teleop and autonomy",
+      "expired input cannot replay its command",
+      "watchdog input rejects nonzero commands",
+      "single physical mux publisher graph contract",
+      "configuration priority/topic/timeout contract",
+      "finite command values"
+    ],
+    "authority_tool": "tools/check_ros_graph_authority.py"
+  },
+  "verification": {
+    "command": "pytest -q hsl_core/tests ros_ws/src/hsl_safety/test",
+    "result": "59 passed",
+    "diff_check": "git diff --check"
+  },
+  "blocked": [
+    "native cmd_vel_mux ROS launch tests",
+    "live ros2 topic publisher authority inspection",
+    "process-death and stalled-callback timing on ROS executors",
+    "Kobuki driver timeout and physical stop response"
+  ],
+  "safety_boundary": "The real profile remains disarmed until native mux, driver timeout and physical response evidence are captured."
+}

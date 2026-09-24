@@ -692,3 +692,52 @@ latching, controlled rearm, encoder round trips and invalid output values.
 The combined pure-core/P1.5/P1.6 run passes 53 tests. Native ROS 2 execution,
 generated-message serialization and launch tests remain `BLOCKED` because the
 pinned ROS 2 Humble environment is unavailable on this Windows host.
+
+## 21. P1.7 mux and fault integration
+
+Audited the installed `cmd_vel_mux` implementation rather than assuming its
+priority semantics. The normative physical chain is now explicit in
+`kobuki/workspace/src/cmd_vel_mux/config/cmd_vel_mux_params.yaml`:
+`/hsl/cmd_vel_stop` at priority 200, `/teleop/cmd_vel` at 100, and
+`/hsl/cmd_vel_final` at 50, with `/commands/velocity` as the only physical
+output. The stop input is explicitly zero-only. The same topics, priorities
+and leases are recorded in the HSL26 hardware profile.
+
+Added the ROS-free deterministic mux contract in
+`ros_ws/src/hsl_safety/hsl_safety/mux_contract.py`. It rejects invalid or
+non-finite commands, guarantees zero-only cold start, selects only fresh
+inputs by priority, rejects nonzero watchdog stop messages and never replays
+expired commands. Added
+`tools/check_ros_graph_authority.py`, which rejects missing or multiple
+publishers of the physical output and identifies unauthorized legacy writers.
+
+Added adversarial P1.7 tests for cold start, simultaneous stop/teleop/autonomy,
+lease expiry, watchdog zero-only behavior, graph authority and exact YAML
+configuration. Evidence is stored in
+`artifacts/reports/phase1/P1.7_mux_fault_report.json`.
+
+P1.7 software-contract tests pass. Native ROS launch tests, live graph
+inspection, process-death timing, Kobuki driver timeout and physical-stop
+response remain explicitly `BLOCKED` because ROS 2 Humble and the hardware are
+not available on this host. The real motion profile remains disarmed.
+
+## 22. P1.8 evidence, runbook and release candidate
+
+Completed the P1.8 evidence package without promoting unavailable runtime or
+hardware checks to false positives. Added
+`artifacts/reports/phase1/P1.8_release_evidence_report.json` with separate
+software, ROS-runtime and physical-response statuses, exact commands,
+environment versions and the G0 closure decision.
+
+Added `docs/runbook_competition.md` covering the revision-2 command chain,
+zero-safe startup, normal/emergency stop, controlled rearm, fault responses,
+graph-authority checks and evidence preservation. The runbook explicitly
+states that a zero command receipt is not proof of physical stopping.
+
+Added `artifacts/releases/P1_release_candidate_manifest.json` containing the
+dirty source revision, SHA-256 hashes of normative and safety-boundary files,
+gate-by-gate evidence links, reproducibility commands, release blockers and
+the restricted Phase-2 handoff. The candidate is intentionally
+`BLOCKED_FOR_RELEASE`: ROS 2 generated builds, native launches, live graph
+inspection, process-fault timing, driver timeout and physical stop response
+remain unavailable. The real motion profile remains disarmed.
