@@ -1,0 +1,59 @@
+{
+  "phase": "P3.0",
+  "scope": [
+    "Pasted text #1 audit claims",
+    "hsl_core/hsl_core/topology.py",
+    "hsl_core/tests/test_topology.py",
+    "HSL26_TECHNICAL_SPECIFICATION.md revision 2.2",
+    "ros_ws/src/hsl_interfaces/msg/TopologyNode.msg",
+    "ros_ws/src/hsl_interfaces/msg/TopologyEdge.msg"
+  ],
+  "status": "PASS_WITH_CORRECTIONS",
+  "findings": [
+    {
+      "id": "AUDIT-P3.0-01",
+      "severity": "HIGH",
+      "status": "CONFIRMED_AND_FIXED",
+      "finding": "NodeKind values and categories did not match the serialized IDL.",
+      "correction": "Added canonical NodeKind values ANCHOR=0 through ZONE_ACCESS=5 and retained TopologyNodeKind as a compatibility alias."
+    },
+    {
+      "id": "AUDIT-P3.0-02",
+      "severity": "HIGH",
+      "status": "CONFIRMED_AND_FIXED",
+      "finding": "Adjacency exposed only the canonical from_node direction.",
+      "correction": "Derived reverse traversal views while preserving the canonical edge ID and reversed polyline."
+    },
+    {
+      "id": "AUDIT-P3.0-03",
+      "severity": "MEDIUM",
+      "status": "CONFIRMED_AND_FIXED",
+      "finding": "Clearance and topology fields required by the IDL were absent.",
+      "correction": "Added node clearance/articulation/semantic fields and edge clearance, width validity, bridge, state and cost fields."
+    },
+    {
+      "id": "AUDIT-P3.0-04",
+      "severity": "MEDIUM",
+      "status": "ADDITIONAL_CORRECTION",
+      "finding": "The proposed patch in the attached audit still omitted SpectralSignature scope metadata and used invented reverse edge IDs.",
+      "correction": "Added center node, hop/count, affinity and validity metadata; reverse views retain the original edge identity so overlays remain addressable."
+    },
+    {
+      "id": "AUDIT-P3.0-05",
+      "severity": "MEDIUM",
+      "status": "ADDITIONAL_CORRECTION",
+      "finding": "The proposed patch used string node/edge identifiers although the normative IDL declares uint64.",
+      "correction": "Topology contract now validates non-negative integer identifiers."
+    }
+  ],
+  "verification": {
+    "target_command": "Set-Location hsl_core; python -m pytest tests/test_topology.py -q",
+    "required_follow_up": "Run the full pure-core regression after implementation changes.",
+    "hardware_status": "BLOCKED_FOR_HARDWARE"
+  },
+  "remaining_limits": [
+    "Topology extraction, graph migration and swept-footprint validation are not implemented by this contract module.",
+    "ROS 2 generated serialization remains untested on this Windows host.",
+    "Clearance values are supplied by a future calibrated/profile-owned extractor; no defaults are treated as deployment calibration."
+  ]
+}

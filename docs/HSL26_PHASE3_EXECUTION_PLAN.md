@@ -1,0 +1,95 @@
+# HSL26 - Phase 3 execution plan
+
+**Revision:** 1.0 · **Baseline:** Phase-3 document 1.0 and architecture/technical specification 2.2  
+**Mode:** SIL/kinematic first; no hardware is available  
+**Entry decision:** `P3.0 READY_FOR_SIL_IMPLEMENTATION_WITH_HARDWARE_BLOCKERS`
+
+## 1. Purpose and limits
+
+This plan turns `HSL26_PHASE3_WORLD_AND_NAVIGATION.md` into an executable
+work sequence without claiming physical acceptance. P2 provides the bounded
+occupancy/coverage contract and deterministic deskew fixtures. The new
+kinematic environment exposes only observations and admitted actuation; referee
+truth stays outside policy, planner and controller interfaces.
+
+No semantic start/goal zone is inferred from graph shape. No unknown cell is
+free. Nonzero hardware motion remains disabled until the exact mode has G0
+physical stop evidence and G1 restricted-envelope evidence.
+
+## 2. Environment created
+
+| Asset | Purpose | Status |
+|---|---|---|
+| `hsl_core/hsl_core/topology.py` | Versioned multigraph/node/edge/spectral contracts | Prepared |
+| `hsl_core/hsl_core/occupancy.py` | Layered atomic occupancy mapper with bounded evidence | Implemented in SIL |
+| `hsl_core/hsl_core/topology.py` | Deterministic grid-to-graph extraction and clearance masks | Implemented in SIL |
+| `sim/kinematic/README.md` | Profile and truth-boundary rules | Prepared |
+| `sim/kinematic/scenarios/parallel_corridors.json` | Seeded maze fixture and negative cases | Prepared |
+| `artifacts/reports/phase3/P3_environment_baseline.json` | Machine-readable baseline and blockers | Prepared |
+
+The fixture includes diagonal corner contact, a pure cycle, parallel corridors
+and a transient opponent block. Its coordinates are development data only.
+
+## 3. Ordered work packages
+
+1. **P3.1 map layers and versions:** implemented in SIL in
+   `hsl_core/hsl_core/occupancy.py`; maintain structural, collision, semantic
+   and observed-free layers; preserve unknown; cap bounded evidence, decay only
+   transient semantic evidence and commit atomic `map_version`. Physical
+   sensor/replay calibration remains pending.
+2. **P3.2 embedded graph:** implemented in SIL with footprint inflation,
+   unknown-space exclusion, explicit diagonal corner-cut rejection,
+   frontier/dead-end distinction, deterministic cycle anchors, metric edge
+   polylines, canonical IDs and versioned graph snapshots. Canonical endpoint
+   ordering reverses a traced polyline when required. Portal minima refinement,
+   swept turnability and physical/replay validation remain pending. Physical
+   Livox mounting orientation and support-bar blind sectors are not promoted
+   from photographs to calibration; they remain P2 hardware evidence.
+3. **P3.3 spectrum (optional):** implement only for explicitly bounded
+   subgraphs, with symmetric normalized Laplacian and unavailable markers.
+   Keep it disabled until direct graph features beat the ablation baseline.
+4. **P3.4 simulator boundary:** implement seed-separated plant/raycaster/
+   sensors/referee, observation-only policy ports and deterministic trace
+   replay. Add MVSim only after sensor-model inspection.
+5. **P3.5 planning/control:** validate metric A* against Dijkstra, reject
+   diagonal corner cutting, smooth only with swept-footprint checks, and route
+   candidates through the existing supervisor/mux lease boundary.
+
+## 4. Verification sequence
+
+Run from the repository root:
+
+```powershell
+Set-Location hsl_core
+python -m pytest tests -q
+python -m compileall -q hsl_core
+Set-Location ..
+python -m pytest hsl_core\tests -q
+```
+
+After each package, add a report under `artifacts/reports/phase3/` recording
+status (`PASS`, `FAIL`, `BLOCKED` or `NOT_RUN`), exact command, seed, versions,
+hashes, expected/observed results and limitations. Do not convert SIL PASS to
+physical PASS.
+
+## 5. G2 acceptance checklist
+
+- [ ] Diagonal blocked corners never connect.
+- [ ] Pure cycles receive a deterministic anchor.
+- [ ] Parallel corridors retain distinct edge IDs and polylines.
+- [ ] A transient opponent blocks traversal without deleting structural identity.
+- [ ] A cancelled old plan cannot produce an admitted candidate.
+- [ ] A* cost matches Dijkstra for the same graph/cost profile.
+- [ ] Every commanded swept/stopping tube is valid in observed coverage.
+- [ ] Map changes trigger bounded route revalidation; localization epoch changes
+      invalidate map-dependent products.
+- [ ] Truth-isolation and seed-replay evidence is complete.
+- [ ] Hardware rows remain `BLOCKED_FOR_HARDWARE` until P2 G0/G1 closure.
+
+## 6. Dependencies
+
+No new library is needed for the SIL environment beyond the existing
+`hsl_core/pyproject.toml` baseline: Python 3.10+, NumPy, SciPy and pytest.
+Open3D remains optional for later point-cloud tooling and must not enter the
+safety path. PyYAML is unnecessary while profiles are JSON or ROS-managed YAML;
+ROS 2, colcon and MVSim belong to their container/runtime profiles.

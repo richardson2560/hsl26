@@ -1,0 +1,46 @@
+{
+  "phase": "P3.2",
+  "status": "PASS_SIL_WITH_PHYSICAL_CALIBRATION_BLOCKER",
+  "implementation": {
+    "module": "hsl_core/hsl_core/topology.py",
+    "api": [
+      "TopologyBuildConfig",
+      "TopologyBuilder",
+      "TopologyExtraction"
+    ],
+    "algorithm": [
+      "known-free cells only",
+      "occupied and unknown inflation by footprint plus grid margin",
+      "fixed 4-connected degree convention",
+      "safe 8-connected traversal with diagonal corner-cut rejection",
+      "frontier detection separated from dead-end classification",
+      "deterministic cycle anchor when no natural node exists",
+      "embedded metric edge polylines",
+      "conservative center-to-blocking clearance",
+      "canonical uint64-compatible node and edge identities"
+    ]
+  },
+  "negative_cases": [
+    "unknown cells never become traversable",
+    "diagonal blocked corners do not connect",
+    "inflation blocks cells inside the configured footprint radius",
+    "frontier is not mislabeled as dead-end",
+    "closed pure cycle receives one deterministic anchor",
+    "parallel corridors retain distinct edge IDs",
+    "edge endpoints are canonical and traced polylines are reversed when needed",
+    "invalid grids and versions are rejected"
+  ],
+  "verification": {
+    "target_command": "Set-Location hsl_core; python -m pytest tests/test_topology.py tests/test_topology_extraction.py -q",
+    "target_result": "13 passed",
+    "full_regression": "106 passed",
+    "compile": "PASS",
+    "hardware_status": "BLOCKED_FOR_HARDWARE"
+  },
+  "limitations": [
+    "The extractor uses a deterministic grid graph rather than a production medial-axis skeletonizer; its connectivity convention is explicit and testable.",
+    "Portal insertion at local clearance minima and junction-region clustering beyond cell-level events remain follow-up refinements.",
+    "Swept footprint and turnability require P3.5 path validation; edge clearance is not by itself a motion certificate.",
+    "ROS 2 serialization and physical G2 route acceptance remain unavailable on this Windows host."
+  ]
+}

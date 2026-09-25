@@ -1,0 +1,60 @@
+{
+  "phase": "P3.2",
+  "status": "PASS_SIL_WITH_PHYSICAL_CALIBRATION_BLOCKER",
+  "audit_input": {
+    "canonical_endpoint_finding": "confirmed",
+    "inverted_lidar_and_support_shadow_claims": "not independently hardware-verified"
+  },
+  "correction": {
+    "file": "hsl_core/hsl_core/topology.py",
+    "behavior": "When a traced path is discovered from the higher node ID to the lower node ID, endpoints are swapped and the embedded polyline is reversed before TopologyEdge construction.",
+    "invariant": "from_node <= to_node",
+    "identity_policy": "The canonical edge_id is retained; no synthetic reverse edge ID is introduced."
+  },
+  "physical_review": {
+    "roll_pi": {
+      "status": "NOT_APPLIED_AS_CALIBRATION",
+      "reason": "frames.yaml declares frame names but the checkout has no measured Livox-to-base extrinsic matrix or hardware manifest proving an inverted installation.",
+      "required_evidence": [
+        "approved sensor mounting inspection",
+        "measured T_base_lidar transform",
+        "deskew/extrinsic replay residuals",
+        "ROS TF authority and frame-direction inspection"
+      ]
+    },
+    "support_shadows": {
+      "status": "NOT_CERTIFIED",
+      "reason": "Photographic geometry can motivate a fixture, but cannot establish angular blind sectors, timing, reflectance or coverage bounds.",
+      "required_evidence": [
+        "hardware blind-zone sweep",
+        "nearest-return and occlusion traces",
+        "coverage report across height and azimuth",
+        "P2 replay or physical evidence"
+      ]
+    },
+    "self_radius_m": {
+      "status": "DEVELOPMENT_ONLY",
+      "value": 0.18,
+      "reason": "P2.3 explicitly labels self-radius and footprint values as uncalibrated development profile values; the mask must not be promoted to physical proof."
+    },
+    "opponent_coasting": {
+      "status": "NOT_A_P3.2_CLOSURE_ARGUMENT",
+      "reason": "EKF coasting behavior belongs to P4 and does not certify P3 map coverage or physical capture visibility."
+    }
+  },
+  "verification": {
+    "target_command": "Set-Location hsl_core; python -m pytest tests/test_topology.py tests/test_topology_extraction.py -q",
+    "target_result": "14 passed",
+    "full_regression_command": "Set-Location hsl_core; python -m pytest tests -q",
+    "full_regression_result": "107 passed",
+    "compile": "PASS",
+    "diff_check": "PASS"
+  },
+  "remaining_p3_2_work": [
+    "junction-region clustering",
+    "clearance-minimum portal insertion",
+    "structural bridge and articulation computation",
+    "explicit topology migration mapping",
+    "swept-footprint and turnability validation"
+  ]
+}

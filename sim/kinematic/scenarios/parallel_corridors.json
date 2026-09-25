@@ -1,0 +1,30 @@
+{
+  "schema": "hsl26.phase3.kinematic-scenario.v1",
+  "scenario_id": "parallel-corridors-fixture",
+  "seed": 20260925,
+  "profile": "observed_map",
+  "physical_authority": false,
+  "map_version": 1,
+  "localization_epoch": "fixture-epoch-0",
+  "grid": {
+    "resolution_m": 0.1,
+    "origin_xy_m": [-1.0, -1.0],
+    "width": 40,
+    "height": 30,
+    "unknown_is_blocking": true
+  },
+  "structural_cases": [
+    "diagonal_corner_touch",
+    "pure_cycle",
+    "parallel_corridors",
+    "transient_opponent_block"
+  ],
+  "robot": {
+    "initial_pose_xytheta": [-0.8, -0.5, 0.0],
+    "footprint_radius_m": 0.18
+  },
+  "truth_boundary": {
+    "referee_only_fields": ["ground_truth_pose", "ground_truth_occupancy", "opponent_truth"],
+    "policy_visible_fields": ["observed_occupancy", "ego_observation", "accepted_commands"]
+  }
+}

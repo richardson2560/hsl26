@@ -1,0 +1,59 @@
+{
+  "phase": "P3.1",
+  "status": "PASS_SIL_WITH_HARDWARE_BLOCKER",
+  "implementation": {
+    "module": "hsl_core/hsl_core/occupancy.py",
+    "api": [
+      "OccupancyMapConfig",
+      "RayEvidence",
+      "OccupancyMapper",
+      "GridSnapshot"
+    ],
+    "layers": [
+      "structural",
+      "collision",
+      "semantic",
+      "observed_free"
+    ],
+    "internal_evidence": [
+      "persistent static log-odds",
+      "transient dynamic log-odds",
+      "per-cell observation timestamps"
+    ]
+  },
+  "contracts": [
+    "unknown is never promoted to free without ray evidence",
+    "terminal hits are not cleared and cells behind a hit remain unknown",
+    "static and dynamic evidence are separated",
+    "collision is the conservative union of structural and semantic occupied states",
+    "dynamic decay returns transient occupancy to UNKNOWN, not observed free",
+    "static walls survive dynamic decay",
+    "correlated same-batch log-odds updates are capped per cell",
+    "invalid or stale batches cannot partially mutate the mapper",
+    "each committed non-empty batch or decay receives one atomic map_version",
+    "empty update is a no-op",
+    "snapshot arrays are copied and validated"
+  ],
+  "verification": {
+    "command": "Set-Location hsl_core; python -m pytest tests/test_occupancy.py -q",
+    "result": "19 passed",
+    "regression_command": "Set-Location hsl_core; python -m pytest tests -q",
+    "regression_result": "97 passed",
+    "compile": "PASS",
+    "hardware_response": "BLOCKED_FOR_HARDWARE"
+  },
+  "mathematical_profile": {
+    "measurement_model": "bounded additive log-odds with prior zero",
+    "free_probability": 0.35,
+    "occupied_probability": 0.70,
+    "classification_band": "[0.20, 0.70]",
+    "max_log_odds": 4.0,
+    "max_batch_abs_update": 1.5,
+    "dynamic_decay": "exp(-age/tau), tau=2.0 s"
+  },
+  "limitations": [
+    "The structural mapper currently consumes normalized 2D ray evidence; P2 deskew and frame adapters remain upstream.",
+    "Persistence is represented by bounded log-odds and explicit dynamic decay; production memory profiles still require approval.",
+    "No physical sensor, blind-zone or hardware calibration claim is made."
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "phase": "P3.0",
+  "status": "READY_FOR_SIL_IMPLEMENTATION_WITH_HARDWARE_BLOCKERS",
+  "objective": "Prepare a deterministic, truth-isolated kinematic environment for Phase-3 world, topology and navigation work.",
+  "source_of_truth": [
+    "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "docs/HSL26_PHASE3_WORLD_AND_NAVIGATION.md",
+    "artifacts/reports/phase2/P2_environment_baseline.json",
+    "artifacts/reports/phase2/P2.3_mapping_report.json"
+  ],
+  "profiles": {
+    "kinematic": {
+      "status": "ENABLED",
+      "scenario": "sim/kinematic/scenarios/parallel_corridors.json",
+      "truth_source": "deterministic fixture",
+      "physical_authority": false
+    },
+    "replay": {
+      "status": "PREPARED",
+      "truth_source": "immutable recorded observations",
+      "physical_authority": false
+    },
+    "mvsim": {
+      "status": "BLOCKED_UNTIL_SENSOR_MODEL_INSPECTION",
+      "physical_authority": false
+    },
+    "real": {
+      "status": "DISARMED",
+      "reason": "P2 G0 physical and G1 evidence remain blocked for hardware",
+      "physical_authority": true
+    }
+  },
+  "software_dependencies": {
+    "required": ["Python >=3.10", "numpy", "scipy", "pytest"],
+    "new_phase3_dependencies": [],
+    "optional_later": ["open3d for point-cloud tooling only"],
+    "not_required_for_sil": ["PyYAML", "ROS 2", "colcon", "MVSim"]
+  },
+  "prepared_contracts": [
+    "hsl_core/hsl_core/topology.py",
+    "sim/kinematic/README.md",
+    "sim/kinematic/scenarios/parallel_corridors.json"
+  ],
+  "next_evidence": [
+    "P3.1 map version and layer replay report",
+    "P3.2 topology graph and migration report",
+    "P3.4 truth-isolation and seed-replay report",
+    "P3.5 A* versus Dijkstra and admitted-route report",
+    "P3_G2_acceptance_record.json"
+  ],
+  "limitations": [
+    "No robot, driver, ROS runtime or physical stop response is validated.",
+    "Fixture dimensions are not competition geometry and are not calibration.",
+    "The topology contract is prepared; extraction, persistence and route execution remain to be implemented."
+  ]
+}
