@@ -17,6 +17,17 @@ The initial scenario is `scenarios/parallel_corridors.json`. Its seed and
 geometry are development fixtures, not competition coordinates or calibration.
 Use it to implement P3.1/P3.2/P3.5 negative cases before adding MVSim.
 
+## Phase-4 opponent-perception fixture
+
+`scenarios/opponent_perception.json` extends the same deterministic boundary
+for P4. It supplies labels and bounds for stationary, moving, partial-view,
+blind-sector, occluded and reappearing opponent sequences. The hidden
+opponent pose and edge progress remain referee-only. A generated measurement
+must be labelled `SYNTHETIC_DETECTION` and must include the scenario seed,
+map/topology versions, localization epoch, observation stamp and sensor frame.
+This fixture validates association, covariance, finite-speed belief and
+rejection behavior; it is not evidence for real-cloud GPIS accuracy.
+
 The testbed must remain deterministic: use the scenario seed, keep truth in the
 referee boundary, record map/topology/path versions, and emit traces that can
 be replayed byte-for-byte. Sensor randomness has its own seed and is never

@@ -1,0 +1,46 @@
+{
+  "phase": "P4.1",
+  "status": "PASS_SIL_PREPARED_C4_MODEL_IMPLEMENTATION_WITH_SOURCE_BLOCKER",
+  "implementation": {
+    "prior": "hsl_core/hsl_core/perception/implicit_surface.py",
+    "training_tool": "tools/train_gpis_prior.py",
+    "validator": "tools/validate_gpis_prior.py",
+    "test_suite": "hsl_core/tests/test_p41_gpis.py",
+    "kernel_id": "wendland_c4_d3_unit_center_v1",
+    "kernel_definition": "sigma_f^2 (1-r/h)^6 (35(r/h)^2+18(r/h)+3)/3 for 0 <= r/h < 1; zero otherwise",
+    "observation_operators": [
+      "value",
+      "directional_derivative"
+    ],
+    "uncertainty_method": "exact_cholesky"
+  },
+  "verification": {
+    "focused_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests\\test_p41_gpis.py -q",
+    "focused_result": "10 passed",
+    "compile_command": "$env:PYTHONPATH='hsl_core'; python -m compileall -q hsl_core\\hsl_core tools",
+    "compile_result": "PASS",
+    "negative_cases": [
+      "non-finite and incorrectly shaped points rejected",
+      "zero support radius rejected",
+      "zero derivative direction rejected",
+      "unsupported queries return zero mean and zero gradient but are not surface matches",
+      "materially unsupported points have zero support fraction",
+      "Hermite covariance symmetry and positive definiteness checked",
+      "directional derivative sign checked against finite differences",
+      "C4 profile limits, value and gradient are zero at support boundary",
+      "artifact hash, schema arrays and non-object serialization checked"
+    ]
+  },
+  "limitations": [
+    "No verified complete opponent geometry, registered scans or model-to-base calibration is available.",
+    "No production model.npz is promoted by this report; fixture-trained models remain synthetic.",
+    "Held-out origin/yaw accuracy and real-cloud GPIS acceptance remain BLOCKED.",
+    "Dense Cholesky is bounded implementation scope and is not a claim of unbounded runtime scalability."
+  ],
+  "next_gate_inputs": [
+    "verified_complete_geometry_or_registered_scans",
+    "T_B_M_calibration",
+    "disjoint_train_validation_views",
+    "P4.2_registration_report.json"
+  ]
+}

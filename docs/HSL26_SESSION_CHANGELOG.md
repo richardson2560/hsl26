@@ -741,3 +741,108 @@ the restricted Phase-2 handoff. The candidate is intentionally
 `BLOCKED_FOR_RELEASE`: ROS 2 generated builds, native launches, live graph
 inspection, process-fault timing, driver timeout and physical stop response
 remain unavailable. The real motion profile remains disarmed.
+
+## 23. Phase-4 SIL environment and implementation plan
+
+Prepared the Phase-4 continuation environment for a checkout without a
+physical robot. Added
+`docs/HSL26_PHASE4_IMPLEMENTATION_PLAN.md`, which maps P4.1–P4.5 to the
+existing architecture, records the truth-isolated SIL boundary, specifies the
+HGW-derived Hermite/compact-support constraints, and defines the next evidence
+and G3 blockers.
+
+Added
+`artifacts/reports/phase4/P4_environment_baseline.json` and
+`sim/kinematic/scenarios/opponent_perception.json`. The baseline preserves the
+P2/P3 profile convention: kinematic and synthetic-detection tests are enabled,
+replay is prepared, MVSim is blocked pending sensor-model inspection, and real
+execution is disarmed. The scenario explicitly separates referee truth from
+tracker-visible observations and covers stationary, motion, partial view,
+blind-sector, occlusion, long-edge and reappearance cases.
+
+The existing `hsl_core` dependency set remains sufficient for this stage:
+Python >=3.10, NumPy, SciPy and pytest. Open3D is documented as optional
+future point-cloud tooling only; no new required library was introduced.
+No P4 algorithm or real-cloud GPIS accuracy is claimed by this preparation.
+
+## 24. P4.1 Hermite-GPIS-W prior implementation
+
+Implemented the first Phase-4 work package in the pure Python core. Added the
+compact Wendland C2 kernel required by TS §8 and the architecture baseline,
+including analytic value, gradient, Hessian and mixed Hermite covariance
+blocks. The implementation handles the `r=0` analytic limit, the compact
+support boundary and the stationary-kernel derivative sign explicitly.
+
+Added `HermiteObservation` and `HermiteGPIS` with regularized Cholesky fitting,
+posterior mean/variance/gradient evaluation, support-fraction checks,
+non-finite-input rejection and a model artifact writer. Added
+`tools/train_gpis_prior.py` and `tools/validate_gpis_prior.py`; artifacts use
+`allow_pickle=False`, non-object arrays, a manifest and SHA-256 verification.
+
+Added adversarial P4.1 tests covering covariance symmetry/positive
+definiteness, finite-difference derivative signs, support-boundary continuity,
+unsupported-query rejection, invalid observations and artifact integrity.
+Evidence is recorded in
+`artifacts/reports/phase4/P4.1_gpis_prior_report.json`.
+
+This is a SIL implementation only. No synthetic or unverified model is
+promoted as real opponent geometry, and held-out origin/yaw validation remains
+blocked until complete geometry, disjoint views and `T_B_M` calibration are
+available.
+
+## 25. P4.2 segmentation and planar registration
+
+Implemented P4.2 on top of the validated P4.1 prior. Added a deterministic
+Euclidean candidate segmenter with explicit finite-input, mask, point-count and
+extent validation. Static or invalid returns are excluded only from semantic
+candidate construction; the full return stream remains available to the
+independent collision/safety layer.
+
+Added bounded robust planar registration using the architecture's compact
+implicit-field residual, uncertainty denominator, damped Gauss-Newton steps and
+Huber weighting. The registrar estimates planar translation and yaw, wraps yaw
+to `[-pi, pi)`, rejects unsupported candidates, enforces point/step/iteration
+bounds, reports residuals and support, and returns a typed rejection rather
+than a plausible fallback pose.
+
+Position and yaw observability are evaluated separately. A position-only result
+may be accepted while `yaw_valid=false`; flat or degenerate views cannot claim
+orientation. The result includes a finite 3x3 covariance representation and
+explicit reasons for weak geometry, insufficient support or invalid input.
+
+Evidence is recorded in
+`artifacts/reports/phase4/P4.2_registration_report.json`. The focused suite
+passes 6 tests and the complete core/SIL regression passes 164 tests.
+Real-cloud origin accuracy, false-match rates, `T_B_M` calibration and
+sensor-specific covariance remain blocked until the required data exist.
+
+## 26. Normative correction: P4.1 Wendland C4 kernel
+
+Audited the P4.1 implementation against the final binding
+`HSL26_TECHNICAL_SPECIFICATION.md` §8.1. The earlier implementation used the
+C2 teaching kernel from the introductory HGW TEX section, while TS §8.1
+explicitly fixes `wendland_c4_d3_unit_center_v1`:
+
+`phi(u) = (1/3)(1-u)^6(35u^2+18u+3)`.
+
+Updated the profile, analytic origin Hessian, kernel identifier, P4.1 tests
+and report. Added direct checks for the closed-form first and second radial
+derivatives and exact support-boundary limits. The C4 change is required for
+normative schema compatibility and provides the regularity margin required by
+the broader HGW operator family. The current P4.2 implementation itself uses
+the value/gradient and mixed second-order covariance blocks; it does not claim
+that the current Gauss-Newton step directly consumes a third derivative.
+
+The TEX C2 derivation remains a valid theoretical base case, but it is not the
+selected HSL26 artifact kernel because the technical specification has higher
+precedence. Existing synthetic model artifacts must be regenerated and old
+C2 manifests must not be accepted under the C4 kernel identifier.
+
+The comparison record is stored in
+`artifacts/reports/phase4/P4.1_kernel_comparison.json`. It also corrects an
+overstated rationale: for the selected C2 polynomial, derivatives through
+order three vanish at the support boundary and the first discontinuity is in
+the fourth derivative. C4 remains the correct implementation because of the
+binding TS kernel identifier and its higher regularity margin, not because C2
+has a third-derivative jump. No fixed iteration-count convergence guarantee is
+claimed without held-out calibrated data.

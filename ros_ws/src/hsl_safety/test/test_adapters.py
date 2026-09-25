@@ -1,5 +1,4 @@
 # ros_ws/src/hsl_safety/test/test_adapters.py
-# ros_ws/src/hsl_safety/test/test_adapters.py
 """Strict revision-2 adapter and cache tests."""
 
 from types import SimpleNamespace

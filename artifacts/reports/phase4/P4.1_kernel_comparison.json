@@ -1,0 +1,36 @@
+{
+  "decision": "USE_C4",
+  "normative_basis": {
+    "technical_specification": "HSL26_TECHNICAL_SPECIFICATION.md §8.1",
+    "selected_kernel_id": "wendland_c4_d3_unit_center_v1",
+    "c2_status": "valid HGW theoretical base case, not the selected HSL26 artifact kernel"
+  },
+  "mathematical_comparison": {
+    "c2_profile": "(1-u)^4(4u+1)",
+    "c4_profile": "(1/3)(1-u)^6(35u^2+18u+3)",
+    "c2_phi_at_zero": 1.0,
+    "c4_phi_at_zero": 1.0,
+    "c2_phi_at_boundary": 0.0,
+    "c4_phi_at_boundary": 0.0,
+    "boundary_regularities": {
+      "c2": "derivatives through order 3 vanish; fourth derivative is the first boundary discontinuity",
+      "c4": "derivatives through order 5 vanish; fifth derivative is the first boundary discontinuity"
+    },
+    "important_correction": "The claim that C2 has a third-derivative jump is false for this profile."
+  },
+  "observed_sil_results": {
+    "c4_hermite_covariance_min_eigenvalue": 0.014729284926968393,
+    "c4_hermite_covariance_condition_number": 7377.512552104187,
+    "c4_derivative_formula_check": "PASS",
+    "c4_origin_hessian_limit_check": "PASS",
+    "c4_support_boundary_check": "PASS",
+    "p41_and_p42_focused_tests": "16 passed",
+    "full_core_sil_regression": "165 passed"
+  },
+  "interpretation": [
+    "C4 is selected because the final technical specification fixes its identifier and polynomial.",
+    "C4 provides higher boundary regularity and is compatible with future higher-order HGW operators.",
+    "The current registrar uses value/gradient and mixed second-order covariance blocks; it does not directly require a third derivative.",
+    "No claim of guaranteed 3-to-5 iteration convergence is made without a calibrated held-out dataset."
+  ]
+}

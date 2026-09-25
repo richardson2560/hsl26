@@ -1,0 +1,48 @@
+{
+  "phase": "P4.2",
+  "status": "PASS_SIL_WITH_REAL_CLOUD_CALIBRATION_BLOCKERS",
+  "implementation": {
+    "segmenter": "hsl_core/hsl_core/perception/segmenter.py",
+    "registration": "hsl_core/hsl_core/perception/registration.py",
+    "tests": "hsl_core/tests/test_p42_registration.py",
+    "method": "bounded robust Gauss-Newton / IRLS",
+    "state": "planar translation x,y and yaw",
+    "residual": "field mean divided by GP, point and model uncertainty",
+    "covariance": "damped normal-matrix pseudoinverse",
+    "safety_separation": "semantic candidate segmentation never removes collision returns"
+  },
+  "verification": {
+    "focused_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests\\test_p42_registration.py -q",
+    "focused_result": "6 passed",
+    "regression_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests sim\\kinematic -q",
+    "regression_result": "164 passed",
+    "compile_command": "$env:PYTHONPATH='hsl_core'; python -m compileall -q hsl_core\\hsl_core",
+    "compile_result": "PASS",
+    "negative_cases": [
+      "invalid and non-finite cloud points rejected",
+      "invalid masks and configuration rejected",
+      "static points excluded only from semantic candidates",
+      "insufficient points rejected with typed reason",
+      "unsupported compact-kernel candidate rejected",
+      "invalid point variance rejected",
+      "bounded translation and yaw steps enforced",
+      "yaw wrapped to [-pi, pi)",
+      "flat/degenerate view cannot claim reliable yaw",
+      "finite result and covariance schema enforced"
+    ]
+  },
+  "limitations": [
+    "The fixture does not establish real-cloud origin error or false-match rate.",
+    "No verified complete opponent geometry or T_B_M calibration is available.",
+    "The covariance is local estimator information and does not include all shared ego/model calibration correlations.",
+    "The current segmenter is deterministic Euclidean clustering; density/range-adaptive production parameters remain to be calibrated.",
+    "No safety collision evidence is allowed to depend on registration success."
+  ],
+  "blocked_acceptance_inputs": [
+    "held_out_registered_views",
+    "complete_opponent_geometry",
+    "model_to_base_calibration_T_B_M",
+    "sensor_noise_and_point_covariance_profile",
+    "P4.3_tracking_report.json"
+  ]
+}

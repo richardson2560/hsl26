@@ -1,5 +1,4 @@
 # hsl_core/tests/test_braking.py
-# hsl_core/tests/test_braking.py
 """Numerical and invalid-input tests for Phase 1.4 braking models."""
 
 import math

@@ -1,0 +1,88 @@
+{
+  "phase": "P4.0",
+  "status": "PASS_PREPARED_WITH_REAL_CLOUD_AND_HARDWARE_BLOCKERS",
+  "date": "2026-09-25",
+  "source_of_truth": [
+    "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "docs/HSL26_PHASE4_OPPONENT_PERCEPTION.md",
+    "docs/HSL26_PHASE4_IMPLEMENTATION_PLAN.md",
+    "artifacts/reports/phase2/P2_environment_baseline.json",
+    "artifacts/reports/phase3/P3_CLOSURE_AND_PHASE4_HANDOFF.json"
+  ],
+  "profiles": {
+    "kinematic": {
+      "status": "ENABLED",
+      "scenario": "sim/kinematic/scenarios/opponent_perception.json",
+      "truth_source": "deterministic referee fixture used only for scoring",
+      "physical_authority": false
+    },
+    "synthetic_detection": {
+      "status": "ENABLED_FOR_FILTER_AND_BELIEF",
+      "label": "SYNTHETIC_DETECTION",
+      "physical_authority": false,
+      "real_cloud_gpis_claim": false
+    },
+    "replay": {
+      "status": "PREPARED",
+      "truth_source": "immutable recorded observations when supplied",
+      "physical_authority": false
+    },
+    "mvsim": {
+      "status": "BLOCKED_UNTIL_SENSOR_MODEL_INSPECTION",
+      "physical_authority": false
+    },
+    "real": {
+      "status": "DISARMED",
+      "physical_authority": true,
+      "gate": "BLOCKED_FOR_HARDWARE_AND_CALIBRATION"
+    }
+  },
+  "software_dependencies": {
+    "required": [
+      "Python >=3.10",
+      "numpy",
+      "scipy",
+      "pytest"
+    ],
+    "new_required_dependencies": [],
+    "optional": [
+      "open3d for future point-cloud inspection only"
+    ],
+    "not_required": [
+      "PyYAML",
+      "ROS 2",
+      "colcon",
+      "MVSim"
+    ]
+  },
+  "prepared_contracts": [
+    "hsl_core/hsl_core/types.py",
+    "hsl_core/hsl_core/perception/implicit_surface.py",
+    "hsl_core/hsl_core/perception/registration.py",
+    "hsl_core/hsl_core/perception/ekf_opponent.py",
+    "hsl_core/hsl_core/perception/topological_belief.py",
+    "sim/kinematic/scenarios/opponent_perception.json"
+  ],
+  "work_packages": {
+    "P4.1": "READY_TO_IMPLEMENT",
+    "P4.2": "READY_TO_IMPLEMENT_AFTER_P4.1",
+    "P4.3": "READY_TO_IMPLEMENT",
+    "P4.4": "READY_TO_IMPLEMENT_WITH_P3_GRAPH",
+    "P4.5": "BLOCKED_UNTIL_RUNTIME_PROFILE"
+  },
+  "next_evidence": [
+    "P4.1_gpis_prior_report.json",
+    "P4.2_registration_report.json",
+    "P4.3_tracking_report.json",
+    "P4.4_belief_report.json",
+    "P4_G3_acceptance_record.json"
+  ],
+  "limitations": [
+    "No physical robot, complete verified opponent geometry or T_B_M calibration is available.",
+    "The kinematic fixture is not competition geometry or sensor-fidelity evidence.",
+    "Synthetic detections can validate filtering, association and belief only.",
+    "Real-cloud GPIS accuracy and G3 physical acceptance remain blocked."
+  ]
+}
+

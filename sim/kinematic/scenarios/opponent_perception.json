@@ -1,0 +1,55 @@
+{
+  "schema": "hsl26.phase4.opponent-perception-scenario.v1",
+  "scenario_id": "opponent-perception-fixture",
+  "seed": 20260925,
+  "profile": "observed_map",
+  "physical_authority": false,
+  "map_version": 1,
+  "topology_version": 1,
+  "localization_epoch": "fixture-epoch-0",
+  "grid": {
+    "resolution_m": 0.1,
+    "origin_xy_m": [-1.0, -1.0],
+    "width": 40,
+    "height": 30,
+    "unknown_is_blocking": true
+  },
+  "ego": {
+    "initial_pose_xytheta": [-0.8, -0.5, 0.0],
+    "footprint_radius_m": 0.18,
+    "sensor_frame_id": "lidar_link"
+  },
+  "opponent_fixture": {
+    "initial_pose_xy": [1.2, 0.0],
+    "radius_m": 0.2,
+    "max_speed_mps": 0.45,
+    "acceleration_bound_mps2": 0.8,
+    "observation_covariance_xy_m2": [0.01, 0.01],
+    "sequence_labels": [
+      "stationary",
+      "moving",
+      "partial_view",
+      "blind_sector",
+      "occluded",
+      "reappearance",
+      "long_edge",
+      "junction_branch"
+    ]
+  },
+  "truth_boundary": {
+    "referee_only_fields": [
+      "ground_truth_pose",
+      "ground_truth_occupancy",
+      "opponent_truth",
+      "true_edge_progress"
+    ],
+    "policy_visible_fields": [
+      "observed_occupancy",
+      "ego_observation",
+      "synthetic_detection",
+      "coverage_mask",
+      "accepted_commands"
+    ]
+  }
+}
+

@@ -1,5 +1,4 @@
 # hsl_core/tests/test_types.py
-# hsl_core/tests/test_types.py
 import pytest
 
 from hsl_core.types import (

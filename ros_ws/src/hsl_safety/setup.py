@@ -1,5 +1,4 @@
 # ros_ws/src/hsl_safety/setup.py
-# ros_ws/src/hsl_safety/setup.py
 from setuptools import setup
 import os
 from glob import glob

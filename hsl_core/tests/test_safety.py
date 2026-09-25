@@ -1,5 +1,4 @@
 # hsl_core/tests/test_safety.py
-# hsl_core/tests/test_safety.py
 """Adversarial tests for the bounded Phase-1 safety evaluator."""
 
 import pytest
