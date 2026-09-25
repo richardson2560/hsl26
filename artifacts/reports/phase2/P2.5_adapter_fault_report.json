@@ -7,8 +7,10 @@
   "hardware_status": "BLOCKED_FOR_HARDWARE",
   "scope": [
     "exact EgoState decode",
+    "field-complete EgoState encode/decode round-trip",
     "bounded LocalObstacleSnapshot validation",
     "replay and stale cache rejection",
+    "diagnostic-only stale re-publication with preserved lease",
     "dropout and pose-jump rejection",
     "coverage and localization authority flags",
     "payload overload rejection"
@@ -41,6 +43,10 @@
       "reject same-session sequence replay",
       "reject stale observation timestamps",
       "preserve original provenance when stale data is diagnosed"
+    ],
+    "serialization": [
+      "field-complete EgoState encoder",
+      "round-trip test preserves pose, twist, covariance and metadata"
     ]
   },
   "validation": {
@@ -54,7 +60,7 @@
   "known_limits": [
     "Generated ROS message serialization and rosidl build require the pinned ROS 2 environment.",
     "Driver timeout, sensor dropout timing and physical stop response require robot hardware.",
-    "Diagnostic stale re-publication must not be wired as a motion-authoritative publisher."
+    "Diagnostic stale re-publication must not be wired as a motion-authoritative publisher; the API explicitly marks it non-authoritative."
   ],
   "traceability": [
     "docs/HSL26_PHASE2_SENSING_AND_CALIBRATION.md",

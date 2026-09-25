@@ -110,12 +110,16 @@ provenance. `validate_obstacle_payload` checks bounded grid dimensions,
 resolution/origin, one cell and observation timestamp per grid cell, the
 three-state alphabet, obstacle count and finite obstacle bounds.
 
-`ValidatedCache` replaces records only after all checks pass and rejects
+`encode_ego_state_message` provides a field-complete ROS-free encoder using
+caller-supplied provenance and covariance data; the round-trip test compares
+encoded fields against the decoded domain state. `ValidatedCache` replaces
+records only after all checks pass and rejects
 replayed sequence/timestamp pairs. `validate_observation_progress` rejects
 non-monotonic timestamps, configured dropout gaps and discontinuous pose
-jumps. A stale observation may be re-emitted for diagnostics, but its original
-observation/publication/expiry metadata must be retained; re-publication never
-refreshes a lease or grants motion authority. Invalid localization and
+jumps. `republish_stale_diagnostic` creates an explicit diagnostic-only
+deep copy, preserves observation/publication/expiry metadata and sets
+`authoritative=False`; it never refreshes a lease or grants motion authority.
+Invalid localization and
 `frontal_coverage_valid=False` remain non-authoritative even when the payload
 is structurally complete.
 

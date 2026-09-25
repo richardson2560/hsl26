@@ -59,6 +59,68 @@ class ValidatedCache:
         self.observation_stamp_ns = observation_stamp_ns
 
 
+@dataclass(frozen=True)
+class StaleDiagnostic:
+    """Non-authoritative diagnostic re-emission preserving source provenance."""
+
+    message: Any
+    observation_stamp_ns: int
+    publication_stamp_ns: int
+    valid_until_ns: int
+    authoritative: bool
+    reason: str
+
+
+def republish_stale_diagnostic(message: Any, *, reason: str = "STALE_OBSERVATION") -> StaleDiagnostic:
+    """Prepare a stale record for diagnostics without changing its lease."""
+
+    if not isinstance(reason, str) or not reason:
+        raise ValueError("stale diagnostic reason must be non-empty")
+    meta = _meta(message)
+    observation_stamp_ns = _stamp_ns(_required(meta, "observation_stamp"), "observation_stamp")
+    publication_stamp_ns = _stamp_ns(_required(meta, "publication_stamp"), "publication_stamp")
+    valid_until_ns = _stamp_ns(_required(meta, "valid_until"), "valid_until")
+    return StaleDiagnostic(
+        message=deepcopy(message),
+        observation_stamp_ns=observation_stamp_ns,
+        publication_stamp_ns=publication_stamp_ns,
+        valid_until_ns=valid_until_ns,
+        authoritative=False,
+        reason=reason,
+    )
+
+
+def encode_ego_state_message(
+    state: EgoState,
+    message: Any,
+    *,
+    meta: Any,
+    twist_covariance: tuple[float, ...],
+    calibration_id: str,
+    localization_valid: bool = True,
+) -> Any:
+    """Encode all revision-2 EgoState fields without manufacturing metadata."""
+
+    if not isinstance(localization_valid, bool) or not localization_valid:
+        raise ValueError("encoded ego localization must be valid")
+    if not isinstance(calibration_id, str) or not calibration_id:
+        raise ValueError("calibration_id must be non-empty")
+    twist_covariance = validate_covariance(tuple(twist_covariance), 2)
+    message.meta = deepcopy(meta)
+    message.pose.x = state.pose.x_m
+    message.pose.y = state.pose.y_m
+    message.pose.theta = state.pose.theta_rad
+    message.v = state.twist.linear_mps
+    message.omega = state.twist.angular_rps
+    message.pose_covariance = list(state.pose_covariance)
+    message.twist_covariance = list(twist_covariance)
+    message.healthy = state.healthy
+    message.slip = state.slip
+    message.localization_valid = localization_valid
+    message.calibration_id = calibration_id
+    return message
+
+
 def decode_ego_state_message(message: Any, *, context: AdapterContext) -> EgoState:
     """Decode an exact revision-2 EgoState without creating provenance."""
 
@@ -127,6 +189,7 @@ def validate_obstacle_payload(
     cells = _required(coverage, "cells")
     observed_stamps = _required(coverage, "observed_stamps")
     obstacles = _required(message, "obstacles")
+    snapshot_stamp_ns = _stamp_ns(_required(meta, "observation_stamp"), "observation_stamp")
     if (
         not isinstance(width, int) or isinstance(width, bool) or width <= 0
         or not isinstance(height, int) or isinstance(height, bool) or height <= 0
@@ -143,6 +206,9 @@ def validate_obstacle_payload(
         raise ValueError("obstacle payload exceeds configured bound")
     if any(value not in (0, 1, 2) for value in cells):
         raise ValueError("coverage contains an invalid state")
+    for stamp in observed_stamps:
+        if _stamp_ns(stamp, "observed_stamp") > snapshot_stamp_ns:
+            raise ValueError("observed_stamp cannot be newer than snapshot")
     for name in ("pose_error_bound_m", "map_error_bound_m"):
         value = _required(message, name)
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) or value < 0.0:
@@ -155,10 +221,27 @@ def validate_obstacle_payload(
     if not isinstance(bounds_id, str) or not bounds_id:
         raise ValueError("bounds_id must be non-empty")
     for obstacle in obstacles:
+        obstacle_id = _required(obstacle, "obstacle_id")
+        if not isinstance(obstacle_id, int) or isinstance(obstacle_id, bool) or obstacle_id < 0:
+            raise ValueError("obstacle_id must be a non-negative integer")
         for name in ("vx", "vy", "speed_bound_mps", "position_error_bound_m"):
             value = _required(obstacle, name)
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
                 raise ValueError(f"obstacle {name} must be finite")
+        if obstacle.speed_bound_mps < 0.0 or obstacle.position_error_bound_m < 0.0:
+            raise ValueError("obstacle bounds must be non-negative")
+        last_observed_ns = _stamp_ns(_required(obstacle, "last_observed_stamp"), "last_observed_stamp")
+        if last_observed_ns > snapshot_stamp_ns:
+            raise ValueError("last_observed_stamp cannot be newer than snapshot")
+        polygon = _required(obstacle, "polygon")
+        vertices = _required(polygon, "vertices")
+        if len(vertices) < 3:
+            raise ValueError("obstacle polygon requires at least three vertices")
+        for vertex in vertices:
+            for coordinate in ("x", "y", "z"):
+                value = _required(vertex, coordinate)
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+                    raise ValueError("obstacle polygon coordinates must be finite")
         for name in ("motion_estimate_valid", "is_opponent"):
             if not isinstance(_required(obstacle, name), bool):
                 raise ValueError(f"obstacle {name} must be boolean")

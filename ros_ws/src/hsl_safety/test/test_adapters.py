@@ -12,6 +12,8 @@ from hsl_safety.adapters import (
     ValidatedCache,
     decode_ego_state_message,
     decode_safety_snapshot,
+    encode_ego_state_message,
+    republish_stale_diagnostic,
     validate_observation_progress,
     validate_obstacle_payload,
     validate_authority_context,
@@ -80,6 +82,27 @@ def test_p25_ego_decode_preserves_pose_twist_covariance_and_epoch():
     assert decoded.frame_id == "odom"
 
 
+def test_p25_ego_encode_decode_round_trip_preserves_contract_fields():
+    scenario = DeterministicMockScenario()
+    source = scenario.ego_local(v=0.2, omega=0.1, lease_ns=200)
+    state = decode_ego_state_message(source, context=_context(scenario))
+    target = scenario.ego_local(v=0.0, omega=0.0, lease_ns=200)
+    encoded = encode_ego_state_message(
+        state,
+        target,
+        meta=source.meta,
+        twist_covariance=(0.1, 0.0, 0.0, 0.2),
+        calibration_id=source.calibration_id,
+    )
+    assert encoded.pose.x == source.pose.x
+    assert encoded.pose.theta == source.pose.theta
+    assert encoded.v == source.v
+    assert encoded.omega == source.omega
+    assert encoded.pose_covariance == source.pose_covariance
+    assert encoded.twist_covariance == [0.1, 0.0, 0.0, 0.2]
+    assert encoded.meta.observation_stamp == source.meta.observation_stamp
+
+
 def test_p25_obstacle_payload_rejects_bad_dimensions_states_and_bounds():
     scenario = DeterministicMockScenario()
     obstacle = scenario.obstacles(complete=True, lease_ns=200)
@@ -97,6 +120,34 @@ def test_p25_obstacle_payload_rejects_bad_dimensions_states_and_bounds():
     obstacle.coverage.cells = [0, 3, 0, 0]
     with pytest.raises(ValueError, match="invalid state"):
         validate_obstacle_payload(obstacle, context=_context(scenario))
+
+
+def test_p25_observed_stamp_and_obstacle_geometry_are_strictly_validated():
+    scenario = DeterministicMockScenario()
+    obstacle = scenario.obstacles(complete=True, lease_ns=200)
+    obstacle.coverage = SimpleNamespace(
+        width=1,
+        height=1,
+        origin=SimpleNamespace(x=0.0, y=0.0),
+        resolution_m=0.05,
+        cells=[2],
+        observed_stamps=[SimpleNamespace(sec=0, nanosec=1_000_000_000)],
+    )
+    obstacle.obstacles = []
+    with pytest.raises(ValueError, match="observed_stamp"):
+        validate_obstacle_payload(obstacle, context=_context(scenario))
+
+
+def test_p25_stale_diagnostic_preserves_lease_and_cannot_be_authoritative():
+    scenario = DeterministicMockScenario()
+    message = scenario.ego_local(v=0.0, omega=0.0, lease_ns=200)
+    diagnostic = republish_stale_diagnostic(message)
+    assert diagnostic.authoritative is False
+    assert diagnostic.valid_until_ns == 200
+    assert diagnostic.observation_stamp_ns == 0
+    assert diagnostic.message.meta.valid_until == message.meta.valid_until
+    diagnostic.message.meta.valid_until.sec = 99
+    assert message.meta.valid_until.sec == 0
 
 
 def test_p25_dropout_and_pose_jump_are_rejected_without_refreshing_state():
