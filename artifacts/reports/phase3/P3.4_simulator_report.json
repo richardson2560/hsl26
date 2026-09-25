@@ -1,0 +1,53 @@
+{
+  "phase": "P3.4",
+  "status": "PASS_SIL_WITH_MVSIM_AND_HARDWARE_BLOCKERS",
+  "scenario": {
+    "path": "sim/kinematic/scenarios/parallel_corridors.json",
+    "scenario_id": "parallel-corridors-fixture",
+    "seed": 20260925,
+    "profile": "observed_map",
+    "map_version": 1,
+    "localization_epoch": "fixture-epoch-0",
+    "physical_authority": false
+  },
+  "implementation": {
+    "plant": "sim/kinematic/plant.py",
+    "raycaster": "sim/kinematic/raycaster.py",
+    "sensor": "sim/kinematic/sensors.py",
+    "referee": "sim/kinematic/referee.py",
+    "scenario_validation": "sim/kinematic/scenario.py",
+    "trace": "sim/kinematic/trace.py"
+  },
+  "contracts": [
+    "Plant accepts only finite bounded actuation and exposes PlantState.",
+    "Raycaster returns nearest range only; target identity is not observable.",
+    "Blind sectors produce invalid max-range samples, never synthetic free space.",
+    "Sensor noise uses an independent deterministic seed.",
+    "Referee alone evaluates collision truth.",
+    "Scenario manifests reject physical-authority claims and require unknown_is_blocking.",
+    "Trace digest is canonical and byte-stable for equal event sequences."
+  ],
+  "verification": {
+    "command": "$env:PYTHONPATH='hsl_core'; python -m pytest sim\\kinematic\\test_p34.py -q",
+    "result": "12 passed",
+    "core_regression_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests -q",
+    "core_regression_result": "124 passed",
+    "compile_command": "$env:PYTHONPATH='hsl_core'; python -m compileall -q sim hsl_core\\hsl_core",
+    "diff_check": "PASS"
+  },
+  "negative_cases": [
+    "nearest static target wins over farther dynamic target",
+    "parallel and behind geometry produce no false hit",
+    "blind sector is invalid rather than free",
+    "observation contains no target identity or truth pose",
+    "invalid dt and over-limit commands are rejected",
+    "invalid observation shapes and negative ranges are rejected",
+    "physical-authority scenario claims are rejected"
+  ],
+  "limitations": [
+    "No MVSim sensor-model or ROS transport acceptance is claimed.",
+    "No physical robot, Livox calibration, motor dynamics or competition authority is claimed.",
+    "Static collision checking against wall geometry remains a referee/planning concern; the plant is intentionally not a hidden collision oracle.",
+    "The current trace records observations and commands; map/topology/path version fields must be attached by later P3.5 orchestration."
+  ]
+}

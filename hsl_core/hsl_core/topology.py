@@ -505,3 +505,116 @@ def validate_graph(graph: TopologyGraph) -> None:
             raise ValueError(f"edge {edge.edge_id} has invalid clearance")
         if edge.from_node > edge.to_node:
             raise ValueError(f"edge {edge.edge_id} endpoints are not canonical")
+
+
+def compute_spectrum(
+    graph: TopologyGraph,
+    *,
+    center_node_id: Optional[int] = None,
+    hops: Optional[int] = None,
+    affinity: str = "unweighted",
+    max_nodes: int = 256,
+) -> SpectralSignature:
+    """Compute a declared normalized-Laplacian spectrum.
+
+    ``center_node_id`` and ``hops`` select an induced k-hop subgraph together.
+    Omitting both computes the global graph. Runtime edge overlays are excluded
+    from the structural descriptor; parallel structural edges add their
+    affinity. The result is diagnostic/optional and never a safety authority.
+    """
+
+    validate_graph(graph)
+    if affinity not in ("unweighted", "inverse_length"):
+        raise ValueError("affinity must be 'unweighted' or 'inverse_length'")
+    if (center_node_id is None) != (hops is None):
+        raise ValueError("center_node_id and hops must be provided together")
+    if hops is not None and (isinstance(hops, bool) or hops < 0):
+        raise ValueError("hops must be a non-negative integer")
+    if isinstance(max_nodes, bool) or not isinstance(max_nodes, int) or max_nodes <= 0:
+        raise ValueError("max_nodes must be a positive integer")
+
+    node_ids = tuple(sorted(node.node_id for node in graph.nodes))
+    node_set = set(node_ids)
+    if center_node_id is not None:
+        _identifier(center_node_id, "center_node_id")
+        if center_node_id not in node_set:
+            raise ValueError("center_node_id must reference an existing node")
+        selected = {center_node_id}
+        frontier = {center_node_id}
+        adjacency = graph.adjacency()
+        for _ in range(hops):
+            next_frontier = {
+                edge.to_node
+                for node_id in frontier
+                for edge in adjacency[node_id]
+                if edge.to_node not in selected
+            }
+            selected.update(next_frontier)
+            frontier = next_frontier
+            if not frontier:
+                break
+        scope = tuple(sorted(selected))
+        signature_center = center_node_id
+        signature_hops = hops
+    else:
+        scope = node_ids
+        signature_center = min(node_ids) if node_ids else 0
+        signature_hops = 0
+
+    if len(scope) > max_nodes:
+        raise ValueError("spectral scope exceeds configured node bound")
+    index = {node_id: position for position, node_id in enumerate(scope)}
+    weights = np.zeros((len(scope), len(scope)), dtype=float)
+    for edge in graph.edges:
+        if edge.from_node not in index or edge.to_node not in index:
+            continue
+        if edge.from_node == edge.to_node:
+            continue
+        weight = 1.0 if affinity == "unweighted" else 1.0 / edge.metric_length_m
+        if not math.isfinite(weight) or weight <= 0.0:
+            raise ValueError("edge affinity must be finite and positive")
+        left = index[edge.from_node]
+        right = index[edge.to_node]
+        weights[left, right] += weight
+        weights[right, left] += weight
+
+    degrees = np.sum(weights, axis=1)
+    inv_sqrt = np.zeros_like(degrees)
+    positive = degrees > 0.0
+    inv_sqrt[positive] = 1.0 / np.sqrt(degrees[positive])
+    laplacian = np.diag(inv_sqrt) @ (np.diag(degrees) - weights) @ np.diag(inv_sqrt)
+    laplacian = (laplacian + laplacian.T) * 0.5
+    eigenvalues = np.linalg.eigvalsh(laplacian) if scope else np.array([], dtype=float)
+    tolerance = 1e-10
+    if np.any(eigenvalues < -tolerance) or np.any(eigenvalues > 2.0 + tolerance):
+        raise ValueError("normalized Laplacian eigenvalues fall outside [0, 2]")
+    eigenvalues = np.clip(eigenvalues, 0.0, 2.0)
+    components = _component_count(weights)
+    return SpectralSignature(
+        topology_version=graph.topology_version,
+        center_node_id=signature_center,
+        hops=signature_hops,
+        node_count=len(scope),
+        component_count=components,
+        eigenvalues=tuple(float(value) for value in eigenvalues),
+        affinity_definition=affinity,
+        valid=True,
+    )
+
+
+def _component_count(weights: np.ndarray) -> int:
+    """Count connected components of the selected undirected affinity graph."""
+    count = 0
+    unseen = set(range(weights.shape[0]))
+    while unseen:
+        count += 1
+        stack = [unseen.pop()]
+        while stack:
+            current = stack.pop()
+            neighbors = np.flatnonzero(weights[current] > 0.0)
+            for neighbor in neighbors:
+                neighbor = int(neighbor)
+                if neighbor in unseen:
+                    unseen.remove(neighbor)
+                    stack.append(neighbor)
+    return count

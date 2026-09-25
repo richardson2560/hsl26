@@ -1,0 +1,53 @@
+{
+  "phase": "P3.3",
+  "status": "PASS_SIL_OPTIONAL_DESCRIPTOR",
+  "implementation": {
+    "module": "hsl_core/hsl_core/topology.py",
+    "api": "compute_spectrum(graph, center_node_id=None, hops=None, affinity, max_nodes)",
+    "operator": "L_sym = D^(-1/2) (D-W) D^(-1/2)",
+    "isolated_node_convention": "zero inverse degree and zero Laplacian row",
+    "affinities": [
+      "unweighted",
+      "inverse_length"
+    ],
+    "scope": [
+      "global graph when center_node_id and hops are omitted",
+      "induced k-hop subgraph with locally recomputed degrees"
+    ],
+    "parallel_edges": "affinities are summed",
+    "runtime_overlay": "ignored; descriptor is structural and does not authorize motion"
+  },
+  "verification": {
+    "target_command": "Set-Location hsl_core; python -m pytest tests/test_spectrum.py -q",
+    "target_result": "17 passed",
+    "full_regression_command": "Set-Location hsl_core; python -m pytest tests -q",
+    "full_regression_result": "124 passed",
+    "compile": "PASS",
+    "diff_check": "PASS"
+  },
+  "fixtures": [
+    "three-node path spectrum [0,1,2]",
+    "triangle spectrum [0,1.5,1.5]",
+    "isolated-node nullity",
+    "parallel-edge affinity summation",
+    "node permutation invariance",
+    "uniform inverse-length scale invariance",
+    "local k-hop degree recomputation",
+    "runtime blocked overlay does not alter structural spectrum",
+    "empty graph without fabricated eigenvalues",
+    "sorted spectrum in [0,2]"
+  ],
+  "negative_cases": [
+    "invalid affinity rejected",
+    "partial local-scope arguments rejected",
+    "unknown center node rejected",
+    "negative hops rejected",
+    "oversized scope rejected"
+  ],
+  "limitations": [
+    "Spectral descriptors remain disabled for tactical use until an ablation demonstrates value beyond clearance, degree, bridge/articulation and travel-time features.",
+    "The spectrum cannot recover coordinates, left/right direction, corridor identity or semantic zones.",
+    "Dense eigensystem computation is bounded by max_nodes and is not a runtime safety-path operation.",
+    "No physical or competition acceptance is claimed."
+  ]
+}

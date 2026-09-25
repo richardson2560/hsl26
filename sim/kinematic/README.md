@@ -1,8 +1,10 @@
 # HSL26 Phase-3 kinematic testbed
 
 This is the no-hardware baseline for Phase 3. It is deliberately separate from
-ROS and from the policy: the plant and sensor adapter expose observations and
-accepted actuation only, while a future referee adapter owns ground truth.
+ROS and from the policy: `KinematicPlant` accepts bounded actuation,
+`LidarSensor` exposes observations only, and `Referee` owns ground truth.
+The first-hit raycaster is deterministic and makes blind sectors explicit
+invalid measurements rather than pretending they are free space.
 
 ## Profiles
 
@@ -17,4 +19,7 @@ Use it to implement P3.1/P3.2/P3.5 negative cases before adding MVSim.
 
 The testbed must remain deterministic: use the scenario seed, keep truth in the
 referee boundary, record map/topology/path versions, and emit traces that can
-be replayed byte-for-byte. No physical authority is granted by this testbed.
+be replayed byte-for-byte. Sensor randomness has its own seed and is never
+shared with plant or referee state. No physical authority is granted by this
+testbed. The MVSim adapter remains a separate integration boundary and is not
+claimed as validated by the kinematic tests.

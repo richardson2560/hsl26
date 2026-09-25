@@ -23,9 +23,12 @@ physical stop evidence and G1 restricted-envelope evidence.
 | `hsl_core/hsl_core/topology.py` | Versioned multigraph/node/edge/spectral contracts | Prepared |
 | `hsl_core/hsl_core/occupancy.py` | Layered atomic occupancy mapper with bounded evidence | Implemented in SIL |
 | `hsl_core/hsl_core/topology.py` | Deterministic grid-to-graph extraction and clearance masks | Implemented in SIL |
+| `compute_spectrum` in `topology.py` | Optional normalized-Laplacian descriptor | Implemented in SIL, disabled for tactics |
 | `sim/kinematic/README.md` | Profile and truth-boundary rules | Prepared |
 | `sim/kinematic/scenarios/parallel_corridors.json` | Seeded maze fixture and negative cases | Prepared |
 | `artifacts/reports/phase3/P3_environment_baseline.json` | Machine-readable baseline and blockers | Prepared |
+| `sim/kinematic/{common,plant,raycaster,sensors,referee,scenario,trace}.py` | Seed-separated deterministic SIL testbed and truth boundary | Implemented in SIL |
+| `sim/kinematic/test_p34.py` | P3.4 ray, blind-zone, plant, replay and isolation tests | 12 passed |
 
 The fixture includes diagonal corner contact, a pure cycle, parallel corridors
 and a transient opponent block. Its coordinates are development data only.
@@ -45,12 +48,15 @@ and a transient opponent block. Its coordinates are development data only.
    swept turnability and physical/replay validation remain pending. Physical
    Livox mounting orientation and support-bar blind sectors are not promoted
    from photographs to calibration; they remain P2 hardware evidence.
-3. **P3.3 spectrum (optional):** implement only for explicitly bounded
-   subgraphs, with symmetric normalized Laplacian and unavailable markers.
-   Keep it disabled until direct graph features beat the ablation baseline.
-4. **P3.4 simulator boundary:** implement seed-separated plant/raycaster/
-   sensors/referee, observation-only policy ports and deterministic trace
-   replay. Add MVSim only after sensor-model inspection.
+3. **P3.3 spectrum (optional):** implemented in SIL for explicitly bounded
+   global or induced k-hop subgraphs, with symmetric normalized Laplacian,
+   isolated-node convention, parallel-edge affinity summation and complete
+   scope metadata. Keep it disabled until direct graph features beat the
+   ablation baseline; it is never a safety authority.
+4. **P3.4 simulator boundary:** implemented in SIL with seed-separated
+   plant/raycaster/sensors/referee, strict scenario validation, observation-only
+   sensor contracts and deterministic trace hashing. MVSim remains blocked until
+   its sensor model is inspected and replay evidence exists.
 5. **P3.5 planning/control:** validate metric A* against Dijkstra, reject
    diagonal corner cutting, smooth only with swept-footprint checks, and route
    candidates through the existing supervisor/mux lease boundary.
