@@ -1,0 +1,98 @@
+{
+  "phase": "P3",
+  "status": "CLOSED_SIL_WITH_G2_PHYSICAL_BLOCKERS",
+  "closure_date": "2026-09-25",
+  "authority": {
+    "technical_baseline": [
+      "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+      "docs/HSL26_FINAL_ARCHITECTURE.md",
+      "docs/HSL26_PHASE3_WORLD_AND_NAVIGATION.md"
+    ],
+    "physical_authority": false,
+    "competition_acceptance": false
+  },
+  "dependency_audit": {
+    "required_for_sil": ["Python >=3.10", "numpy", "scipy", "pytest"],
+    "open3d": "OPTIONAL_AND_REMOVED_FROM_REQUIRED_PROJECT_DEPENDENCIES",
+    "ros2_colcon_mvsim": "NOT_REQUIRED_FOR_SIL"
+  },
+  "work_packages": {
+    "P3.0": {
+      "status": "PASS_PREPARED",
+      "evidence": ["artifacts/reports/phase3/P3.0_independent_audit_report.json"]
+    },
+    "P3.1": {
+      "status": "PASS_SIL",
+      "evidence": ["artifacts/reports/phase3/P3.1_occupancy_report.json"]
+    },
+    "P3.2": {
+      "status": "PASS_SIL_WITH_PHYSICAL_BLOCKERS",
+      "evidence": [
+        "artifacts/reports/phase3/P3.2_topology_report.json",
+        "artifacts/reports/phase3/P3.2_independent_closure_report.json"
+      ]
+    },
+    "P3.3": {
+      "status": "PASS_SIL_OPTIONAL_DESCRIPTOR",
+      "evidence": ["artifacts/reports/phase3/P3.3_spectral_report.json"],
+      "tactical_use": "DISABLED_PENDING_ABLATION"
+    },
+    "P3.4": {
+      "status": "PASS_SIL_WITH_MVSIM_AND_HARDWARE_BLOCKERS",
+      "evidence": [
+        "artifacts/reports/phase3/P3.4_simulator_report.json",
+        "artifacts/reports/phase3/P3.4_visualizer_report.json"
+      ]
+    },
+    "P3.5": {
+      "status": "PASS_SIL_WITH_SUPERVISOR_AND_HARDWARE_BLOCKERS",
+      "evidence": ["artifacts/reports/phase3/P3.5_planning_control_report.json"]
+    }
+  },
+  "final_verification": {
+    "command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests sim\\kinematic -q",
+    "result": "149 passed",
+    "compile_command": "$env:PYTHONPATH='hsl_core'; python -m compileall -q hsl_core\\hsl_core sim",
+    "compile_result": "PASS",
+    "diff_check": "PASS",
+    "json_reports": "PASS"
+  },
+  "handoff_to_phase4": {
+    "authoritative_contracts": [
+      "hsl_core/hsl_core/types.py",
+      "hsl_core/hsl_core/occupancy.py",
+      "hsl_core/hsl_core/topology.py",
+      "sim/kinematic/common.py",
+      "sim/kinematic/sensors.py",
+      "sim/kinematic/scenario.py"
+    ],
+    "required_metadata": [
+      "map_version",
+      "topology_version",
+      "localization_epoch",
+      "observation_stamp",
+      "sensor frame_id",
+      "scenario seed for synthetic replay"
+    ],
+    "allowed_phase4_use": [
+      "synthetic detections labelled SYNTHETIC_DETECTION",
+      "version-bound topology reachability and bounded route context",
+      "truth-isolated replay for tracker and belief tests",
+      "observation-only sensor streams"
+    ],
+    "prohibited_use": [
+      "using referee truth as a policy or tracker observation",
+      "claiming synthetic detections satisfy real-cloud GPIS accuracy",
+      "using spectrum or visualizer output as safety authority",
+      "using P3 SIL as physical Livox, braking or G2 evidence"
+    ]
+  },
+  "open_blockers_for_later_gates": [
+    "No physical robot, G0 stop evidence or G1 restricted-envelope evidence.",
+    "MVSim sensor-model inspection and replay fidelity are pending.",
+    "Swept footprint, turnability and stopping-tube route evidence are not a physical acceptance.",
+    "Supervisor/mux integration and real command admission remain outside the pure SIL package.",
+    "Livox extrinsic calibration and support-bar blind-zone measurements remain unverified.",
+    "Phase 4 GPIS requires verified complete geometry, model-to-base transform and held-out real or registered scans."
+  ]
+}

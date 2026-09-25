@@ -1,0 +1,33 @@
+{
+  "phase": "P3.4-extra",
+  "status": "PASS_HEADLESS_DIAGNOSTIC",
+  "purpose": "Optional deterministic visual diagnostics without changing policy, plant or referee contracts.",
+  "implementation": {
+    "module": "sim/kinematic/visualizer.py",
+    "top_view": "RGB uint8 raster with static segments, dynamic target geometry, heading and valid/invalid rays",
+    "doom_2_5d": "RGB uint8 column projection with perpendicular-distance correction and depth shading",
+    "display": "Matplotlib is lazy-imported only by show_top_view/show_doom"
+  },
+  "guarantees": [
+    "Headless render functions require no GUI backend.",
+    "Equal pose, geometry and observation inputs produce byte-identical images.",
+    "Doom projection samples only a bounded frontal FOV and never projects rear beams.",
+    "Invalid or blind beams are not rendered as observed walls.",
+    "Visualizers do not call the plant or referee and do not mutate policy-visible state.",
+    "No target identity is inferred from sensor ranges."
+  ],
+  "verification": {
+    "command": "$env:PYTHONPATH='hsl_core'; python -m pytest sim\\kinematic\\test_visualizer.py -q",
+    "result": "5 passed",
+    "full_simulator_command": "$env:PYTHONPATH='hsl_core'; python -m pytest sim\\kinematic\\test_p34.py sim\\kinematic\\test_visualizer.py -q",
+    "full_simulator_result": "17 passed",
+    "core_regression": "124 passed",
+    "compile": "PASS",
+    "diff_check": "PASS"
+  },
+  "limitations": [
+    "Doom mode is 2.5D planar diagnostics, not a calibrated 3D Livox renderer.",
+    "The visualizer does not certify visibility, collision safety or physical sensor calibration.",
+    "Interactive keyboard control is intentionally not included in the safety testbed; actuation must continue through the accepted command boundary."
+  ]
+}

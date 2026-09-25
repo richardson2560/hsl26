@@ -1,8 +1,9 @@
 # HSL26 - Phase 3 execution plan
 
-**Revision:** 1.0 · **Baseline:** Phase-3 document 1.0 and architecture/technical specification 2.2  
+**Revision:** 1.1 · **Baseline:** Phase-3 document 1.0 and architecture/technical specification 2.2
 **Mode:** SIL/kinematic first; no hardware is available  
 **Entry decision:** `P3.0 READY_FOR_SIL_IMPLEMENTATION_WITH_HARDWARE_BLOCKERS`
+**Closure decision:** `P3_CLOSED_SIL_WITH_G2_PHYSICAL_BLOCKERS`
 
 ## 1. Purpose and limits
 
@@ -29,6 +30,10 @@ physical stop evidence and G1 restricted-envelope evidence.
 | `artifacts/reports/phase3/P3_environment_baseline.json` | Machine-readable baseline and blockers | Prepared |
 | `sim/kinematic/{common,plant,raycaster,sensors,referee,scenario,trace}.py` | Seed-separated deterministic SIL testbed and truth boundary | Implemented in SIL |
 | `sim/kinematic/test_p34.py` | P3.4 ray, blind-zone, plant, replay and isolation tests | 12 passed |
+| `sim/kinematic/visualizer.py` | Optional headless Top-View and Doom 2.5D diagnostics | Implemented, 5 tests |
+| `hsl_core/hsl_core/planning/{astar,execution}.py` | Versioned A*/Dijkstra paths, safe smoothing and leases | Implemented in SIL |
+| `hsl_core/hsl_core/control/{regulated_pursuit,execution}.py` | Bounded pursuit candidates and option lease boundary | Implemented in SIL |
+| `hsl_core/tests/test_p35_planning_control.py` | P3.5 planner/control/cancellation adversarial tests | 8 passed |
 
 The fixture includes diagonal corner contact, a pure cycle, parallel corridors
 and a transient opponent block. Its coordinates are development data only.
@@ -57,9 +62,11 @@ and a transient opponent block. Its coordinates are development data only.
    plant/raycaster/sensors/referee, strict scenario validation, observation-only
    sensor contracts and deterministic trace hashing. MVSim remains blocked until
    its sensor model is inspected and replay evidence exists.
-5. **P3.5 planning/control:** validate metric A* against Dijkstra, reject
-   diagonal corner cutting, smooth only with swept-footprint checks, and route
-   candidates through the existing supervisor/mux lease boundary.
+5. **P3.5 planning/control:** implemented in SIL: metric A* is checked against
+   Dijkstra, blocked overlays preserve structural IDs, smoothing requires an
+   external swept-footprint validator, regulated pursuit is bounded by speed,
+   yaw and lateral acceleration, and candidates cross a versioned
+   cancellation/lease boundary before the existing supervisor/mux chain.
 
 ## 4. Verification sequence
 
@@ -92,6 +99,11 @@ physical PASS.
 - [ ] Truth-isolation and seed-replay evidence is complete.
 - [ ] Hardware rows remain `BLOCKED_FOR_HARDWARE` until P2 G0/G1 closure.
 
+The checklist above is the G2 acceptance record, not a claim that G2 passed.
+The first six SIL/contract rows are evidenced by the phase reports; swept
+stopping tubes, route execution through the supervisor, and physical rows
+remain open or blocked as recorded in the closure report.
+
 ## 6. Dependencies
 
 No new library is needed for the SIL environment beyond the existing
@@ -99,3 +111,18 @@ No new library is needed for the SIL environment beyond the existing
 Open3D remains optional for later point-cloud tooling and must not enter the
 safety path. PyYAML is unnecessary while profiles are JSON or ROS-managed YAML;
 ROS 2, colcon and MVSim belong to their container/runtime profiles.
+
+## 7. Closure and handoff to Phase 4
+
+P3 is closed for the declared SIL/kinematic profile. The immutable handoff
+contract is documented in
+`artifacts/reports/phase3/P3_CLOSURE_AND_PHASE4_HANDOFF.json`. Phase 4 may use
+the versioned `TopologyGraph`, `SensorObservation`, map/topology versions,
+localization epochs, deterministic scenario seed and truth-isolated replay
+boundary. It must not treat synthetic detections, the optional spectrum,
+visualizer output or referee truth as physical sensing evidence.
+
+Phase 4 entry prerequisites are the contracts in
+`docs/HSL26_PHASE4_OPPONENT_PERCEPTION.md`, especially explicit labeling of
+`SYNTHETIC_DETECTION`, verified model/base geometry and independent safety
+returns. G3 and physical G2 remain separate gates.

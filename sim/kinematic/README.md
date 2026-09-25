@@ -23,3 +23,20 @@ be replayed byte-for-byte. Sensor randomness has its own seed and is never
 shared with plant or referee state. No physical authority is granted by this
 testbed. The MVSim adapter remains a separate integration boundary and is not
 claimed as validated by the kinematic tests.
+
+## Optional visualizer
+
+`visualizer.py` is a diagnostic satellite and is not imported by policy,
+planning, control or the referee. It has two headless renderers:
+
+- `render_top_view(...)` returns a deterministic RGB image with walls, dynamic
+  targets, heading, valid beams and invalid/blind beams.
+- `render_doom(...)` returns a deterministic 2.5D RGB projection using
+  perpendicular distance correction, so oblique rays do not create fish-eye
+  wall inflation.
+
+`show_top_view(...)` and `show_doom(...)` provide optional Matplotlib display
+helpers. Matplotlib is intentionally lazy-imported and is not a required
+runtime dependency or safety-path dependency. The renderers consume the
+observation contract only; they do not access the referee result or infer
+target identity from a range.

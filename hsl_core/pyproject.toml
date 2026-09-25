@@ -10,7 +10,6 @@ description = "Pure Python robotics core for HSL26: kinematics, control, percept
 dependencies = [
     "numpy>=1.22.0",
     "scipy>=1.8.0",
-    "open3d>=0.16.0",
     "pytest>=7.0.0"
 ]
 

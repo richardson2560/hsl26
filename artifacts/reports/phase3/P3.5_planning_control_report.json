@@ -1,0 +1,44 @@
+{
+  "phase": "P3.5",
+  "status": "PASS_SIL_WITH_SUPERVISOR_AND_HARDWARE_BLOCKERS",
+  "implementation": {
+    "planner": "hsl_core/hsl_core/planning/astar.py",
+    "execution_leases": "hsl_core/hsl_core/planning/execution.py",
+    "regulated_pursuit": "hsl_core/hsl_core/control/regulated_pursuit.py",
+    "option_executor_boundary": "hsl_core/hsl_core/control/execution.py",
+    "reference_algorithm": "Dijkstra over the same versioned multigraph"
+  },
+  "contracts": [
+    "A* uses Euclidean distance as an admissible heuristic because every edge cost must dominate its metric length.",
+    "Blocked runtime overlays exclude traversal without deleting structural edge identity.",
+    "Paths retain map_version, topology_version, localization_epoch, node IDs, edge IDs and metric polyline.",
+    "Smoothing accepts only shortcuts approved by an external swept-footprint validator.",
+    "Regulated pursuit uses body-frame lookahead, kappa=2*y_local/L^2 and bounded speed/yaw/lateral acceleration.",
+    "A candidate is not admitted across a stale lease generation, cancellation, map version or localization epoch.",
+    "Replacement activation invalidates older candidates before the new option can be admitted."
+  ],
+  "verification": {
+    "target_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests\\test_p35_planning_control.py -q",
+    "target_result": "8 passed",
+    "regression_command": "$env:PYTHONPATH='hsl_core'; python -m pytest sim\\kinematic hsl_core\\tests -q",
+    "regression_result": "149 passed",
+    "compile": "PASS",
+    "diff_check": "PASS"
+  },
+  "negative_cases": [
+    "blocked edge is not traversed",
+    "structurally unreachable goal raises instead of fabricating a path",
+    "invalid edge cost below metric length is rejected",
+    "smoothing cannot shortcut unless the swept validator approves",
+    "cancelled option cannot re-admit its candidate",
+    "old lease generation cannot win a replacement race",
+    "map-version mismatch is rejected",
+    "expired candidate lease is rejected"
+  ],
+  "limitations": [
+    "Final command authority remains in the existing supervisor/safety/mux chain; this package never publishes motor commands.",
+    "Stopping tubes, dynamic obstacle swept prediction, wheel calibration and physical braking evidence are not claimed by this SIL package.",
+    "The current pursuit generator is regulated-pursuit MVP; DWA arc search and nonholonomic swept validation remain future extensions.",
+    "A separate ROS public planner service was not introduced; the boundary is a typed in-process envelope as required by the architecture."
+  ]
+}
