@@ -1,0 +1,67 @@
+{
+  "scope": [
+    "attached independent audit of P2.3/P2.4",
+    "technical specification and architecture consistency",
+    "mapping implementation and tests",
+    "safety adapter coverage authority",
+    "dry-run braking calibration semantics"
+  ],
+  "status": "PASS_WITH_CORRECTIONS",
+  "confirmed_findings": [
+    {
+      "id": "BUG-P2.3-03",
+      "severity": "CRITICAL",
+      "finding": "Full-grid path referenced config.origin_x instead of config.origin_x_m.",
+      "action": "Corrected and covered with a fully observed grid test."
+    },
+    {
+      "id": "BUG-P2.3-04",
+      "severity": "HIGH",
+      "finding": "The previous implementation treated any UNKNOWN after observed free cells as invalid coverage, causing an unconditional safety veto.",
+      "action": "frontal_coverage_valid is true once a nonzero observed-free segment exists; free_distance_m remains bounded at the first UNKNOWN or OCCUPIED cell."
+    }
+  ],
+  "refined_findings": [
+    {
+      "id": "AUDIT-P2.3-06",
+      "severity": "HIGH",
+      "finding": "The proposed audit patch allowed an immediate UNKNOWN boundary to become valid based only on cell arithmetic.",
+      "action": "If no OBSERVED_FREE cell exists before the first UNKNOWN/OCCUPIED boundary, return 0.0 and false."
+    },
+    {
+      "id": "AUDIT-P2.3-07",
+      "severity": "MEDIUM",
+      "finding": "free_distance_m needs one origin convention.",
+      "action": "Distance is measured from base_link x=0 to the start of the first blocking/unknown cell; no start-radius subtraction is applied."
+    },
+    {
+      "id": "AUDIT-P2.3-08",
+      "severity": "MEDIUM",
+      "finding": "A centreline-only check could miss occupied returns at the corridor edge.",
+      "action": "Any OCCUPIED cell across the configured 0.40 m corridor width stops the distance; UNKNOWN is evaluated on the centreline."
+    }
+  ],
+  "p2_4_review": {
+    "status": "PASS_SYNTHETIC_ONLY",
+    "confirmed": [
+      "real mode exits 2 and cannot publish motion",
+      "dry-run is deterministic and explicitly non-hardware",
+      "minimum b_min estimate is used across trials",
+      "formula rejects non-positive measured braking distance"
+    ],
+    "remaining_limits": [
+      "sample quantization and odometry bias require physical traces",
+      "physical first-zero-request and rest timestamps are not measured",
+      "synthetic noise does not establish MID-360 or Kobuki uncertainty"
+    ]
+  },
+  "verification": {
+    "mapping_tests": "25 passed",
+    "pure_core_tests": "74 passed",
+    "adapter_tests": "29 passed",
+    "calibration_tool_tests": "9 passed",
+    "compile": "PASS",
+    "diff_check": "PASS"
+  },
+  "decision": "The attached audit recommendations were not applied blindly; each was checked against UNKNOWN-space safety semantics, frame-origin mathematics and the Phase-2 authority contract."
+}

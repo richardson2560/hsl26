@@ -5,3 +5,4 @@ float64 pose_error_bound_m
 float64 map_error_bound_m
 string bounds_id
 bool complete
+bool frontal_coverage_valid

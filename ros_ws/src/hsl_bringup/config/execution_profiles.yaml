@@ -1,0 +1,23 @@
+profiles:
+  default: kinematic
+  kinematic:
+    enabled: true
+    sensor_source: synthetic
+    allow_motion: false
+    allow_simulator_truth: false
+  replay:
+    enabled: true
+    sensor_source: recorded_bag
+    allow_motion: false
+    allow_simulator_truth: false
+  sim:
+    enabled: false
+    sensor_source: mvsim_adapter
+    allow_motion: false
+    allow_simulator_truth: false
+  real:
+    enabled: false
+    sensor_source: authorized_ros_topics
+    allow_motion: false
+    allow_simulator_truth: false
+    activation_gate: BLOCKED_FOR_HARDWARE

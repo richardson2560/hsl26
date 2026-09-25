@@ -1,0 +1,65 @@
+{
+  "report": "P2.5_adapter_fault_exercise",
+  "revision": "1.0",
+  "profile": "kinematic",
+  "status": "PASS_ROS_FREE_SIL",
+  "native_ros_status": "BLOCKED",
+  "hardware_status": "BLOCKED_FOR_HARDWARE",
+  "scope": [
+    "exact EgoState decode",
+    "bounded LocalObstacleSnapshot validation",
+    "replay and stale cache rejection",
+    "dropout and pose-jump rejection",
+    "coverage and localization authority flags",
+    "payload overload rejection"
+  ],
+  "implementation": {
+    "ego_state": [
+      "metadata identity and frame validation",
+      "finite pose and twist construction",
+      "3x3 and 2x2 covariance validation",
+      "boolean health flags",
+      "localization_valid must be true for safety decode",
+      "non-empty calibration provenance"
+    ],
+    "obstacles": [
+      "positive bounded grid dimensions",
+      "finite positive resolution and finite origin",
+      "cells and observed_stamps cardinality",
+      "UNKNOWN/OBSERVED_FREE/OCCUPIED state alphabet",
+      "bounded obstacle count",
+      "finite obstacle kinematics and boolean flags",
+      "complete and frontal_coverage_valid are independent booleans"
+    ],
+    "progress": [
+      "strictly increasing observation stamps",
+      "maximum observation gap",
+      "maximum planar pose jump"
+    ],
+    "cache": [
+      "replace only after validation",
+      "reject same-session sequence replay",
+      "reject stale observation timestamps",
+      "preserve original provenance when stale data is diagnosed"
+    ]
+  },
+  "validation": {
+    "command": "PYTHONPATH=hsl_core;ros_ws/src/hsl_safety python -m pytest ros_ws/src/hsl_safety/test -q",
+    "tests_passed": 32,
+    "tests_failed": 0,
+    "core_regression": "74 passed",
+    "compileall": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "known_limits": [
+    "Generated ROS message serialization and rosidl build require the pinned ROS 2 environment.",
+    "Driver timeout, sensor dropout timing and physical stop response require robot hardware.",
+    "Diagnostic stale re-publication must not be wired as a motion-authoritative publisher."
+  ],
+  "traceability": [
+    "docs/HSL26_PHASE2_SENSING_AND_CALIBRATION.md",
+    "docs/HSL26_PHASE2_EXECUTION_PLAN.md",
+    "ros_ws/src/hsl_safety/hsl_safety/adapters.py",
+    "ros_ws/src/hsl_safety/test/test_adapters.py"
+  ]
+}

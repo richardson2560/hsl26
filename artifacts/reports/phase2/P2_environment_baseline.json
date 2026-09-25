@@ -1,0 +1,68 @@
+{
+  "phase": "P2.0",
+  "status": "PASS_WITH_HARDWARE_BLOCKERS",
+  "source_of_truth": [
+    "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "docs/HSL26_PHASE2_SENSING_AND_CALIBRATION.md"
+  ],
+  "profiles": {
+    "kinematic": {
+      "status": "ENABLED",
+      "truth_source": "deterministic synthetic fixtures",
+      "physical_authority": false
+    },
+    "replay": {
+      "status": "PREPARED",
+      "truth_source": "immutable recorded sensor data",
+      "physical_authority": false
+    },
+    "sim": {
+      "status": "PREPARED",
+      "truth_source": "MVSim adapter output after sensor-model inspection",
+      "physical_authority": false
+    },
+    "real": {
+      "status": "DISARMED",
+      "truth_source": "authorized robot topics",
+      "physical_authority": true,
+      "gate": "BLOCKED_FOR_HARDWARE"
+    }
+  },
+  "software_dependencies": {
+    "required": [
+      "Python >=3.10",
+      "numpy",
+      "scipy",
+      "pytest"
+    ],
+    "declared_optional_for_future_point_cloud_tools": [
+      "open3d"
+    ],
+    "not_required_for_sil_core": [
+      "PyYAML",
+      "ROS 2",
+      "colcon",
+      "MVSim"
+    ]
+  },
+  "hardware_defaults_are_not_calibration": [
+    "minimum_deceleration_mps2",
+    "command_latency_s",
+    "footprint_radius_m",
+    "blind sectors"
+  ],
+  "verification": {
+    "command": "python -m pytest hsl_core/tests ros_ws/src/hsl_safety/test -q",
+    "expected_scope": "Phase-1 pure-core and safety-boundary regression",
+    "physical_response": "BLOCKED_FOR_HARDWARE"
+  },
+  "next_evidence": [
+    "P2.1_hardware_manifest.json",
+    "P2.2_deskew_report.json",
+    "P2.3_mapping_report.json",
+    "braking_report.json",
+    "P2_G1_acceptance_record.json"
+  ]
+}
+

@@ -1,0 +1,19 @@
+{
+  "measured_b_min_mps2": 0.8390741624834557,
+  "measured_stop_time_s": 0.54,
+  "profile": "kinematic",
+  "response_delay_s": 0.075,
+  "sample_rate_hz": 50.0,
+  "schema_version": 1,
+  "seed": 20260925,
+  "source": "deterministic synthetic odometry; not hardware calibration",
+  "speed_mps": 0.4,
+  "status": "PASS_SYNTHETIC_ONLY",
+  "stopping_distance_m": 0.12492937812657355,
+  "trial_count": 3,
+  "uncertainty": {
+    "b_min_std_mps2": 0.0027220833407407864,
+    "distance_std_m": 0.00030704660973330866,
+    "noise_std_m": 0.001
+  }
+}

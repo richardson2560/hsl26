@@ -136,6 +136,7 @@ class DeterministicMockScenario:
             map_error_bound_m=0.0,
             bounds_id="mock-bounds",
             complete=complete,
+            frontal_coverage_valid=complete,
         )
 
     def match(self, *, motion_authorized: bool, lease_ns: int) -> Any:

@@ -1,0 +1,40 @@
+{
+  "phase": "P2.4",
+  "status": "PREPARED_WITH_HARDWARE_BLOCKER",
+  "profile": "kinematic",
+  "tool": "tools/calibrate_braking.py",
+  "dry_run": {
+    "command": "python tools/calibrate_braking.py --dry-run --speed 0.4 --target-file artifacts/calibration/braking_report.json",
+    "status": "PASS_SYNTHETIC_ONLY",
+    "output": "artifacts/calibration/braking_report.json",
+    "sample_rate_hz": 50.0,
+    "trials": 3,
+    "seed": 20260925,
+    "motion_publication": false
+  },
+  "verification": {
+    "tool_test_command": "Set-Location tools; python -m pytest test_calibrate_braking.py -q",
+    "tool_test_result": "9 passed",
+    "regression_command": "python -m pytest hsl_core/tests ros_ws/src/hsl_safety/test -q",
+    "regression_result": "112 passed",
+    "compile": "PASS",
+    "diff_check": "PASS"
+  },
+  "real_profile": {
+    "status": "BLOCKED_FOR_HARDWARE",
+    "behavior": "--real returns exit code 2 and REAL_BLOCKED_FOR_HARDWARE",
+    "required_before_enable": [
+      "authorized ROS/Kobuki odometry adapter",
+      "supervised stop-channel authority verification",
+      "raw odometry trace capture",
+      "separate first-zero-request and measured-rest timestamps",
+      "repeated trials across permitted floor/load/speed conditions"
+    ]
+  },
+  "formula": "b_min = v0^2 / (2 * (d_stop - v0 * tau))",
+  "limitations": [
+    "Dry-run values are synthetic and cannot close P2.4 or G1.",
+    "The current tool does not publish commands in any profile.",
+    "Physical calibration must preserve raw traces and uncertainty bounds."
+  ]
+}

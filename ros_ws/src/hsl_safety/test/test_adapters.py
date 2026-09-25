@@ -6,10 +6,14 @@ from types import SimpleNamespace
 
 import pytest
 
+from hsl_core.types import Pose2D, Twist2D
 from hsl_safety.adapters import (
     AdapterContext,
     ValidatedCache,
+    decode_ego_state_message,
     decode_safety_snapshot,
+    validate_observation_progress,
+    validate_obstacle_payload,
     validate_authority_context,
 )
 from fixtures import DeterministicMockScenario, MockOutputSink
@@ -39,7 +43,11 @@ def _records(scenario, option="option-a", complete=True):
     ego_meta.state_stamp = ego_meta.publication_stamp
     ego = SimpleNamespace(meta=ego_meta, v=0.0, omega=0.0)
     obstacle_meta = scenario.header(frame_id="odom", lease_ns=200_000_000)
-    obstacle = SimpleNamespace(meta=obstacle_meta, complete=complete)
+    obstacle = SimpleNamespace(
+        meta=obstacle_meta,
+        complete=complete,
+        frontal_coverage_valid=complete,
+    )
     return candidate, ego, obstacle
 
 
@@ -60,6 +68,59 @@ def test_decode_preserves_revision2_identity_and_exact_nanoseconds():
     assert result.candidate_seq == 0
     assert result.received_steady_ns == 50_000
     assert result.option_instance_id == "option-a"
+
+
+def test_p25_ego_decode_preserves_pose_twist_covariance_and_epoch():
+    scenario = DeterministicMockScenario()
+    ego = scenario.ego_local(v=0.2, omega=0.1, lease_ns=200)
+    decoded = decode_ego_state_message(ego, context=_context(scenario))
+    assert decoded.pose == Pose2D(0.0, 0.0, 0.0)
+    assert decoded.twist == Twist2D(0.2, 0.1)
+    assert decoded.localization_epoch == scenario.localization_epoch
+    assert decoded.frame_id == "odom"
+
+
+def test_p25_obstacle_payload_rejects_bad_dimensions_states_and_bounds():
+    scenario = DeterministicMockScenario()
+    obstacle = scenario.obstacles(complete=True, lease_ns=200)
+    obstacle.coverage = SimpleNamespace(
+        width=2,
+        height=2,
+        origin=SimpleNamespace(x=-1.0, y=-1.0),
+        resolution_m=0.05,
+        cells=[0, 1, 2, 0],
+        observed_stamps=[SimpleNamespace(sec=0, nanosec=0)] * 4,
+    )
+    obstacle.pose_error_bound_m = 0.01
+    obstacle.map_error_bound_m = 0.02
+    validate_obstacle_payload(obstacle, context=_context(scenario))
+    obstacle.coverage.cells = [0, 3, 0, 0]
+    with pytest.raises(ValueError, match="invalid state"):
+        validate_obstacle_payload(obstacle, context=_context(scenario))
+
+
+def test_p25_dropout_and_pose_jump_are_rejected_without_refreshing_state():
+    scenario = DeterministicMockScenario()
+    previous = scenario.ego_local(v=0.0, omega=0.0, lease_ns=2_000_000_000)
+    scenario.clock.advance(ros_ns=100, steady_ns=100)
+    current = scenario.ego_local(v=0.0, omega=0.0, lease_ns=2_000_000_000)
+    current.pose.x = 2.0
+    with pytest.raises(ValueError, match="jump"):
+        validate_observation_progress(
+            previous,
+            current,
+            max_position_jump_m=0.5,
+            max_time_gap_ns=1_000,
+        )
+    scenario.clock.advance(ros_ns=2_000, steady_ns=2_000)
+    dropout = scenario.ego_local(v=0.0, omega=0.0, lease_ns=2_000_000_000)
+    with pytest.raises(ValueError, match="dropout"):
+        validate_observation_progress(
+            current,
+            dropout,
+            max_position_jump_m=5.0,
+            max_time_gap_ns=1_000,
+        )
 
 
 @pytest.mark.parametrize(

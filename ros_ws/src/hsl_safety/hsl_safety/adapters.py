@@ -13,6 +13,8 @@ from typing import Any
 
 from hsl_core.control.safety import SafetySnapshot
 from hsl_core.control.safety import SafetyEvaluation
+from hsl_core.contracts import validate_covariance
+from hsl_core.types import EgoState, Pose2D, Twist2D
 
 
 @dataclass(frozen=True)
@@ -55,6 +57,136 @@ class ValidatedCache:
         self.source_session = source_session
         self.seq = seq
         self.observation_stamp_ns = observation_stamp_ns
+
+
+def decode_ego_state_message(message: Any, *, context: AdapterContext) -> EgoState:
+    """Decode an exact revision-2 EgoState without creating provenance."""
+
+    meta = _meta(message)
+    _validate_meta(
+        meta,
+        context,
+        require_frame=True,
+        expected_frame_id=context.expected_ego_frame_id,
+    )
+    pose = _required(message, "pose")
+    pose_covariance = tuple(float(value) for value in _required(message, "pose_covariance"))
+    twist_covariance = tuple(float(value) for value in _required(message, "twist_covariance"))
+    validate_covariance(pose_covariance, 3)
+    validate_covariance(twist_covariance, 2)
+    if not isinstance(_required(message, "healthy"), bool) or not isinstance(_required(message, "slip"), bool):
+        raise ValueError("ego health flags must be boolean")
+    if not isinstance(_required(message, "localization_valid"), bool):
+        raise ValueError("localization_valid must be boolean")
+    if not _required(message, "localization_valid"):
+        raise ValueError("ego localization is invalid")
+    calibration_id = _required(message, "calibration_id")
+    if not isinstance(calibration_id, str) or not calibration_id:
+        raise ValueError("calibration_id must be non-empty")
+    twist = Twist2D(float(_required(message, "v")), float(_required(message, "omega")))
+    state = EgoState(
+        pose=Pose2D(
+            float(_required(pose, "x")),
+            float(_required(pose, "y")),
+            float(_required(pose, "theta")),
+        ),
+        twist=twist,
+        pose_covariance=pose_covariance,
+        localization_epoch=_required(meta, "localization_epoch"),
+        healthy=_required(message, "healthy"),
+        slip=_required(message, "slip"),
+        observation_time_s=_stamp_ns(
+            _required(meta, "observation_stamp"), "observation_stamp"
+        ) / 1_000_000_000.0,
+        frame_id=_required(meta, "frame_id"),
+    )
+    return state
+
+
+def validate_obstacle_payload(
+    message: Any,
+    *,
+    context: AdapterContext,
+    max_cells: int = 200_000,
+    max_obstacles: int = 512,
+) -> None:
+    """Validate bounded obstacle/coverage payloads before safety use."""
+
+    meta = _meta(message)
+    _validate_meta(
+        meta,
+        context,
+        require_frame=True,
+        expected_frame_id=context.expected_obstacle_frame_id,
+    )
+    coverage = _required(message, "coverage")
+    width = _required(coverage, "width")
+    height = _required(coverage, "height")
+    resolution = _required(coverage, "resolution_m")
+    origin = _required(coverage, "origin")
+    cells = _required(coverage, "cells")
+    observed_stamps = _required(coverage, "observed_stamps")
+    obstacles = _required(message, "obstacles")
+    if (
+        not isinstance(width, int) or isinstance(width, bool) or width <= 0
+        or not isinstance(height, int) or isinstance(height, bool) or height <= 0
+        or isinstance(resolution, bool) or not isinstance(resolution, (int, float))
+        or not math.isfinite(float(resolution)) or resolution <= 0.0
+        or not math.isfinite(float(_required(origin, "x")))
+        or not math.isfinite(float(_required(origin, "y")))
+        or len(cells) != width * height
+        or len(observed_stamps) != width * height
+        or width * height > max_cells
+    ):
+        raise ValueError("coverage dimensions and cells are inconsistent")
+    if len(obstacles) > max_obstacles:
+        raise ValueError("obstacle payload exceeds configured bound")
+    if any(value not in (0, 1, 2) for value in cells):
+        raise ValueError("coverage contains an invalid state")
+    for name in ("pose_error_bound_m", "map_error_bound_m"):
+        value = _required(message, name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) or value < 0.0:
+            raise ValueError(f"{name} must be finite and non-negative")
+    if not isinstance(_required(message, "complete"), bool):
+        raise ValueError("obstacle completeness must be boolean")
+    if not isinstance(_required(message, "frontal_coverage_valid"), bool):
+        raise ValueError("frontal coverage validity must be boolean")
+    bounds_id = _required(message, "bounds_id")
+    if not isinstance(bounds_id, str) or not bounds_id:
+        raise ValueError("bounds_id must be non-empty")
+    for obstacle in obstacles:
+        for name in ("vx", "vy", "speed_bound_mps", "position_error_bound_m"):
+            value = _required(obstacle, name)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+                raise ValueError(f"obstacle {name} must be finite")
+        for name in ("motion_estimate_valid", "is_opponent"):
+            if not isinstance(_required(obstacle, name), bool):
+                raise ValueError(f"obstacle {name} must be boolean")
+
+
+def validate_observation_progress(
+    previous: Any,
+    current: Any,
+    *,
+    max_position_jump_m: float,
+    max_time_gap_ns: int,
+) -> None:
+    """Reject dropout-sized gaps and discontinuous ego observations."""
+
+    if max_position_jump_m <= 0.0 or max_time_gap_ns <= 0:
+        raise ValueError("observation progress bounds must be positive")
+    previous_stamp = _stamp_ns(_required(_meta(previous), "observation_stamp"), "previous observation_stamp")
+    current_stamp = _stamp_ns(_required(_meta(current), "observation_stamp"), "current observation_stamp")
+    if current_stamp <= previous_stamp or current_stamp - previous_stamp > max_time_gap_ns:
+        raise ValueError("observation dropout or non-monotonic timestamp")
+    previous_pose = _required(previous, "pose")
+    current_pose = _required(current, "pose")
+    distance = math.hypot(
+        float(_required(current_pose, "x")) - float(_required(previous_pose, "x")),
+        float(_required(current_pose, "y")) - float(_required(previous_pose, "y")),
+    )
+    if not math.isfinite(distance) or distance > max_position_jump_m:
+        raise ValueError("ego observation jump exceeds configured bound")
 
 
 def _set_time(stamp: Any, stamp_ns: int) -> None:
@@ -248,6 +380,8 @@ def decode_safety_snapshot(
         raise ValueError("free_distance_m must be finite and non-negative")
     if not isinstance(_required(obstacles, "complete"), bool):
         raise ValueError("obstacle completeness must be boolean")
+    if not isinstance(_required(obstacles, "frontal_coverage_valid"), bool):
+        raise ValueError("frontal coverage validity must be boolean")
     return SafetySnapshot(
         candidate_seq=_required(candidate_meta, "seq"),
         candidate_v_mps=_required(candidate, "v"),
@@ -263,7 +397,10 @@ def decode_safety_snapshot(
         expected_clock_epoch=context.expected_clock_epoch,
         localization_epoch=_required(candidate_meta, "localization_epoch"),
         expected_localization_epoch=context.expected_localization_epoch,
-        coverage_valid=_required(obstacles, "complete"),
+        coverage_valid=(
+            _required(obstacles, "complete")
+            and _required(obstacles, "frontal_coverage_valid")
+        ),
         free_distance_m=float(free_distance_m),
         ego_speed_mps=_required(ego_local, "v"),
         option_instance_id=_required(candidate, "option_instance_id"),

@@ -1,0 +1,56 @@
+{
+  "phase": "P2.2",
+  "status": "PASS_WITH_REPLAY_AND_HARDWARE_BLOCKERS",
+  "profile": "kinematic",
+  "source_of_truth": [
+    "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "docs/HSL26_PHASE2_SENSING_AND_CALIBRATION.md"
+  ],
+  "implementation": {
+    "file": "hsl_core/hsl_core/kinematics.py",
+    "api": "deskew_cloud(cloud, pose_history, T_B_L, t_ref)",
+    "contracts": [
+      "TimedPointCloud requires finite Nx3 points and one finite timestamp per point",
+      "PoseSample requires finite timestamped homogeneous SE(3) T_OB",
+      "T_B_L must be a finite rigid homogeneous transform",
+      "pose history must be strictly increasing and cover all point/reference times",
+      "unsupported samples are rejected; no arbitrary extrapolation is performed",
+      "correction follows (T_OB(t_ref) T_B_L)^-1 T_OB(t_i) T_B_L p_i",
+      "input arrays are copied and are not mutated",
+      "translation is interpolated linearly and attitude with quaternion SLERP"
+    ]
+  },
+  "verification": {
+    "command": "Set-Location hsl_core; python -m pytest tests/test_deskew.py -q",
+    "result": "19 passed",
+    "regression_command": "Set-Location hsl_core; python -m pytest tests -q",
+    "regression_result": "49 passed",
+    "compile": "python -m compileall -q hsl_core/hsl_core",
+    "diff_check": "PASS"
+  },
+  "fixtures": [
+    "static wall under translation and yaw with non-identity 3D extrinsic",
+    "interpolated translation and SLERP attitude versus nearest-pose behavior",
+    "identity motion and input immutability",
+    "empty cloud and strict TimedPointCloud type contract",
+    "shape, cardinality and finite-value rejection",
+    "missing per-point time rejection",
+    "out-of-history point/reference rejection without extrapolation",
+    "empty, duplicate and unsorted pose history rejection",
+    "non-rigid extrinsic rejection",
+    "result structure validation"
+  ],
+  "acceptance_scope": {
+    "synthetic_residual_bound_m": 1e-10,
+    "synthetic_residual_result": "PASS",
+    "replay_sensor_residual": "NOT_RUN",
+    "physical_tf_and_clock_record": "BLOCKED_FOR_HARDWARE",
+    "livox_timestamp_semantics": "BLOCKED_FOR_HARDWARE"
+  },
+  "limitations": [
+    "The SIL fixture validates the transform contract, not Livox driver timestamp semantics.",
+    "The real T_B_L calibration and frame ownership require the robot and authorized ROS graph.",
+    "No physical motion, driver timeout or hardware stop behavior is inferred from this report."
+  ]
+}

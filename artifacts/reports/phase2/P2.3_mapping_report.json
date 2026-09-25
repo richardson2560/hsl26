@@ -1,0 +1,94 @@
+{
+  "phase": "P2.3",
+  "status": "PASS_WITH_REPLAY_AND_HARDWARE_BLOCKERS",
+  "independent_audit": {
+    "reviewed": true,
+    "confirmed_findings": [
+      "ray tracing must process nearer returns before farther returns on the same line of sight"
+    ],
+    "rejected_recommendation": [
+      "the grid boundary must not be reported as free distance when the forward corridor has no observed return; that would convert UNKNOWN into unsafe observed-free space"
+    ],
+    "result": "The confirmed ordering defect was fixed and covered by a regression test."
+  },
+  "profile": "kinematic",
+  "source_of_truth": [
+    "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "docs/HSL26_PHASE2_SENSING_AND_CALIBRATION.md"
+  ],
+  "implementation": {
+    "file": "hsl_core/hsl_core/mapping.py",
+    "api": "LocalObstacleBuilder.build(points_xyz)",
+    "records": [
+      "LocalObstacleConfig",
+      "CoverageGrid",
+      "LocalObstacleSnapshot"
+    ],
+    "coverage_states": {
+      "UNKNOWN": 0,
+      "OBSERVED_FREE": 1,
+      "OCCUPIED": 2
+    },
+    "contracts": [
+      "finite bounded Nx3 input only",
+      "explicit z crop [-0.10, 0.40] m",
+      "explicit self-body radial mask at 0.18 m",
+      "frontal corridor width is explicitly configured at 0.40 m",
+      "free_distance_m is the nearest valid forward corridor return",
+      "no in-grid frontal return yields conservative finite distance 0.0, UNKNOWN forward space and frontal_coverage_valid=false",
+      "complete records successful bounded processing independently of frontal coverage",
+      "free_distance_m walks centreline evidence to first OCCUPIED or UNKNOWN cell",
+      "unknown at or before the first observed-free cell yields zero conservative clearance",
+      "out-of-grid returns do not certify forward coverage",
+      "nearer returns are processed before farther returns on the same line of sight",
+      "ray tracing marks only cells before a first hit as OBSERVED_FREE",
+      "cells behind a hit are never cleared",
+      "occupied returns are retained independently of semantic identity",
+      "payload dimensions, states and arrays are validated and copied"
+    ]
+  },
+  "verification": {
+    "command": "Set-Location hsl_core; python -m pytest tests/test_mapping.py -q",
+    "result": "25 passed",
+    "regression_command": "Set-Location hsl_core; python -m pytest tests -q",
+    "regression_result": "74 passed",
+    "compile": "python -m compileall -q hsl_core/hsl_core",
+    "diff_check": "PASS"
+  },
+  "fixtures": [
+    "ground below -0.10 m rejected",
+    "roof/upper returns above 0.40 m rejected",
+    "low obstacle retained",
+    "self-body radius rejected",
+    "side and reverse returns excluded from frontal metric",
+    "nearest frontal obstacle reported at 1.50 m",
+    "free cells before first hit",
+    "unknown cells behind first hit",
+    "multiple occupied returns retained",
+    "empty/no-return scan remains UNKNOWN",
+    "invalid shape, nonfinite input and point-count bound rejection",
+    "invalid geometric configuration rejection",
+    "coverage state and snapshot structural validation",
+    "input immutability"
+  ],
+  "acceptance_scope": {
+    "synthetic_filter_and_ray_contract": "PASS",
+    "synthetic_low_obstacle_detection": "PASS",
+    "centreline_unknown_boundary_semantics": "PASS",
+    "separate_pipeline_and_coverage_flags": "PASS",
+    "bounded_measurement_noise_fixture": "PASS",
+    "near_far_occlusion_ordering": "PASS",
+    "fully_observed_grid_boundary": "PASS",
+    "immediate_unknown_conservative_zero": "PASS",
+    "replay_sensor_validity_and_per_point_time": "NOT_RUN",
+    "physical_self_mask_and_footprint_calibration": "BLOCKED_FOR_HARDWARE",
+    "physical_coverage_and_blind_zone_measurement": "BLOCKED_FOR_HARDWARE"
+  },
+  "limitations": [
+    "The z limits and self radius are development profile values, not physical calibration.",
+    "The implementation expects deskewed, extrinsically normalized local points.",
+    "Ray traversal is bounded local-grid evidence, not a complete persistent occupancy mapper.",
+    "No physical or replay sensor coverage is inferred from synthetic fixtures."
+  ]
+}
