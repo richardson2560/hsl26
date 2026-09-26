@@ -20,6 +20,8 @@ set(msg_files
   "msg/CoverageGrid.msg"
   "msg/Obstacle2.msg"
   "msg/LocalObstacleSnapshot.msg"
+  "msg/BeliefCell.msg"
+  "msg/OpponentBelief.msg"
   "msg/MatchState.msg"
   "msg/GoalZone.msg"
   "msg/TopologyNode.msg"

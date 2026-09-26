@@ -846,3 +846,100 @@ the fourth derivative. C4 remains the correct implementation because of the
 binding TS kernel identifier and its higher regularity margin, not because C2
 has a third-derivative jump. No fixed iteration-count convergence guarantee is
 claimed without held-out calibrated data.
+
+## 27. P4.3 opponent tracking and association
+
+Implemented P4.3 as a ROS-independent pure-core filter. Added a four-state
+constant-velocity model `[x,y,vx,vy]` with continuous white-acceleration
+process noise in `m^2/s^3`, position-only measurements and linear innovation
+gating. The association contract rejects stale map/localization metadata,
+Mahalanobis outliers and best-versus-second candidate ambiguities.
+
+Accepted updates use the Joseph covariance form and enforce finite,
+symmetrized positive-semidefinite covariance. The filter maintains separate
+last-measurement, prediction and publication timestamps. Out-of-order samples
+and overlong prediction intervals are rejected instead of silently
+extrapolated.
+
+Implemented the configured lifecycle
+`SEARCHING -> TRACKED -> COASTING -> OCCLUDED_BELIEF -> LOST`, with repeated
+confirmation for acquisition and no refresh of measurement time on rejected
+associations. The filter does not infer yaw or angular velocity.
+
+Added adversarial tests in `hsl_core/tests/test_p43_tracking.py` and evidence
+in `artifacts/reports/phase4/P4.3_tracking_report.json`. The focused suite
+passes 9 tests and the complete core/SIL regression passes 174 tests.
+ROS encoding, worker timeout, multi-target assignment and real sensor
+false-association evidence remain outside this pure SIL package.
+
+## 28. P4.4 finite-speed topological belief
+
+Implemented P4.4 in `hsl_core/hsl_core/perception/topological_belief.py`.
+Beliefs are bound to the P3 `TopologyGraph` snapshot and represent normalized
+probability over metric edge intervals plus explicit `unknown_mass`.
+Propagation computes reachable support by graph path length, not node-to-node
+diffusion, and supports either the conservative `vmax * elapsed` envelope or
+the architecture's integrated acceleration bound when a valid initial speed
+bound is supplied. Probability over known reachable support uses a declared
+uniform arc-length measure; no uniform-over-nodes assumption is made.
+
+Reached frontier nodes expose an explicit unknown-route branch. Its default
+0.5 branch probability is documented as an uncalibrated engineering prior,
+not a measured opponent behavior. Blocked edges are not treated as known
+routes. Mass is conserved and normalized across propagation, evidence and
+reacquisition.
+
+Negative observations require valid, fresh, independent observation-group
+identity and matching map/topology/localization versions. Detection probability
+is averaged only over covered portions of each support interval; uncovered,
+blind and occluded regions have zero negative-evidence effect. The Bayes
+normalizer follows TS §9.3, including unknown-space likelihood. Duplicate or
+out-of-order groups are rejected, and a zero normalizer broadens to all-unknown
+instead of dividing by zero.
+
+Reacquisition uses a position likelihood over edge geometry and retains an
+explicit likelihood for unknown support; it does not select a single nearest
+centerline. Added 19 adversarial tests, including normative T18 negative
+likelihoods and T19 long-edge travel-time rejection. The full core/SIL
+regression passes 193 tests. Evidence is in
+`artifacts/reports/phase4/P4.4_belief_report.json`.
+
+Visibility calibration, real turn behavior, physical topology fidelity and
+the frontier prior remain blocked pending suitable data. This implementation
+is SIL evidence, not a G3 physical acceptance.
+
+## 29. P4.5 runtime codecs, worker and fidelity profile
+
+Completed the P4.5 software/runtime contract increment. Added strict
+transport-neutral and generated-message adapters in
+`hsl_core/hsl_core/perception/runtime_codec.py` for revision-2
+`OpponentTrack`, `OpponentBelief` and nested `BeliefCell`. Registered the two
+missing belief IDL messages in `hsl_interfaces`; both records preserve
+`ContractHeader` validity, timestamps, sensor fidelity, frame and
+map/topology/localization versions. Decoding rejects unsupported schema,
+malformed time, covariance, track validity, yaw and belief mass instead of
+repairing payloads.
+
+Added an adapter from P4.3 filter output that preserves the true last
+measurement stamp and publishes yaw invalid with its canonical zero payload
+when no yaw estimate exists. Added a single-flight worker with bounded caller
+deadline, explicit task errors, version/generation-based stale-result discard
+and no unbounded replacement workers. Since Python threads cannot be forcibly
+terminated, a hung task keeps the worker busy; hard process-level cancellation
+and WCET are not claimed.
+
+Added `hsl_core/hsl_core/perception/fidelity.py` and
+`tools/evaluate_p45_fidelity.py` for evaluation-only real-cloud/MVSim/replay/
+synthetic comparisons using labeled cases. The evaluator reports position
+error, misses, false positives, covariance coverage and latency, and refuses
+to turn insufficient data into a pass or infer acceptance thresholds. Tightened
+`tools/validate_gpis_prior.py` to reject old C2 kernel manifests and malformed
+array/transform/factorization schemas.
+
+The final focused codec suite passes 20 tests; the complete core, simulation
+and interface regression passes 218 tests. `compileall`, report JSON parsing
+and `git diff --check` also pass. Native ROS 2 generation,
+launch/topic/QoS tracing, bag replay, MVSim sensor inspection and paired
+real-cloud comparison remain `BLOCKED`: the Windows environment has no ROS 2
+toolchain or sensor datasets. Evidence and explicit fidelity statuses are in
+`artifacts/reports/phase4/P4.5_runtime_fidelity_report.json`.

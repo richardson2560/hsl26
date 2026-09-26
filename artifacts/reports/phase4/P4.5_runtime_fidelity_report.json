@@ -1,0 +1,93 @@
+{
+  "phase": "P4.5",
+  "status": "PASS_SIL_CONTRACTS_WITH_NATIVE_RUNTIME_AND_SENSOR_FIDELITY_BLOCKERS",
+  "contracts": {
+    "track_message": "hsl_interfaces/OpponentTrack",
+    "belief_message": "hsl_interfaces/OpponentBelief",
+    "belief_cell_message": "hsl_interfaces/BeliefCell",
+    "header_schema": 2,
+    "required_versions": [
+      "map_version",
+      "topology_version",
+      "localization_epoch"
+    ],
+    "required_times": [
+      "observation_stamp",
+      "state_stamp",
+      "publication_stamp",
+      "valid_until",
+      "last_measurement_stamp"
+    ],
+    "fidelity_profiles": [
+      "REAL_CLOUD",
+      "SIM_CLOUD",
+      "SYNTHETIC_DETECTION",
+      "REPLAY_CLOUD"
+    ]
+  },
+  "runtime": {
+    "codec": "hsl_core/hsl_core/perception/runtime_codec.py",
+    "worker": "hsl_core/hsl_core/perception/bounded_worker.py",
+    "fidelity_evaluator": "hsl_core/hsl_core/perception/fidelity.py",
+    "validator": "tools/validate_gpis_prior.py",
+    "worker_contract": {
+      "maximum_concurrent_tasks": 1,
+      "deadline_result": "TIMEOUT",
+      "late_or_version_stale_result": "DISCARDED",
+      "exceptions": "returned as explicit FAILED result",
+      "hard_compute_cancellation": "NOT_GUARANTEED_FOR_PYTHON_THREAD",
+      "hung_task_behavior": "no replacement thread; fail closed and remain busy"
+    }
+  },
+  "profiles": {
+    "synthetic_detection": {
+      "status": "ENABLED_FOR_SIL",
+      "label": "SYNTHETIC_DETECTION",
+      "physical_authority": false
+    },
+    "real_cloud": {
+      "status": "BLOCKED_NO_ROBOT_OR_REGISTERED_BAGS",
+      "physical_authority": false
+    },
+    "replay_cloud": {
+      "status": "BLOCKED_NO_ROSBAG_DATA_OR_NATIVE_ROS_RUNTIME",
+      "physical_authority": false
+    },
+    "mvsim_cloud": {
+      "status": "BLOCKED_SENSOR_MODEL_NOT_INSPECTED",
+      "physical_authority": false
+    }
+  },
+  "fidelity_comparison": {
+    "tool": "tools/evaluate_p45_fidelity.py",
+    "evaluation_truth_boundary": "referee labels accepted only in offline evaluator inputs",
+    "metrics": [
+      "position error mean/RMSE/p95",
+      "false positives per attempt",
+      "miss count",
+      "95% covariance coverage when covariance is supplied",
+      "latency mean/p95",
+      "paired real-cloud minus synthetic RMSE"
+    ],
+    "acceptance_thresholds": "NOT_INFERRED",
+    "dataset_status": "BLOCKED_NO_REAL_CLOUD_OR_REPLAY_DATA",
+    "production_comparison_result": "NOT_RUN"
+  },
+  "verification": {
+    "runtime_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests\\test_p45_runtime_codec.py -q",
+    "runtime_result": "20 passed",
+    "interface_command": "$env:PYTHONPATH='hsl_core'; python -m pytest ros_ws\\src\\hsl_interfaces\\test -q",
+    "interface_result": "5 passed",
+    "full_core_simulation_interface_regression": "218 passed",
+    "compile_result": "PASS",
+    "native_rosidl_build": "BLOCKED_NO_ROS_2_COLCON_ON_WINDOWS_HOST",
+    "native_launch_and_topic_qos_trace": "BLOCKED"
+  },
+  "limitations": [
+    "No native ROS serialization or launch execution has been validated on this host.",
+    "No authoritative perception topic names or QoS profile were added without a validated graph/registry contract.",
+    "Thread workers provide bounded caller wait and stale-result suppression, not hard process-level CPU termination.",
+    "No real-cloud, replay-bag or inspected MVSim sensor data exists for fidelity claims.",
+    "Evaluation metrics do not constitute acceptance until preregistered profile-specific thresholds and labeled data exist."
+  ]
+}

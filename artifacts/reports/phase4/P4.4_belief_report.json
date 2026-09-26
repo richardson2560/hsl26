@@ -1,0 +1,56 @@
+{
+  "phase": "P4.4",
+  "status": "PASS_SIL_WITH_GRAPH_AND_VISIBILITY_CALIBRATION_BLOCKERS",
+  "implementation": {
+    "belief": "hsl_core/hsl_core/perception/topological_belief.py",
+    "tests": "hsl_core/tests/test_p44_topological_belief.py",
+    "support": "metric edge intervals with lateral bounds and explicit unknown mass",
+    "propagation": "bounded reachable support on versioned graph using shortest path length",
+    "branch_measure": "uniform arc-length measure over reachable known support",
+    "frontier_model": "explicit unknown branch prior; default probability 0.5, uncalibrated",
+    "negative_observation": "fresh independent group Bayes update with coverage-averaged detection probability",
+    "reacquisition": "position likelihood over graph-edge support with explicit unknown likelihood"
+  },
+  "equations": {
+    "unknown_speed_prior": "s_max(t)=v_max*t",
+    "known_initial_speed_and_acceleration": "v0*t + 0.5*a*t^2 until v_max, then continue at v_max",
+    "negative_update": "b_j+ proportional to (1-P_D(j))*b_j-; unknown mass uses L_u",
+    "normalization": "sum(edge interval masses)+unknown_mass=1"
+  },
+  "verification": {
+    "focused_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests\\test_p44_topological_belief.py -q",
+    "focused_result": "19 passed",
+    "regression_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests sim\\kinematic -q",
+    "regression_result": "193 passed",
+    "compile_command": "$env:PYTHONPATH='hsl_core'; python -m compileall -q hsl_core\\hsl_core",
+    "compile_result": "PASS",
+    "normative_tests": {
+      "T18_equal_prior_negative_likelihoods": "PASS",
+      "T19_long_edge_finite_speed": "PASS"
+    },
+    "negative_cases": [
+      "far endpoint unavailable before bounded travel time",
+      "junction branching begins only when reachable",
+      "frontier creates unknown-route mass only after it is reachable",
+      "blocked edge is not used as a known route",
+      "occluded, blind, invalid or uncovered regions retain probability",
+      "partial coverage applies only its average covered detection probability",
+      "stale, duplicate, out-of-order and wrong-version observations are rejected",
+      "zero Bayes normalizer broadens to unknown instead of dividing by zero",
+      "reacquisition preserves normalized mass and a nonzero unknown component",
+      "invalid intervals, covariance, timestamps and probability mass are rejected"
+    ]
+  },
+  "limitations": [
+    "No real graph, visibility/detection probability calibration or opponent turn prior is available.",
+    "Uniform arc-length propagation is an explicitly named uninformative measure, not measured behavior.",
+    "The default frontier branch probability is an engineering prior and must be calibrated or versioned before deployment.",
+    "Continuous reachable support is propagated conservatively; this is not a nonholonomic dynamics certificate.",
+    "Synthetic SIL does not establish physical reachability or G3 acceptance."
+  ],
+  "handoff": [
+    "P4.5 codec must serialize topology/map/localization versions, timestamps, unknown_mass and fidelity.",
+    "Runtime must reject beliefs bound to stale graph or localization versions.",
+    "Detection probabilities and frontier prior require profile-specific calibration before G3."
+  ]
+}

@@ -1,6 +1,6 @@
 # HSL26 — Phase 4 implementation plan and SIL environment
 
-**Revision:** 1.0 · **Date:** 2026-09-25 · **Status:** prepared for implementation  
+**Revision:** 1.1 · **Date:** 2026-09-25 · **Status:** P4.1–P4.5 SIL implemented; external acceptance blocked
 **Authority:** `HSL26_FINAL_ARCHITECTURE.md`, `HSL26_TECHNICAL_SPECIFICATION.md`,
 and `HSL26_PHASE4_OPPONENT_PERCEPTION.md`.
 
@@ -62,7 +62,7 @@ python -m pytest hsl_core\tests\test_p4_*.py sim\kinematic\test_p4*.py -q
 | P4.2 | 2 | `segmenter.py`, `registration.py`, validation tool | origin error by held-out view/range, support fraction, false-match and yaw observability tables |
 | P4.3 | 3 | `ekf_opponent.py`, tracker node and codec | accepted/rejected gates, Joseph covariance PSD, independent measurement/prediction/publication stamps |
 | P4.4 | 4 | `topological_belief.py`, sequence generator | stationary, occluded, long-edge, junction and reappearance traces with unknown mass |
-| P4.5 | 5 | runtime integration and profile report | version/hash-stamped traces, timeout/stale discard, synthetic bypass versus real-cloud path declaration |
+| P4.5 | 5 | `runtime_codec.py`, `bounded_worker.py`, versioned ROS IDL and profile evaluator | round-trip tests, timeout/stale discard, synthetic bypass versus real-cloud path declaration |
 
 Each package must preserve the existing pure-core/adapter split. No P4 module
 may publish a motor command or replace the independent safety return path.
@@ -134,9 +134,31 @@ Each work package stores machine-readable results under
 seed, source/model/topology hashes, expected result, observed result and
 `PASS`, `FAIL`, `BLOCKED` or `NOT_RUN`.
 
-This prepared environment is `PASS_PREPARED` only. It does not establish:
+The implemented software-in-the-loop work packages are test-verified, but this
+does not establish:
 complete robot geometry, \(T_B^M\) calibration, real-cloud origin accuracy,
 Livox/MVSim fidelity, ROS transport behavior, CPU WCET, or physical safety.
 G3 remains blocked until held-out registered/real views and the declared
 sensor conditions are available.
 
+## 7. P4.5 runtime profile boundary
+
+The revision-2 `OpponentTrack` and `OpponentBelief` records carry
+`ContractHeader` metadata, map/topology/localization versions, observation,
+state and publication times, expiry, validity and sensor fidelity. Belief
+cells preserve edge interval and mass; unknown mass is never dropped by the
+codec. Codecs reject unknown schemas, malformed timestamps, invalid covariance,
+noncanonical invalid yaw and non-normalized belief.
+
+The single-flight worker exposes a caller-bounded deadline and discards work
+after map/topology/localization or explicit generation changes. Python threads
+cannot be forcibly stopped: it never spawns replacements while a timed-out
+task is still running. Production hard CPU isolation therefore needs a
+supervised process boundary; this SIL contract makes no WCET claim.
+
+The profile evaluator accepts referee labels only in evaluation data and emits
+descriptive error, miss, false-positive, covariance-coverage and latency
+metrics. It does not import labels into the tracker and does not infer
+acceptance thresholds. Real bag replay, ROS graph/QoS traces, MVSim sensor
+fidelity and paired real-cloud/synthetic measurements stay `BLOCKED` until
+their runtime and data prerequisites are supplied.

@@ -1,0 +1,58 @@
+{
+  "phase": "P4.3",
+  "status": "PASS_SIL_WITH_SENSOR_AND_RUNTIME_BLOCKERS",
+  "implementation": {
+    "filter": "hsl_core/hsl_core/perception/ekf_opponent.py",
+    "tests": "hsl_core/tests/test_p43_tracking.py",
+    "state": "[x,y,vx,vy]",
+    "motion_model": "constant velocity with continuous white acceleration",
+    "process_noise_units": "m^2/s^3",
+    "measurement": "position_xy",
+    "association": "Mahalanobis innovation gate with best-versus-second ambiguity rejection",
+    "covariance_update": "Joseph form",
+    "lifecycle": [
+      "SEARCHING",
+      "TRACKED",
+      "COASTING",
+      "OCCLUDED_BELIEF",
+      "LOST"
+    ]
+  },
+  "temporal_contract": {
+    "last_measurement_stamp": "changes only after an accepted measurement",
+    "prediction_stamp": "advances through CV prediction",
+    "publication_stamp": "records every emitted filter output",
+    "out_of_order_measurements": "rejected",
+    "overlong_prediction_intervals": "rejected"
+  },
+  "verification": {
+    "focused_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests\\test_p43_tracking.py -q",
+    "focused_result": "9 passed",
+    "regression_command": "$env:PYTHONPATH='hsl_core'; python -m pytest hsl_core\\tests sim\\kinematic -q",
+    "regression_result": "174 passed",
+    "compile_command": "$env:PYTHONPATH='hsl_core'; python -m compileall -q hsl_core\\hsl_core",
+    "compile_result": "PASS",
+    "negative_cases": [
+      "initial confirmation is required when configured",
+      "Mahalanobis outlier is gated without refreshing measurement time",
+      "ambiguous close candidates are rejected rather than fused",
+      "map version and localization epoch mismatches are rejected",
+      "Joseph covariance remains symmetric and PSD",
+      "invalid covariance and non-finite metadata are rejected",
+      "timestamp reversal and excessive prediction interval are rejected",
+      "lifecycle reaches coasting, occluded belief, lost and searching"
+    ]
+  },
+  "limitations": [
+    "Association is single-track and does not claim multi-target global assignment.",
+    "Detection confirmation is temporal count only; shape/support evidence remains upstream in P4.2.",
+    "The filter does not infer yaw or angular velocity.",
+    "ROS message encoding, worker timeout and real sensor latency remain P4.5/runtime evidence.",
+    "Synthetic SIL does not establish real-cloud false-association rates."
+  ],
+  "next_inputs": [
+    "P4.4_belief_report.json",
+    "runtime_codec_and_timeout_profile",
+    "real_or_replay_detection_sequences"
+  ]
+}
