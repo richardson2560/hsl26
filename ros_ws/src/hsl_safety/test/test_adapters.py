@@ -24,11 +24,15 @@ def _context(scenario, option="option-a"):
     return AdapterContext(
         now_ros_ns=scenario.clock.ros_ns,
         now_steady_ns=scenario.clock.steady_ns,
+        expected_stage_id="stage-mock",
         expected_clock_epoch=scenario.clock_epoch,
         expected_localization_epoch=scenario.localization_epoch,
         expected_candidate_frame_id="base_link",
         expected_ego_frame_id="odom",
         expected_obstacle_frame_id="odom",
+        expected_map_version=7,
+        expected_topology_version=9,
+        expected_lease_generation=1,
         expected_option_instance_id=option,
     )
 
@@ -37,6 +41,7 @@ def _records(scenario, option="option-a", complete=True):
     candidate = SimpleNamespace(
         meta=scenario.header(frame_id="base_link", lease_ns=200_000_000),
         option_instance_id=option,
+        lease_generation=1,
         v=0.3,
         omega=0.0,
     )
@@ -69,6 +74,8 @@ def test_decode_preserves_revision2_identity_and_exact_nanoseconds():
     assert result.candidate_seq == 0
     assert result.received_steady_ns == 50_000
     assert result.option_instance_id == "option-a"
+    assert result.candidate_lease_generation == 1
+    assert result.expected_topology_version == 9
 
 
 def test_p25_ego_decode_preserves_pose_twist_covariance_and_epoch():
@@ -220,17 +227,35 @@ def test_cache_does_not_replace_with_replayed_or_stale_records():
 def test_authority_context_requires_execution_match_and_watchdog_health():
     scenario = DeterministicMockScenario()
     meta = scenario.header(frame_id="", lease_ns=200_000_000)
-    execution = SimpleNamespace(meta=meta, candidate_authorized=True)
+    execution = SimpleNamespace(
+        meta=meta,
+        candidate_authorized=True,
+        lease_generation=1,
+        phase=2,
+    )
     match = SimpleNamespace(meta=meta, motion_authorized=True)
     health = SimpleNamespace(meta=meta, ready=True, stop_latched=False)
     validate_authority_context(execution, match, health, context=_context(scenario))
     health.stop_latched = True
     with pytest.raises(ValueError, match="latched"):
         validate_authority_context(execution, match, health, context=_context(scenario))
+    health.stop_latched = False
+    execution.lease_generation = 2
+    with pytest.raises(ValueError, match="lease_generation"):
+        validate_authority_context(execution, match, health, context=_context(scenario))
+    execution.lease_generation = 1
+    execution.phase = 3
+    with pytest.raises(ValueError, match="EXECUTING"):
+        validate_authority_context(execution, match, health, context=_context(scenario))
 
     metadata_meta = scenario.header(frame_id="", lease_ns=200_000_000)
     validate_authority_context(
-        SimpleNamespace(meta=metadata_meta, candidate_authorized=True),
+        SimpleNamespace(
+            meta=metadata_meta,
+            candidate_authorized=True,
+            lease_generation=1,
+            phase=2,
+        ),
         SimpleNamespace(meta=metadata_meta, motion_authorized=True),
         SimpleNamespace(meta=metadata_meta, ready=True, stop_latched=False),
         context=_context(scenario),
@@ -250,11 +275,39 @@ def test_incomplete_obstacle_coverage_decodes_but_is_not_authorized():
     assert result.coverage_valid is False
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("lease_generation", 2, "candidate lease_generation mismatch"),
+        ("stage_id", "stage-old", "stage_id mismatch"),
+        ("map_version", 8, "map_version mismatch"),
+        ("topology_version", 10, "topology_version mismatch"),
+    ],
+)
+def test_delayed_candidate_from_old_lease_or_world_version_is_rejected(
+    field, value, message
+):
+    scenario = DeterministicMockScenario()
+    candidate, ego, obstacles = _records(scenario)
+    if field == "lease_generation":
+        setattr(candidate, field, value)
+    else:
+        setattr(candidate.meta, field, value)
+    with pytest.raises(ValueError, match=message):
+        decode_safety_snapshot(
+            candidate,
+            ego,
+            obstacles,
+            free_distance_m=0.8,
+            context=_context(scenario),
+        )
+
+
 def test_decode_rejects_mixed_stage_identity():
     scenario = DeterministicMockScenario()
     candidate, ego, obstacle = _records(scenario)
     ego.meta.stage_id = "other-stage"
-    with pytest.raises(ValueError, match="stage identities"):
+    with pytest.raises(ValueError, match="stage_id mismatch"):
         decode_safety_snapshot(
             candidate,
             ego,

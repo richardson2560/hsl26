@@ -1,0 +1,80 @@
+{
+  "phase": "P5.1",
+  "status": "PASS_PURE_CORE_WITH_RUNTIME_AND_UPSTREAM_GATE_BLOCKERS",
+  "authority": {
+    "technical_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "architecture": "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "phase_document": "docs/HSL26_PHASE5_MATCH_AND_TACTICS.md",
+    "physical_authority": false,
+    "competition_acceptance": false,
+    "g4_status": "NOT_RUN"
+  },
+  "implementation": {
+    "stage_owner": "hsl_core/hsl_core/match.py::StageManager",
+    "stage_phases": ["INIT", "FREEZE", "ACTIVE", "TERMINAL"],
+    "clock": "monotonic integer nanoseconds; active phase evaluated at exact configured boundaries",
+    "stage_identity": "idempotent requests, expected-stage compare, never-reused generated IDs",
+    "stage_authority": "derived from ACTIVE, no event hold, valid state and completed reset/epoch barriers",
+    "resource_bounds": {
+      "request_idempotency_records": "explicit profile cap; new requests fail closed when full",
+      "event_records_per_stage": "explicit profile cap; overflow event is rejected",
+      "audit_journal": "bounded profile-sized in-memory tail with monotonic sequence and observable dropped-record counter"
+    },
+    "semantic_zone": {
+      "accepted_requirements": [
+        "simple counterclockwise polygon",
+        "explicit approved frame",
+        "finite non-negative position error bound",
+        "provider and approved authorization reference",
+        "SHA-256 provenance"
+      ],
+      "candidate_used_as_authority": false,
+      "unresolved_geometry_inference": false,
+      "permission_window": "explicit immutable StageProfile field bounded by freeze duration"
+    },
+    "event_adjudication": {
+      "estimate_effect": "local active-stage hold only; no official terminal result",
+      "official_event_order": "closed evidence intervals, independent of arrival order",
+      "overlapping_distinct_terminal_intervals": "AMBIGUOUS",
+      "deadline": "event upper bound must be strictly less than stage deadline",
+      "delayed_predeadline_event": "processed before applying timeout transition",
+      "capture_or_arrival_geometry": "not inferred by StageManager; supplied by validated evidence producer"
+    },
+    "reset": {
+      "allowed_phases": ["INIT", "TERMINAL"],
+      "memory_retention": "only explicitly approved profile IDs",
+      "new_stage_phase": "INIT",
+      "authority_barrier": ["actions", "execution", "plans", "candidates", "tracks", "memory"],
+      "start_before_all_acknowledgements": "rejected"
+    },
+    "epoch_change": {
+      "localization": "invalidates estimate holds and requires action, plan, candidate, track, map and world acknowledgements",
+      "clock": "new stage ID, clears stage/zone/event state and requires reset acknowledgements"
+    },
+    "audit": "ordered in-memory request/transition/event journal preserving intervals, provenance IDs, evidence class and config/profile identity; bounded retention is explicit"
+  },
+  "verification": {
+    "focused_command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest hsl_core\\tests\\test_p51_match.py hsl_core\\tests\\test_p13_foundation.py ros_ws\\src\\hsl_interfaces\\test\\test_contract_schema.py -q",
+    "focused_result": "77 passed in 0.99s",
+    "p51_only_command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest hsl_core\\tests\\test_p51_match.py -q",
+    "p51_only_result": "64 passed in 0.26s",
+    "repository_regression_command": "$env:PYTHONPATH = 'hsl_core;ros_ws\\src\\hsl_safety'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "repository_regression_result": "321 passed in 2.84s",
+    "test_inventory": {
+      "p51_adversarial_cases": "hsl_core/tests/test_p51_match.py",
+      "normative_rule_fixtures": "hsl_core/tests/test_p13_foundation.py",
+      "interface_schema": "ros_ws/src/hsl_interfaces/test/test_contract_schema.py"
+    },
+    "compileall": "PASS",
+    "json_validation": "PASS",
+    "diff_check": "PASS"
+  },
+  "limitations": [
+    "Pure-core tests do not validate ROS/DDS delivery, QoS, service authentication or process failure recovery.",
+    "The organizer authorization registry is supplied as immutable profile data; external credential verification belongs to the ROS adapter/deployment boundary.",
+    "Position error bound is preserved and validated but polygon offset/footprint contact must be computed by the separately tested geometry/referee layer.",
+    "The in-memory audit journal is bounded and reports dropped-record count; runtime must persist/forward records off the control path before the configured cap is reached.",
+    "No G0/G2/G3 physical acceptance or G4 end-to-end rehearsal is claimed."
+  ],
+  "next_work": "P5.2 pure-core authority slice is recorded in P5.2_option_authority_report.json; ROS action/execution-state integration remains pending"
+}

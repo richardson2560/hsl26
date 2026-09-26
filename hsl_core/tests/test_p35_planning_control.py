@@ -83,6 +83,7 @@ def test_regulated_pursuit_respects_speed_yaw_and_lateral_acceleration():
         now_s=2.0,
         lease_s=0.2,
         source_id="option-1",
+        lease_generation=1,
     )
     assert 0.0 <= candidate.linear_velocity_mps <= 0.4
     assert abs(candidate.angular_velocity_rps) <= 1.0
@@ -113,16 +114,97 @@ def test_candidate_rejects_stale_version_and_expired_lease():
     generation = lease.activate("option")
     path = astar(graph, 0, 3)
     candidate = MotionCandidate(
-        0.1, 0.0, 1.0, 1.5, 0.5, "option", 8, "epoch-a"
+        0.1, 0.0, 1.0, 1.5, 0.5, "option", 8, "epoch-a", 9, generation
     )
     envelope = CandidateEnvelope(candidate, path, "option")
     with pytest.raises(ValueError, match="map version"):
         lease.admit(envelope, now_s=1.1, generation=generation)
     expired = MotionCandidate(
-        0.1, 0.0, 1.0, 1.5, 0.5, "option", 7, "epoch-a"
+        0.1, 0.0, 1.0, 1.5, 0.5, "option", 7, "epoch-a", 9, generation
     )
     with pytest.raises(ValueError, match="expired"):
         lease.admit(CandidateEnvelope(expired, path, "option"), now_s=1.5, generation=generation)
+
+
+def test_lease_requires_cancellation_and_active_instance_ownership():
+    lease = ExecutionLease()
+    generation = lease.activate("active", candidate_authorized=False)
+    graph = _graph()
+    path = astar(graph, 0, 3)
+    not_authorized = MotionCandidate(
+        0.1, 0.0, 1.0, 2.0, 0.5, "active", 7, "epoch-a", 9, generation
+    )
+    with pytest.raises(ValueError, match="authority is revoked"):
+        lease.admit(
+            CandidateEnvelope(not_authorized, path, "active"),
+            now_s=1.1,
+            generation=generation,
+        )
+    lease.set_candidate_authorized("active", generation, True)
+    wrong_owner = MotionCandidate(
+        0.1, 0.0, 1.0, 2.0, 0.5, "other", 7, "epoch-a", 9, generation
+    )
+    with pytest.raises(ValueError, match="does not own"):
+        lease.admit(
+            CandidateEnvelope(wrong_owner, path, "other"),
+            now_s=1.1,
+            generation=generation,
+        )
+    active = CandidateEnvelope(not_authorized, path, "active")
+    assert lease.admit(active, now_s=1.1, generation=generation) is not_authorized
+    with pytest.raises(ValueError, match="cancelled before replacement"):
+        lease.activate("next", candidate_authorized=False)
+
+
+def test_lease_rejects_candidate_with_topology_version_different_from_path():
+    lease = ExecutionLease()
+    generation = lease.activate(
+        "option",
+        expected_map_version=7,
+        expected_topology_version=9,
+        expected_localization_epoch="epoch-a",
+    )
+    path = astar(_graph(), 0, 3)
+    wrong_topology = MotionCandidate(
+        0.1, 0.0, 1.0, 2.0, 0.5, "option", 7, "epoch-a", 8, generation
+    )
+    with pytest.raises(ValueError, match="topology version"):
+        lease.admit(
+            CandidateEnvelope(wrong_topology, path, "option"),
+            now_s=1.1,
+            generation=generation,
+        )
+
+
+def test_lease_rejects_matching_candidate_and_path_from_stale_option_topology():
+    lease = ExecutionLease()
+    generation = lease.activate(
+        "option",
+        expected_map_version=7,
+        expected_topology_version=9,
+        expected_localization_epoch="epoch-a",
+    )
+    path = astar(_graph(), 0, 3)
+    stale_path = PlannedPath(
+        map_version=path.map_version,
+        topology_version=10,
+        localization_epoch=path.localization_epoch,
+        start_node_id=path.start_node_id,
+        goal_node_id=path.goal_node_id,
+        node_ids=path.node_ids,
+        edge_ids=path.edge_ids,
+        polyline_xy_m=path.polyline_xy_m,
+        cost=path.cost,
+    )
+    stale_candidate = MotionCandidate(
+        0.1, 0.0, 1.0, 2.0, 0.5, "option", 7, "epoch-a", 10, generation
+    )
+    with pytest.raises(ValueError, match="active option"):
+        lease.admit(
+            CandidateEnvelope(stale_candidate, stale_path, "option"),
+            now_s=1.1,
+            generation=generation,
+        )
 
 
 def test_invalid_edge_cost_cannot_make_euclidean_astar_heuristic_inadmissible():

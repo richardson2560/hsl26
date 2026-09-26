@@ -35,6 +35,24 @@ shared with plant or referee state. No physical authority is granted by this
 testbed. The MVSim adapter remains a separate integration boundary and is not
 claimed as validated by the kinematic tests.
 
+## Phase-5 match and tactics preparation
+
+`scenarios/match_tactics.json` indexes the planned stage, adjudication,
+authority-race and both-role SIL cases. It reuses the Phase-3/4 fixtures and
+is explicitly a case manifest, not yet an executable two-robot match runner.
+Its role poses and seed are development inputs only. Stage durations, official
+start trigger, goal-zone provider/coordinates and memory-retention permission
+remain unresolved; null or unresolved values must not be inferred from the
+fixture or map.
+
+The policy must receive only its own observations, versioned topology, leased
+match state and admitted commands. Opponent/goal truth and official event
+truth remain referee/evaluator-only. Estimated capture/arrival may cause a
+safe local hold, but must not be promoted to an official result. Hardware,
+MVSim and G4 acceptance remain separate from this SIL preparation. See
+[`HSL26_PHASE5_IMPLEMENTATION_PLAN.md`](../../docs/HSL26_PHASE5_IMPLEMENTATION_PLAN.md)
+and [`P5_environment_baseline.json`](../../artifacts/reports/phase5/P5_environment_baseline.json).
+
 ## Optional visualizer
 
 `visualizer.py` is a diagnostic satellite and is not imported by policy,

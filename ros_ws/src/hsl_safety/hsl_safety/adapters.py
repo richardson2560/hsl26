@@ -23,12 +23,29 @@ class AdapterContext:
 
     now_ros_ns: int
     now_steady_ns: int
+    expected_stage_id: str
     expected_clock_epoch: str
     expected_localization_epoch: str
     expected_candidate_frame_id: str
     expected_ego_frame_id: str
     expected_obstacle_frame_id: str
+    expected_map_version: int
+    expected_topology_version: int
+    expected_lease_generation: int
     expected_option_instance_id: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.expected_stage_id, str) or not self.expected_stage_id.strip():
+            raise ValueError("expected_stage_id must be non-empty")
+        for value, name in (
+            (self.expected_map_version, "expected_map_version"),
+            (self.expected_topology_version, "expected_topology_version"),
+            (self.expected_lease_generation, "expected_lease_generation"),
+        ):
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                raise ValueError(f"{name} must be a non-negative integer")
+        if self.expected_lease_generation == 0:
+            raise ValueError("expected_lease_generation must be positive")
 
 
 @dataclass
@@ -382,8 +399,19 @@ def _validate_meta(
         raise ValueError("schema_version must be revision 2")
     if _required(meta, "clock_epoch") != context.expected_clock_epoch:
         raise ValueError("clock_epoch mismatch")
+    if _required(meta, "stage_id") != context.expected_stage_id:
+        raise ValueError("stage_id mismatch")
     if _required(meta, "localization_epoch") != context.expected_localization_epoch:
         raise ValueError("localization_epoch mismatch")
+    for name, expected in (
+        ("map_version", context.expected_map_version),
+        ("topology_version", context.expected_topology_version),
+    ):
+        version = _required(meta, name)
+        if not isinstance(version, int) or isinstance(version, bool) or version < 0:
+            raise ValueError(f"{name} must be a non-negative integer")
+        if version != expected:
+            raise ValueError(f"{name} mismatch")
     frame_id = _required(meta, "frame_id")
     if require_frame and frame_id != expected_frame_id:
         raise ValueError("frame_id mismatch")
@@ -442,6 +470,15 @@ def decode_safety_snapshot(
     }
     if len(stage_ids) != 1 or "" in stage_ids:
         raise ValueError("candidate, ego and obstacle stage identities must match")
+    candidate_generation = _required(candidate, "lease_generation")
+    if (
+        not isinstance(candidate_generation, int)
+        or isinstance(candidate_generation, bool)
+        or candidate_generation <= 0
+    ):
+        raise ValueError("candidate lease_generation must be positive")
+    if candidate_generation != context.expected_lease_generation:
+        raise ValueError("candidate lease_generation mismatch")
     candidate_stamp_ns = _stamp_ns(
         _required(candidate_meta, "publication_stamp"), "candidate publication_stamp"
     )
@@ -486,6 +523,12 @@ def decode_safety_snapshot(
         ),
         free_distance_m=float(free_distance_m),
         ego_speed_mps=_required(ego_local, "v"),
+        candidate_map_version=_required(candidate_meta, "map_version"),
+        expected_map_version=context.expected_map_version,
+        candidate_topology_version=_required(candidate_meta, "topology_version"),
+        expected_topology_version=context.expected_topology_version,
+        candidate_lease_generation=candidate_generation,
+        expected_lease_generation=context.expected_lease_generation,
         option_instance_id=_required(candidate, "option_instance_id"),
         expected_option_instance_id=context.expected_option_instance_id,
         received_steady_ns=context.now_steady_ns,
@@ -508,8 +551,22 @@ def validate_authority_context(
             require_frame=False,
             expected_frame_id=context.expected_candidate_frame_id,
         )
-    if not _required(execution_state, "candidate_authorized"):
+    candidate_authorized = _required(execution_state, "candidate_authorized")
+    if not isinstance(candidate_authorized, bool):
+        raise ValueError("candidate_authorized must be boolean")
+    if not candidate_authorized:
         raise ValueError("candidate authority is not granted")
+    lease_generation = _required(execution_state, "lease_generation")
+    if (
+        not isinstance(lease_generation, int)
+        or isinstance(lease_generation, bool)
+        or lease_generation <= 0
+        or lease_generation != context.expected_lease_generation
+    ):
+        raise ValueError("execution lease_generation mismatch")
+    phase = _required(execution_state, "phase")
+    if not isinstance(phase, int) or isinstance(phase, bool) or phase != 2:
+        raise ValueError("execution phase is not EXECUTING")
     if not _required(match_state, "motion_authorized"):
         raise ValueError("match motion authority is not granted")
     if not _required(watchdog_health, "ready"):

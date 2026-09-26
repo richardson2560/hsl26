@@ -55,6 +55,8 @@ def test_temporal_and_spatial_metadata_are_required():
             source_id="planner",
             map_version=3,
             localization_epoch="epoch-1",
+            topology_version=4,
+            lease_generation=1,
         )
 
     track = OpponentTrack(

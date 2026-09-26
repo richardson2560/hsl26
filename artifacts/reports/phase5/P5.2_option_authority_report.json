@@ -1,0 +1,67 @@
+{
+  "phase": "P5.2",
+  "status": "PASS_PURE_CORE_WITH_ROS_ADAPTER_AND_RUNTIME_GATE_BLOCKERS",
+  "authority": {
+    "technical_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "architecture": "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "phase_document": "docs/HSL26_PHASE5_MATCH_AND_TACTICS.md",
+    "physical_authority": false,
+    "ros_action_server_verified": false,
+    "message_shaped_safety_adapter_verified": true,
+    "dds_qos_verified": false,
+    "competition_acceptance": false,
+    "g4_status": "NOT_RUN"
+  },
+  "implementation": {
+    "registry": "hsl_core/hsl_core/tactics/options.py::OptionRegistry",
+    "authority_owner": "hsl_core/hsl_core/tactics/options.py::OptionAuthority",
+    "execution_state_owner": "OptionAuthority.execution_state",
+    "option_kinds": 12,
+    "serialized_enum_consistency": "OptionKind, OptionPhase, OptionOutcome, Role and StagePhase statically compared to ROS IDL constants",
+    "admission": [
+      "schema revision 2 and typed goal/context validation",
+      "unique action and option instance identities; identities are not rebound",
+      "role, stage, clock epoch, localization epoch, map and topology must match",
+      "deadline is strictly future and cannot exceed stage deadline for movement options",
+      "required target and accepted semantic zone are explicit",
+      "movement requires active stage, valid stage lease, motion authorization and no safety stop",
+      "HOLD_SAFE has no movement target, can be admitted without movement authority, and never authorizes candidates"
+    ],
+    "lifecycle": {
+      "states": ["IDLE", "PLANNING", "EXECUTING", "REPLANNING", "CANCELING", "FINISHED"],
+      "candidate_authority": "false until current path is validated and all invariants pass; revoked before replan, cancel or terminal result",
+      "lease_generation": "monotonic on accepted option and replan; carried by ExecutionState and MotionCandidate to fence delayed output from an earlier plan",
+      "replacement": "new goal rejected while prior option is active; old lease revoked on cancel request; replacement admitted only after cancellation acknowledgement or bounded cancellation timeout",
+      "cancel_timeout": "INTERNAL_ERROR terminal result after immediate lease revocation; delayed candidates remain inadmissible",
+      "termination": "deadline and stage boundaries are inclusive; effect completion requires EXECUTING phase, matching option_instance_id and non-empty evidence ID"
+    },
+    "candidate_lease": {
+      "owner_check": "generation and active option_instance_id are both matched",
+      "revocation": "cancel revokes authorization synchronously",
+      "validation": ["candidate lease generation", "candidate source identity", "finite current time", "lease expiry", "stage identity", "map version", "topology version", "localization epoch"]
+    },
+    "bounded_records": {
+      "action_records": 4096,
+      "audit_records": 16384,
+      "capacity_behavior": "fail closed without evicting identity/idempotency records",
+      "audit": "monotonic causal sequence with observable dropped-record counter"
+    }
+  },
+  "verification": {
+    "dedicated_command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest hsl_core\\tests\\test_p52_option_authority.py -q",
+    "dedicated_result": "73 passed in 0.75s",
+    "repository_regression_command": "$env:PYTHONPATH = 'hsl_core;ros_ws\\src\\hsl_safety'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "repository_regression_result": "406 passed in 1.98s",
+    "compileall": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "limitations": [
+    "The pure-core authority is not connected to an ExecuteOption action server, ROS feedback/result publisher or option_executor_node. The pure message-shaped safety adapter validates lease generation and stage/world-version matches, but native ROS transport was not exercised.",
+    "No DDS/QoS, stale transient-local delivery, multi-process cancellation or process-crash behavior was tested.",
+    "The runtime adapter must construct OptionContext only from coherent, lease-checked MatchState, map/world and safety snapshots; booleans in this pure contract are not authentication.",
+    "OptionRegistry covers role, target, zone and generic lifecycle rules. Option-specific effect measurement and tactical selection remain responsibilities for later P5 work; this authority does not infer capture, arrival, LOS or physical success.",
+    "The runtime must preserve stage/epoch metadata in ROS ContractHeader and make candidate admission use the same ExecutionLease instance.",
+    "No ROS colcon build, MVSim run, physical robot test or G4 rehearsal was performed."
+  ],
+  "next_work": "Implement the ROS action/execution-state adapter with a single publisher and shared lease, then proceed to P5.3 role selection; retain all integration and G4 blockers until independently verified."
+}

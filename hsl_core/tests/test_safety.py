@@ -59,6 +59,12 @@ def _snapshot(**overrides) -> SafetySnapshot:
         option_instance_id="option-a",
         expected_option_instance_id="option-a",
         received_steady_ns=0,
+        candidate_map_version=7,
+        expected_map_version=7,
+        candidate_topology_version=9,
+        expected_topology_version=9,
+        candidate_lease_generation=1,
+        expected_lease_generation=1,
     )
     values.update(overrides)
     return SafetySnapshot(**values)
@@ -94,6 +100,9 @@ def test_admit_limit_and_stop_are_distinct_and_traceable():
         ("frame_id", "map", "TF_UNAVAILABLE"),
         ("clock_epoch", "clock-old", "EPOCH_MISMATCH"),
         ("option_instance_id", "option-old", "OPTION_REVOKED"),
+        ("candidate_lease_generation", 2, "OPTION_REVOKED"),
+        ("candidate_map_version", 6, "STALE_CANDIDATE"),
+        ("candidate_topology_version", 8, "STALE_CANDIDATE"),
     ],
 )
 def test_stale_identity_and_epoch_failures_force_zero(field, value, reason):

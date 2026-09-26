@@ -130,6 +130,12 @@ class SafetySnapshot:
     coverage_valid: bool
     free_distance_m: float
     ego_speed_mps: float
+    candidate_map_version: int
+    expected_map_version: int
+    candidate_topology_version: int
+    expected_topology_version: int
+    candidate_lease_generation: int
+    expected_lease_generation: int
     option_instance_id: str = ""
     expected_option_instance_id: str = ""
     received_steady_ns: int = 0
@@ -158,6 +164,18 @@ class SafetySnapshot:
         ):
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise ValueError(f"{name} must be a non-negative integer")
+        for value, name in (
+            (self.candidate_map_version, "candidate_map_version"),
+            (self.expected_map_version, "expected_map_version"),
+            (self.candidate_topology_version, "candidate_topology_version"),
+            (self.expected_topology_version, "expected_topology_version"),
+            (self.candidate_lease_generation, "candidate_lease_generation"),
+            (self.expected_lease_generation, "expected_lease_generation"),
+        ):
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                raise ValueError(f"{name} must be a non-negative integer")
+        if self.candidate_lease_generation == 0 or self.expected_lease_generation == 0:
+            raise ValueError("lease generations must be positive")
         if self.candidate_valid_until_ns <= self.candidate_stamp_ns:
             raise ValueError("candidate lease must be positive")
         if self.free_distance_m < 0.0:
@@ -364,6 +382,13 @@ class SafetySupervisor:
             and snapshot.option_instance_id != snapshot.expected_option_instance_id
         ):
             reasons.append("OPTION_REVOKED")
+        if snapshot.candidate_lease_generation != snapshot.expected_lease_generation:
+            reasons.append("OPTION_REVOKED")
+        if (
+            snapshot.candidate_map_version != snapshot.expected_map_version
+            or snapshot.candidate_topology_version != snapshot.expected_topology_version
+        ):
+            reasons.append("STALE_CANDIDATE")
         return tuple(dict.fromkeys(reasons))
 
     def _result(

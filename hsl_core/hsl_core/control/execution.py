@@ -35,6 +35,7 @@ class OptionExecutor:
             now_s=now_s,
             lease_s=lease_s,
             source_id=option_instance_id,
+            lease_generation=generation,
         )
         envelope = CandidateEnvelope(candidate, path, option_instance_id)
         self._lease.admit(envelope, now_s=now_s, generation=generation)

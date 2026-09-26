@@ -1,0 +1,119 @@
+{
+  "schema": "hsl26.phase5.match-tactics-case-manifest.v1",
+  "scenario_id": "phase5-match-tactics-sil",
+  "seed": 20260926,
+  "profile": "observed_map",
+  "physical_authority": false,
+  "map_version": 1,
+  "topology_version": 1,
+  "localization_epoch": "p5-fixture-epoch-0",
+  "base_fixtures": [
+    "sim/kinematic/scenarios/parallel_corridors.json",
+    "sim/kinematic/scenarios/opponent_perception.json"
+  ],
+  "fixture_scope": "contract_and_policy_test_inputs_only",
+  "competition_geometry": false,
+  "official_rules_assumptions": [],
+  "grid": {
+    "resolution_m": 0.1,
+    "origin_xy_m": [-1.0, -1.0],
+    "width": 40,
+    "height": 30,
+    "unknown_is_blocking": true
+  },
+  "roles": {
+    "guardian": {
+      "fixture_initial_pose_xytheta": [-0.8, -0.5, 0.0],
+      "options": [
+        "HOLD_SAFE",
+        "SEARCH_PORTAL",
+        "INTERCEPT_PORTAL",
+        "PRESSURE_ROUTE",
+        "APPROACH_CAPTURE",
+        "RECOVER_VIEW",
+        "FALLBACK_DEFEND_BASE"
+      ]
+    },
+    "explorer": {
+      "fixture_initial_pose_xytheta": [1.2, 0.0, 3.141592653589793],
+      "options": [
+        "HOLD_SAFE",
+        "ADVANCE_BASE",
+        "BREAK_LOS",
+        "TAKE_ALTERNATE_PORTAL",
+        "KEEP_ESCAPE_ROUTE",
+        "OBSERVE_SAFE"
+      ]
+    }
+  },
+  "pose_semantics": "development_fixture_only",
+  "stage_profile": {
+    "freeze_duration_s": null,
+    "stage_duration_s": null,
+    "start_trigger": "UNAPPROVED_EXTERNAL_INPUT",
+    "goal_zone_provider": "UNRESOLVED",
+    "goal_zone_coordinates": null,
+    "memory_retention": "DISABLED_UNTIL_APPROVED",
+    "note": "Null and unresolved fields must not be filled from fixture geometry or defaults."
+  },
+  "case_catalog": [
+    {
+      "id": "capture_boundary",
+      "tests": ["T01", "T02", "T03", "T04"],
+      "expected": "strict_distance_inclusive_bearing_and_true_los_only"
+    },
+    {
+      "id": "first_footprint_contact",
+      "tests": ["T05", "T14"],
+      "expected": "continuous_first_contact_and_nonempty_robust_interval"
+    },
+    {
+      "id": "duplicate_start_and_timeout",
+      "tests": ["I04"],
+      "expected": "duplicate_start_does_not_reset_clock_and_delayed_freeze_cannot_emit_active"
+    },
+    {
+      "id": "cancel_race_and_epoch_change",
+      "tests": ["T21", "T22", "I11"],
+      "expected": "revoked_or_old_instance_candidate_is_rejected"
+    },
+    {
+      "id": "unresolved_goal_and_stale_match_state",
+      "tests": ["T28", "T30", "I13"],
+      "expected": "no_invented_zone_or_arrival_and_no_stale_authority"
+    },
+    {
+      "id": "overlapping_terminal_events",
+      "tests": ["I12"],
+      "expected": "AMBIGUOUS_hold_without_inventing_official_order"
+    },
+    {
+      "id": "both_roles_and_shared_blockage",
+      "tests": ["T29", "I12", "I13"],
+      "expected": "role_guarded_options_share_collision_and_route_feasibility"
+    },
+    {
+      "id": "two_robot_truth_isolation",
+      "tests": ["I14"],
+      "expected": "no_cross_robot_truth_subscription_or_physical_output_in_sil"
+    }
+  ],
+  "truth_boundary": {
+    "referee_only_fields": [
+      "ground_truth_pose",
+      "ground_truth_occupancy",
+      "opponent_truth",
+      "goal_truth",
+      "official_event_truth"
+    ],
+    "policy_visible_fields": [
+      "observed_occupancy",
+      "ego_observation",
+      "synthetic_detection",
+      "versioned_topology",
+      "accepted_commands",
+      "leased_match_state"
+    ]
+  },
+  "execution_status": "MANIFEST_PREPARED_RUNNER_NOT_IMPLEMENTED"
+}

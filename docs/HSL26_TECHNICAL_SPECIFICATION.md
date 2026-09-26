@@ -323,7 +323,7 @@ Values below are serialized constants and MUST NOT be reordered. Unknown values 
 | `TopologyNode` | `u64 node_id; Point2 position; NodeKind kind; f64 clearance_radius_m; bool articulation; text semantic_zone_id` | No invented BASE label from shape alone. Empty semantic ID allowed. |
 | `TopologyEdge` | `u64 edge_id,from_id,to_id; Point2[] polyline; f64 length_m; f64 min_clearance_radius_m; f64 min_width_m; bool width_valid; bool structural_bridge; EdgeState state; f64 cost; Time overlay_valid_until` | Undirected structural graph stored once with canonical endpoint ordering; adjacency derived both ways. Cost units fixed by planner profile. |
 | `SpectralSignature` | `u64 center_node_id; u32 hops,node_count,component_count; f64[] eigenvalues; text affinity_definition; bool valid` | Optional diagnostic/tactical feature, versioned by same topology; not required by safety. |
-| `GoalZone` | `text zone_id; GoalStatus status; Polygon2 boundary; text provider; text approval_ref; text provenance_hash; f64 position_error_bound_m` | Accepted semantic identity plus geometry in map. Unknown geometry has empty polygon and cannot be ACCEPTED. |
+| `GoalZone` | `text zone_id; GoalStatus status; Polygon2 boundary; text provider; text approval_ref; text provenance_hash; text frame_id; f64 position_error_bound_m` | Accepted semantic identity plus geometry in the explicitly declared frame, with a finite non-negative position-error bound. Unknown geometry has empty polygon and cannot be ACCEPTED. |
 
 A `CoverageGrid` is local and bounded; the structural occupancy map may remain an internal `GridSnapshot` plus `nav_msgs/OccupancyGrid` visualization. Publishing full topology at sensor rate is unnecessary. `min_width_m` is optional because nearest-obstacle distance is not always half of an actual corridor width; clearance remains mandatory.
 
@@ -479,11 +479,13 @@ The ROS action UUID is recorded alongside `option_instance_id`; they are distinc
 # ExecutionState.msg: required authority companion
 hsl_interfaces/ContractHeader meta
 string active_option_instance_id
+uint64 lease_generation
 uint8 phase
 bool candidate_authorized
 ```
 
 Topic `/navigation/execution_state`: option executor → local control/supervisor, reliable volatile depth 1, periodic lease. `candidate_authorized=false` during cancel, replan without valid path, stage end or hold. `HOLD_SAFE` can authorize zero only. A missing execution lease uses the registered `STALE_EXECUTION` reason.
+Every newly accepted option and each replan advances `lease_generation`; `MotionCandidate` carries that generation, and the safety boundary rejects a candidate whose generation differs from the current `ExecutionState`. Thus a delayed candidate from an earlier plan cannot regain authority merely because the `option_instance_id` is unchanged.
 
 ### 6.2 Stage and zone services
 
@@ -1520,7 +1522,8 @@ Internal types: `ValidationResult(accepted,reason,details)`, `WheelRates(left_ra
 | `planning.astar.TopologicalAStar` | `plan(world,start,goal,cost_profile) -> PlanResult` | Known traversable connectors; returns version-bound path or NO_PATH. |
 | `planning.intercept.solve_free_intercept(r,v_e,s_g,horizon) -> InterceptResult` | Pure root solution | No positive root means unavailable; not forced to t=0. |
 | `planning.intercept.rank_portals(world,belief,ego,bounds) -> tuple[PortalOpportunity]` | Route-time bounds and hypotheses | Each result retains support probability/rank and feasibility assumptions. |
-| `tactics.options.OptionRegistry` | `definition(kind)`, `check_initiation(goal,snapshot)`, `check_invariant(instance,snapshot)`, `check_termination(instance,snapshot)` | Single source of option semantics; unknown kinds rejected. |
+| `tactics.options.OptionRegistry` | `definition(kind)`, `check_initiation(goal,context)`, `check_invariant(goal,context,executing)`, `check_termination(goal,context,executing)` | Single source of option role/target and generic lifecycle predicates; unknown kinds and unresolved required zones rejected. Effect evidence is considered only in EXECUTING, must match the active option instance and carry an evidence ID. |
+| `tactics.options.OptionAuthority` | `submit(action_id,goal,context)`, `mark_executing(action_id,context)`, `begin_replan(action_id,context)`, `request_cancel(...)`, `acknowledge_cancel(...)`, `tick(context)` | At most one active option; candidate authority is false until a current path passes invariant checks, and is revoked before cancel/replan/terminal publication. Action and option identities are not rebound; record capacity fails closed. |
 | `tactics.fsm.TacticalSelector` | `select(snapshot,current,now) -> SelectionResult` | Role-specific feasible options and deterministic hysteresis. |
 | `tactics.utility.score(features,parameters) -> UtilityResult` | Pure bounded feature scoring | Units and missing-feature policy explicit; no NaN ranking. |
 | `control.regulated_pursuit.RegulatedPursuit` | `step(path,ego,limits) -> NominalCommand` | Recompute omega after v; final target/behind-target cases explicit. |

@@ -138,6 +138,8 @@ class MotionCandidate:
     source_id: str
     map_version: int
     localization_epoch: str
+    topology_version: int
+    lease_generation: int
 
     def __post_init__(self) -> None:
         _finite(self.linear_velocity_mps, "linear_velocity_mps")
@@ -149,8 +151,15 @@ class MotionCandidate:
             raise ValueError("valid_until_s must not precede observation_time_s")
         if self.horizon_s < 0.0:
             raise ValueError("horizon_s must be non-negative")
-        if self.map_version < 0:
-            raise ValueError("map_version must be non-negative")
+        for value, field_name in (
+            (self.map_version, "map_version"),
+            (self.topology_version, "topology_version"),
+            (self.lease_generation, "lease_generation"),
+        ):
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                raise ValueError(f"{field_name} must be a non-negative integer")
+        if self.lease_generation == 0:
+            raise ValueError("lease_generation must be positive")
         _non_empty(self.source_id, "source_id")
         _non_empty(self.localization_epoch, "localization_epoch")
 

@@ -4,6 +4,9 @@
 from pathlib import Path
 import re
 
+from hsl_core.match import Role, StagePhase
+from hsl_core.tactics import OptionKind, OptionOutcome, OptionPhase
+
 
 PACKAGE = Path(__file__).resolve().parents[1]
 MSG = PACKAGE / "msg"
@@ -135,3 +138,48 @@ def test_transactional_interfaces_are_registered():
     assert "OptionGoal goal" in action
     assert "OptionResult result" in action
     assert "OptionFeedback feedback" in action
+
+
+def test_goal_zone_contract_carries_frame_and_position_uncertainty():
+    fields = _fields(MSG / "GoalZone.msg")
+    assert fields[-2:] == ["frame_id", "position_error_bound_m"]
+
+
+def test_option_core_enums_match_ros_action_and_feedback_contracts():
+    def constants(path: Path) -> dict[str, int]:
+        return {
+            name: int(value)
+            for name, value in re.findall(
+                r"^\s*uint8\s+([A-Z_]+)\s*=\s*(\d+)\s*$",
+                path.read_text(encoding="utf-8"),
+                flags=re.MULTILINE,
+            )
+        }
+
+    assert constants(MSG / "OptionGoal.msg") == {
+        kind.name: kind.value for kind in OptionKind
+    }
+    assert constants(MSG / "OptionFeedback.msg") == {
+        phase.name: phase.value for phase in OptionPhase
+    }
+    assert constants(MSG / "OptionResult.msg") == {
+        outcome.name: outcome.value for outcome in OptionOutcome
+    }
+    match_constants = constants(MSG / "MatchState.msg")
+    assert match_constants["EXPLORER"] == Role.EXPLORER.value
+    assert match_constants["GUARDIAN"] == Role.GUARDIAN.value
+    assert {
+        phase.name: match_constants[phase.name] for phase in StagePhase
+    } == {phase.name: phase.value for phase in StagePhase}
+
+
+def test_execution_and_candidate_contracts_carry_lease_generation():
+    assert _fields(MSG / "ExecutionState.msg") == [
+        "meta",
+        "active_option_instance_id",
+        "lease_generation",
+        "phase",
+        "candidate_authorized",
+    ]
+    candidate_fields = _fields(MSG / "MotionCandidate.msg")
+    assert candidate_fields[candidate_fields.index("option_instance_id") + 1] == "lease_generation"

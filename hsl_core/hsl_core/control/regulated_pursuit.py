@@ -50,6 +50,7 @@ def make_candidate(
     now_s: float,
     lease_s: float,
     source_id: str,
+    lease_generation: int,
 ) -> MotionCandidate:
     if lease_s <= 0.0 or not source_id or not math.isfinite(now_s):
         raise ValueError("time, lease and source_id must be valid")
@@ -80,4 +81,6 @@ def make_candidate(
         source_id,
         path.map_version,
         path.localization_epoch,
+        path.topology_version,
+        lease_generation,
     )

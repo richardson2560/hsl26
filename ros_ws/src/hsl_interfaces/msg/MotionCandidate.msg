@@ -1,5 +1,6 @@
 hsl_interfaces/ContractHeader meta
 string option_instance_id
+uint64 lease_generation
 string path_id
 uint64 ego_seq
 uint64 obstacle_seq

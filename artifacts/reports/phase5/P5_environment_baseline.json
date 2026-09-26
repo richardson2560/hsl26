@@ -1,0 +1,129 @@
+{
+  "phase": "P5.0",
+  "status": "READY_FOR_SIL_IMPLEMENTATION_WITH_EXTERNAL_GATE_BLOCKERS",
+  "prepared_on": "2026-09-26",
+  "source_revision": "37d2b915efaf02e0852616f93ffe43b65a2c0503",
+  "authority": {
+    "technical_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "architecture": "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "phase_document": "docs/HSL26_PHASE5_MATCH_AND_TACTICS.md",
+    "implementation_plan": "docs/HSL26_PHASE5_IMPLEMENTATION_PLAN.md",
+    "physical_authority": false,
+    "competition_acceptance": false,
+    "g4_status": "NOT_RUN"
+  },
+  "entry_evidence": {
+    "p1": {
+      "software_contracts": "PASS_RECORDED",
+      "g0_physical_and_native_ros": "BLOCKED",
+      "evidence": "artifacts/reports/phase1/P1.8_release_evidence_report.json"
+    },
+    "p3": {
+      "kinematic_route_contracts": "PASS_SIL_RECORDED",
+      "physical_g2_and_integrated_route_execution": "BLOCKED_OR_OPEN",
+      "evidence": "artifacts/reports/phase3/P3_CLOSURE_AND_PHASE4_HANDOFF.json"
+    },
+    "p4": {
+      "synthetic_detection_and_belief": "ENABLED_FOR_SIL",
+      "real_cloud_replay_mvsim_and_physical_g3": "BLOCKED",
+      "evidence": "artifacts/reports/phase4/P4.5_runtime_fidelity_report.json"
+    }
+  },
+  "profiles": {
+    "kinematic_synthetic_detection": {
+      "status": "ENABLED_FOR_PURE_CORE_SIL",
+      "scenario_manifest": "sim/kinematic/scenarios/match_tactics.json",
+      "base_fixtures": [
+        "sim/kinematic/scenarios/parallel_corridors.json",
+        "sim/kinematic/scenarios/opponent_perception.json"
+      ],
+      "truth_source": "referee_only_for_evaluation",
+      "physical_authority": false,
+      "p5_runner_status": "NOT_IMPLEMENTED"
+    },
+    "replay": {
+      "status": "PREPARED_DATA_AND_NATIVE_RUNTIME_BLOCKED",
+      "physical_authority": false
+    },
+    "mvsim": {
+      "status": "BLOCKED_UNTIL_SENSOR_MODEL_AND_NATIVE_RUNTIME_INSPECTION",
+      "physical_authority": false
+    },
+    "hardware": {
+      "status": "DISARMED_BLOCKED_FOR_HARDWARE_AND_CALIBRATION",
+      "physical_authority": true
+    }
+  },
+  "software_dependencies": {
+    "required_existing": [
+      "Python >=3.10",
+      "numpy",
+      "scipy",
+      "pytest"
+    ],
+    "new_p5_dependencies": [],
+    "optional": [
+      "open3d for future point-cloud inspection",
+      "matplotlib for optional diagnostics"
+    ],
+    "not_required_for_pure_core_sil": [
+      "PyYAML",
+      "ROS 2",
+      "colcon",
+      "MVSim"
+    ],
+    "ros_integration_later": [
+      "ROS 2 Humble",
+      "colcon",
+      "pinned Docker development environment"
+    ]
+  },
+  "prepared_assets": [
+    "docs/HSL26_PHASE5_IMPLEMENTATION_PLAN.md",
+    "sim/kinematic/scenarios/match_tactics.json",
+    "sim/kinematic/README.md",
+    "artifacts/reports/phase5/P5_environment_baseline.json"
+  ],
+  "implementation_readiness": {
+    "P5.1_stage_and_semantic_zones": "NEXT",
+    "P5.2_option_authority": "WAITING_FOR_P5.1_CONTRACTS",
+    "P5.3_role_tactics": "WAITING_FOR_STAGE_AND_OPTION_CONTRACTS",
+    "P5.4_referee_and_simulation_integration": "WAITING_FOR_PURE_CORE_EVENT_CONTRACTS",
+    "P5.5_full_baseline_rehearsal": "WAITING_FOR_P5.1_TO_P5.4"
+  },
+  "verification": {
+    "preparation_regression_command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest hsl_core\\tests sim\\kinematic -q",
+    "preparation_regression_result": "216 passed in 2.87s",
+    "regression_scope": "inherited core and kinematic tests plus P5 manifest-contract checks; no P5 runtime behavioral tests",
+    "manifest_json_validation": "PASS",
+    "manifest_contract_test": {
+      "command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest sim\\kinematic\\test_p5_manifest.py -q",
+      "result": "3 passed"
+    },
+    "compile_command": "$env:PYTHONPATH = 'hsl_core'; python -m compileall -q hsl_core\\hsl_core sim",
+    "compile_result": "PASS",
+    "diff_check": "PASS",
+    "p5_runtime_or_g4": "NOT_RUN"
+  },
+  "external_blockers": [
+    "No physical robot, G0 physical-stop evidence or calibrated limits.",
+    "G2 physical swept/stopping-tube and integrated route-execution evidence remains open.",
+    "No real-cloud or registered replay data and no validated MVSim sensor fidelity.",
+    "Accepted own-start and target-zone provider, coordinates, frame, authorization and uncertainty are not supplied.",
+    "Official stage-start trigger, score/timeout rules, simultaneous-event ordering, tie handling and memory-retention permission require organizer approval.",
+    "ROS action, namespace, QoS, launch and live graph verification has not been performed."
+  ],
+  "limitations": [
+    "The new match_tactics.json is a prepared scenario/case manifest, not an executable two-robot P5 runner.",
+    "Fixture dimensions and seeds are development test inputs, not competition geometry or calibration.",
+    "Existing 213-test regression does not imply G4 acceptance or real-motion authority.",
+    "Estimated events may request a safe hold but must not be reported as official scoring."
+  ],
+  "next_evidence": [
+    "P5.1_stage_lifecycle_report.json",
+    "P5.2_option_authority_report.json",
+    "P5.3_role_tactics_report.json",
+    "P5.4_referee_integration_report.json",
+    "P5_G4_acceptance_record.json"
+  ]
+}
