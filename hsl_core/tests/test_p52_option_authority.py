@@ -293,6 +293,20 @@ def test_hold_safe_without_started_stage_terminates_as_stage_ended_not_timeout()
     assert authority.result("action-1").outcome == OptionOutcome.STAGE_ENDED
 
 
+def test_hold_safe_is_not_rejected_or_timed_out_by_its_expired_goal_deadline():
+    context = _context(now_ns=95_000_000_000, path_valid=False)
+    goal = _goal(OptionKind.HOLD_SAFE, deadline_ns=90_000_000_000)
+    decision = OptionRegistry().check_initiation(goal, context)
+    assert decision.accepted
+    authority = OptionAuthority()
+    admission = _submit(authority, goal=goal, context=context)
+    assert admission.accepted
+    authority.tick(context)
+    assert authority.result("action-1") is None
+    assert authority.execution_state.phase == OptionPhase.PLANNING
+    assert not authority.execution_state.candidate_authorized
+
+
 def test_hold_safe_rejects_movement_target_even_if_target_would_be_ignored():
     decision = OptionRegistry().check_initiation(
         _goal(OptionKind.HOLD_SAFE, has_target_node=True, target_node_id=12),

@@ -1,4 +1,4 @@
-"""Preparation checks for the Phase-5 case manifest; no match runner is implied."""
+"""Contract and case-inventory checks for the Phase-5 SIL manifest."""
 
 import json
 from pathlib import Path
@@ -20,7 +20,9 @@ def test_p5_manifest_uses_the_existing_kinematic_scenario_contract():
     assert scenario.scenario_id == "phase5-match-tactics-sil"
     assert scenario.profile == "observed_map"
     assert scenario.physical_authority is False
-    assert manifest["execution_status"] == "MANIFEST_PREPARED_RUNNER_NOT_IMPLEMENTED"
+    assert manifest["execution_status"] == (
+        "KINEMATIC_LIFECYCLE_REHEARSAL_TESTED_G4_AND_RUNTIME_INTEGRATION_BLOCKED"
+    )
     assert all(Path(path).is_file() for path in manifest["base_fixtures"])
 
 
@@ -46,3 +48,20 @@ def test_p5_case_catalog_covers_both_roles_without_exposing_truth():
     assert "T02" in cases["capture_boundary"]
     assert "I14" in cases["two_robot_truth_isolation"]
     assert not set(boundary["referee_only_fields"]) & set(boundary["policy_visible_fields"])
+
+
+def test_p5_rehearsal_fixture_labels_assumed_timing_and_external_zone_as_unapproved():
+    manifest = _manifest()
+    rehearsal = manifest["rehearsal_profile"]
+    assert rehearsal["kind"] == "DEVELOPMENT_TEST_FIXTURE_ONLY"
+    assert rehearsal["freeze_duration_ns"] == 100_000_000
+    assert rehearsal["stage_duration_ns"] == 300_000_000
+    assert rehearsal["official_authority"] is False
+    assert rehearsal["accepted_goal_zone"] is None
+    assert rehearsal["memory_retention"] == "DISABLED"
+    case_ids = {case["id"] for case in manifest["case_catalog"]}
+    assert {
+        "cold_start_stage_lifecycle_and_role_swap",
+        "injected_stage_planner_sensor_and_watchdog_faults",
+        "deterministic_replay_and_truth_adjudication_boundary",
+    } <= case_ids

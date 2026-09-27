@@ -37,21 +37,34 @@ claimed as validated by the kinematic tests.
 
 ## Phase-5 match and tactics preparation
 
-`scenarios/match_tactics.json` indexes the planned stage, adjudication,
-authority-race and both-role SIL cases. It reuses the Phase-3/4 fixtures and
-is explicitly a case manifest, not yet an executable two-robot match runner.
-Its role poses and seed are development inputs only. Stage durations, official
-start trigger, goal-zone provider/coordinates and memory-retention permission
-remain unresolved; null or unresolved values must not be inferred from the
-fixture or map.
+`scenarios/match_tactics.json` indexes the stage, adjudication, authority-race
+and both-role SIL cases. `match.py` provides a deterministic two-role
+kinematic runner with role-scoped inputs to injected policy callbacks, an
+optional `StageManager` lease projection, a runner-level per-role command
+veto and a separate referee result. The P5.5 fixture covers lifecycle and
+fault injection, but does not wire `TacticalSelector`/`OptionAuthority`, the
+P1 safety/mux chain or ROS/DDS; nor does it provide an accepted goal zone or
+official scoring service. Its role poses and seed
+are development inputs only. Stage durations, official start trigger,
+goal-zone provider/coordinates and memory-retention permission remain
+unresolved; null or unresolved values must not be inferred from the fixture
+or map.
 
 The policy must receive only its own observations, versioned topology, leased
 match state and admitted commands. Opponent/goal truth and official event
-truth remain referee/evaluator-only. Estimated capture/arrival may cause a
+truth remain referee/evaluator-only. The capture interval checker uses
+piecewise-linear pose interpolation, conservative LOS swept envelopes and
+bounded subdivision; unresolved intervals fail closed and can be missed at
+the finite refinement limit. Arrival uses continuous first contact of a
+circular footprint along piecewise-linear trajectory segments, and rejects
+initial overlap. These are kinematic model contracts, not formal exact-
+arithmetic or sensor-fidelity proofs. Estimated capture/arrival may cause a
 safe local hold, but must not be promoted to an official result. Hardware,
-MVSim and G4 acceptance remain separate from this SIL preparation. See
+ROS runtime, MVSim and G4 acceptance remain separate from this SIL runner. See
 [`HSL26_PHASE5_IMPLEMENTATION_PLAN.md`](../../docs/HSL26_PHASE5_IMPLEMENTATION_PLAN.md)
 and [`P5_environment_baseline.json`](../../artifacts/reports/phase5/P5_environment_baseline.json).
+The bounded P5.5 evidence matrix is in
+[`P5.5_rehearsal_report.json`](../../artifacts/reports/phase5/P5.5_rehearsal_report.json).
 
 ## Optional visualizer
 

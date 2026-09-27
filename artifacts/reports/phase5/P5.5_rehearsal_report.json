@@ -1,0 +1,148 @@
+{
+  "phase": "P5.5",
+  "status": "PASS_BOUNDED_KINEMATIC_REHEARSAL_WITH_G4_BLOCKED",
+  "scope": "Two-role software-in-the-loop lifecycle, stage gating, determinism and injected application faults only.",
+  "authority": {
+    "technical_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "architecture": "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "phase_document": "docs/HSL26_PHASE5_MATCH_AND_TACTICS.md",
+    "physical_authority": false,
+    "official_scoring_authority": false,
+    "approved_stage_timing": false,
+    "accepted_goal_zone": false,
+    "ros_namespace_and_dds_verified": false,
+    "production_watchdog_process_verified": false,
+    "mvsim_fidelity_verified": false,
+    "competition_acceptance": false,
+    "g4_status": "BLOCKED_NOT_RUN"
+  },
+  "fixture_profile": {
+    "scenario": "sim/kinematic/scenarios/match_tactics.json",
+    "profile_kind": "DEVELOPMENT_TEST_FIXTURE_ONLY",
+    "freeze_duration_ns": 100000000,
+    "stage_duration_ns": 300000000,
+    "tick_duration_s": 0.05,
+    "sensor_seeds": {
+      "guardian": 21,
+      "explorer": 22
+    },
+    "goal_zone": null,
+    "memory_retention": "DISABLED",
+    "note": "Fixture values are not official timing, geometry, authorization or competition rules."
+  },
+  "implementation": {
+    "stage_integration": "TwoRobotMatch accepts optional StageManager; the leased MatchState snapshot is passed read-only to both role callbacks.",
+    "motion_gate": "Runner independently zeros both commands unless MatchState.motion_authorized, the assigned stage role matches the endpoint, and the entire tick ends no later than both MatchState.meta.valid_until_ns and stage_ends_at_ns.",
+    "deadline_policy": "A tick that straddles the deadline is zeroed in full; no command is extrapolated past authority.",
+    "watchdog_fault": "watchdog_healthy=false bypasses both policy callbacks and supplies zero actuation; simulated time advances and stage result is not altered.",
+    "transaction_boundary": "Sensor/policy/referee exceptions and invalid paired commands occur before either plant advances; predicted poses are evaluated before commit, and failed ticks do not commit runner time or plant state.",
+    "lifecycle": "Cold INIT/FREEZE/ACTIVE, guardian stage, timeout, terminal stop, reset acknowledgement barrier, fresh stage ID and explorer role swap.",
+    "truth_boundary": "No referee truth enters policy callbacks. SIM_TRUTH remains unscored unless a stage profile explicitly enables it; no goal zone or ARRIVAL is inferred.",
+    "replay": "Fixed sensor seeds and wall fixture produce byte-comparable observation/command/pose tuples across repeated cold runs."
+  },
+  "verification": {
+    "dedicated_command": "$env:PYTHONPATH = 'hsl_core;ros_ws\\src\\hsl_safety'; python -m pytest sim\\kinematic\\test_p55_rehearsal.py -q",
+    "dedicated_result": "15 passed in 0.26s",
+    "related_command": "$env:PYTHONPATH = 'hsl_core;ros_ws\\src\\hsl_safety'; python -m pytest sim\\kinematic\\test_p55_rehearsal.py sim\\kinematic\\test_p54_referee.py sim\\kinematic\\test_p5_manifest.py -q",
+    "related_result": "36 passed in 2.53s",
+    "full_regression_command": "$env:PYTHONPATH = 'hsl_core;ros_ws\\src\\hsl_safety'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "full_regression_result": "522 passed in 12.34s",
+    "compileall": "PASS",
+    "git_diff_check": "PASS",
+    "json_validation": "PASS",
+    "tested_cases": [
+      {
+        "case": "cold_start_freeze_active_timeout_role_swap_reset",
+        "result": "PASS",
+        "test": "test_cold_start_freeze_active_role_swap_terminal_and_reset_are_reproducible"
+      },
+      {
+        "case": "deadline_straddling_tick",
+        "result": "PASS",
+        "test": "test_stage_deadline_straddling_tick_is_held_without_crossing_authority"
+      },
+      {
+        "case": "match_state_lease_expiry",
+        "result": "PASS",
+        "test": "test_tick_cannot_outlive_the_match_state_lease"
+      },
+      {
+        "case": "reset_ack_barrier_and_terminal_stop",
+        "result": "PASS",
+        "test": "test_reset_ack_barrier_and_terminal_event_both_fail_closed"
+      },
+      {
+        "case": "stage_clock_fault",
+        "result": "PASS",
+        "test": "test_stage_clock_fault_fails_closed_before_sensors_or_policies_run"
+      },
+      {
+        "case": "sensor_fault",
+        "result": "PASS",
+        "test": "test_sensor_failure_is_not_silently_replaced_and_tick_is_transactional"
+      },
+      {
+        "case": "referee_fault",
+        "result": "PASS",
+        "test": "test_referee_failure_is_not_silently_replaced_and_tick_is_transactional"
+      },
+      {
+        "case": "referee_fault",
+        "result": "PASS",
+        "test": "test_referee_failure_is_not_silently_replaced_and_tick_is_transactional"
+      },
+      {
+        "case": "planner_fault_and_invalid_paired_command",
+        "result": "PASS",
+        "test": "test_planner_failure_or_invalid_second_command_cannot_partially_step_either_robot"
+      },
+      {
+        "case": "watchdog_loss_and_invalid_health_type",
+        "result": "PASS",
+        "tests": [
+          "test_watchdog_fault_bypasses_both_policies_and_forces_zero_without_advancing_pose",
+          "test_watchdog_health_requires_a_real_boolean"
+        ]
+      },
+      {
+        "case": "deterministic_replay",
+        "result": "PASS",
+        "test": "test_same_seed_cold_runs_replay_observations_and_pose_trace_exactly"
+      },
+      {
+        "case": "simulation_truth_not_promoted",
+        "result": "PASS",
+        "test": "test_sim_truth_is_not_automatically_scored_and_wrong_role_never_gets_motion"
+      }
+    ]
+  },
+  "acceptance_matrix": {
+    "kinematic_stage_gating_and_role_swap": "PASS_TESTED",
+    "stage_reset_acknowledgement_and_timeout": "PASS_TESTED",
+    "application_fault_fail_closed_behavior": "PASS_TESTED",
+    "P5_1_event_interval_ambiguity": "PASS_IN_SEPARATE_P5_1_CORE_TESTS_NOT_END_TO_END",
+    "P5_2_OptionAuthority_and_P5_3_TacticalSelector_wiring": "BLOCKED_NOT_WIRED",
+    "candidate_safety_supervisor_and_command_mux": "BLOCKED_NOT_IN_THIS_HARNESS",
+    "diagnostics_HUD_and_metrics": "BLOCKED_NOT_IMPLEMENTED_OR_RUN",
+    "ROS_launch_namespace_DDS_QoS_and_process_faults": "BLOCKED_RUNTIME_UNAVAILABLE",
+    "MVSim_or_replay_fidelity": "NOT_RUN",
+    "accepted_zone_arrival_or_base_defense": "BLOCKED_ZONE_UNRESOLVED",
+    "physical_stop_braking_and_hardware": "BLOCKED_NO_PHYSICAL_ROBOT",
+    "G4": "BLOCKED_NOT_RUN"
+  },
+  "limitations": [
+    "Policy callbacks return raw kinematic Actuation. This runner does not replace or verify OptionAuthority, MotionCandidate validation, the safety supervisor or command mux.",
+    "The watchdog fault is a deterministic input to the harness, not an independent process, transport heartbeat, OS-scheduling test or physical stop.",
+    "The two roles share one sequential StageManager role assignment; this does not infer simultaneous-event or competition role-swap rules.",
+    "A whole deadline-straddling tick is discarded, conservatively losing up to one tick of otherwise authorized movement.",
+    "No accepted zone, official start trigger, official duration/scoring/tie rule, or memory-retention approval was supplied.",
+    "Passing kinematic tests does not establish MVSim sensor fidelity, ROS/DDS isolation, I08 diagnostics, physical G0-G3 evidence, competition readiness or G4."
+  ],
+  "next_required_evidence": [
+    "Wire TacticalSelector proposals through OptionAuthority, leased candidates, safety supervisor and mux in an integrated runtime.",
+    "Add bounded diagnostics/HUD and immutable run artifact capture without putting UI work on the control path.",
+    "Run ROS launch/topic/namespace/QoS/process fault integration when the pinned runtime is available.",
+    "Obtain approved stage/zone/scoring/retention metadata before any arrival or official-result rehearsal.",
+    "Repeat the complete profile-specific acceptance matrix in MVSim and hardware; keep G4 blocked until its defined evidence is complete."
+  ]
+}

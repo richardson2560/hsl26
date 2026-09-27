@@ -49,9 +49,9 @@
   },
   "verification": {
     "dedicated_command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest hsl_core\\tests\\test_p52_option_authority.py -q",
-    "dedicated_result": "73 passed in 0.75s",
+    "dedicated_result": "74 passed in 0.59s",
     "repository_regression_command": "$env:PYTHONPATH = 'hsl_core;ros_ws\\src\\hsl_safety'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
-    "repository_regression_result": "406 passed in 1.98s",
+    "repository_regression_result": "489 passed in 6.08s",
     "compileall": "PASS",
     "git_diff_check": "PASS"
   },
@@ -63,5 +63,5 @@
     "The runtime must preserve stage/epoch metadata in ROS ContractHeader and make candidate admission use the same ExecutionLease instance.",
     "No ROS colcon build, MVSim run, physical robot test or G4 rehearsal was performed."
   ],
-  "next_work": "Implement the ROS action/execution-state adapter with a single publisher and shared lease, then proceed to P5.3 role selection; retain all integration and G4 blockers until independently verified."
+  "next_work": "Implement the ROS action/execution-state adapter with a single publisher and shared lease; the pure-core P5.3 selector is recorded in P5.3_tactics_report.json. Retain all integration and G4 blockers until independently verified."
 }

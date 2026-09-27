@@ -76,5 +76,5 @@
     "The in-memory audit journal is bounded and reports dropped-record count; runtime must persist/forward records off the control path before the configured cap is reached.",
     "No G0/G2/G3 physical acceptance or G4 end-to-end rehearsal is claimed."
   ],
-  "next_work": "P5.2 pure-core authority slice is recorded in P5.2_option_authority_report.json; ROS action/execution-state integration remains pending"
+  "next_work": "P5.2 and P5.3 pure-core slices are recorded in their phase reports; ROS action/tactics integration remains pending, followed by P5.4 referee and two-role SIL integration"
 }

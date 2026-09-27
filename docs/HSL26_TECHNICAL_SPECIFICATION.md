@@ -964,6 +964,24 @@ First filter role, semantic and motion feasibility. Rank urgent safety/threat av
 
 Hysteresis compares utilities in utility units: switch only if `U_new > U_current + delta_U` after minimum dwell, except urgent invalidation. A distance threshold named `hysteresis_dist` cannot be applied to dimensionless utility. Stable tie-breaking uses a deterministic option order and target ID. To guarantee a weighted capture term dominates all others, bound the total range of the other terms and choose its weight accordingly, or use lexicographic ordering. “w_capture is large” is not a proof.
 
+The pure-core schema fixes these normalized feature names (each assessor must
+define the profile-specific normalization and provenance; values are bounded
+to `[0,1]` and are not probabilities unless calibrated as such):
+
+| Role | Features (value 1 means) |
+|---|---|
+| Guardian | `capture_opportunity`: stronger evidence-based opportunity score; `portal_time_advantage`: larger supported route-time advantage; `observation_gain`: larger expected information gain; `pursuit_value`: greater bounded pursuit value; `duration_cost`: greater expected duration/cost (therefore a non-positive weight). |
+| Explorer | `base_progress`: greater normalized geodesic progress toward the accepted target; `visibility_loss`: greater predicted guardian-visibility reduction; `alternative_exits`: more verified exits under the frozen normalization; `escape_safety`: safer validated escape; `observation_gain`: greater expected information gain; `capture_risk`: greater risk (non-positive weight); `duration_cost`: greater expected duration/cost (non-positive weight). |
+
+For either role, `U = sum(w_i f_i)` and the immutable versioned profile
+requires `sum(abs(w_i)) <= 1`; hence `U` is dimensionless and lies in
+`[-1,1]`. Missing or extra features are rejected, never filled with zero.
+Explorer `KEEP_ESCAPE_ROUTE`/`BREAK_LOS` proposals also carry a discrete
+`urgency_rank` in `[0,255]` and evidence ID; the larger ordinal preempts lower
+urgency before nominal utility and is not a calibrated probability. Production
+normalizations/weights require explicit held-out calibration; test fixtures
+are not deployment policy.
+
 When no movement option is feasible, choose HOLD_SAFE. A blocked corridor is not traversable simply because stopping is tactically undesirable. The physical opponent stays in the collision layer for guardian and explorer alike.
 
 ```mermaid
@@ -1524,8 +1542,9 @@ Internal types: `ValidationResult(accepted,reason,details)`, `WheelRates(left_ra
 | `planning.intercept.rank_portals(world,belief,ego,bounds) -> tuple[PortalOpportunity]` | Route-time bounds and hypotheses | Each result retains support probability/rank and feasibility assumptions. |
 | `tactics.options.OptionRegistry` | `definition(kind)`, `check_initiation(goal,context)`, `check_invariant(goal,context,executing)`, `check_termination(goal,context,executing)` | Single source of option role/target and generic lifecycle predicates; unknown kinds and unresolved required zones rejected. Effect evidence is considered only in EXECUTING, must match the active option instance and carry an evidence ID. |
 | `tactics.options.OptionAuthority` | `submit(action_id,goal,context)`, `mark_executing(action_id,context)`, `begin_replan(action_id,context)`, `request_cancel(...)`, `acknowledge_cancel(...)`, `tick(context)` | At most one active option; candidate authority is false until a current path passes invariant checks, and is revoked before cancel/replan/terminal publication. Action and option identities are not rebound; record capacity fails closed. |
-| `tactics.fsm.TacticalSelector` | `select(snapshot,current,now) -> SelectionResult` | Role-specific feasible options and deterministic hysteresis. |
-| `tactics.utility.score(features,parameters) -> UtilityResult` | Pure bounded feature scoring | Units and missing-feature policy explicit; no NaN ranking. |
+| `tactics.fsm.TacticalSelector` | `select(TacticalSnapshot,current_stable_key,current_option_instance_id,current_started_at_ns) -> SelectionResult` | Requires exactly one feasible `HOLD_SAFE`; hard health/stage/safety/lease gates precede role priority, urgency rank, bounded utility, utility hysteresis and dwell. Candidate work is explicitly capped at 256 proposals. Returns all alternatives with rejection reasons and guard/urgency evidence IDs. |
+| `tactics.fsm.InterceptionTiming` | `dominates_base_defense` | Requires integer-ns evidence with `guardian_arrival_upper + buffer < explorer_arrival_lower`; equality, overlap and non-positive advantage do not confer urgent priority. |
+| `tactics.utility.UtilityProfile` / `score(features,profile)` | Versioned exact role feature schema; normalized `[0,1]` features; explicit signed coefficients; `math.fsum(w_i f_i)` | `sum(abs(w_i)) <= 1` proves utility in `[-1,1]`; missing/extra/nonfinite/out-of-range data rejected. Risk and duration coefficients are non-positive; benefit coefficients non-negative. Hysteresis is in utility units. |
 | `control.regulated_pursuit.RegulatedPursuit` | `step(path,ego,limits) -> NominalCommand` | Recompute omega after v; final target/behind-target cases explicit. |
 | `control.dwa_local.ArcEvaluator` | `select(snapshot,budget) -> NominalCommand` | Optional, bounded candidates; checked stopping tails only. |
 | `control.braking.stopping_distance(speed,b_min,tau) -> float` | Constant-speed-delay model | speed≥0, b>0, tau≥0; finite result. |

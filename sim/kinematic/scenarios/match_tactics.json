@@ -58,6 +58,35 @@
   },
   "case_catalog": [
     {
+      "id": "cold_start_stage_lifecycle_and_role_swap",
+      "tests": [
+        "test_cold_start_freeze_active_role_swap_terminal_and_reset_are_reproducible",
+        "test_stage_deadline_straddling_tick_is_held_without_crossing_authority",
+        "test_tick_cannot_outlive_the_match_state_lease",
+        "test_reset_ack_barrier_and_terminal_event_both_fail_closed"
+      ],
+      "expected": "no_motion_before_freeze_or_after_deadline_and_reset; only_assigned_role_moves"
+    },
+    {
+      "id": "injected_stage_planner_sensor_and_watchdog_faults",
+      "tests": [
+        "test_stage_clock_fault_fails_closed_before_sensors_or_policies_run",
+        "test_sensor_failure_is_not_silently_replaced_and_tick_is_transactional",
+        "test_referee_failure_is_not_silently_replaced_and_tick_is_transactional",
+        "test_planner_failure_or_invalid_second_command_cannot_partially_step_either_robot",
+        "test_watchdog_fault_bypasses_both_policies_and_forces_zero_without_advancing_pose"
+      ],
+      "expected": "fault_is_visible_and_neither_robot_receives_partial_or_stale_motion"
+    },
+    {
+      "id": "deterministic_replay_and_truth_adjudication_boundary",
+      "tests": [
+        "test_same_seed_cold_runs_replay_observations_and_pose_trace_exactly",
+        "test_sim_truth_is_not_automatically_scored_and_wrong_role_never_gets_motion"
+      ],
+      "expected": "same_seed_same_trace; simulation_truth_never_becomes_official_without_explicit_policy"
+    },
+    {
       "id": "capture_boundary",
       "tests": ["T01", "T02", "T03", "T04"],
       "expected": "strict_distance_inclusive_bearing_and_true_los_only"
@@ -115,5 +144,14 @@
       "leased_match_state"
     ]
   },
-  "execution_status": "MANIFEST_PREPARED_RUNNER_NOT_IMPLEMENTED"
+  "rehearsal_profile": {
+    "kind": "DEVELOPMENT_TEST_FIXTURE_ONLY",
+    "freeze_duration_ns": 100000000,
+    "stage_duration_ns": 300000000,
+    "tick_duration_s": 0.05,
+    "official_authority": false,
+    "accepted_goal_zone": null,
+    "memory_retention": "DISABLED"
+  },
+  "execution_status": "KINEMATIC_LIFECYCLE_REHEARSAL_TESTED_G4_AND_RUNTIME_INTEGRATION_BLOCKED"
 }

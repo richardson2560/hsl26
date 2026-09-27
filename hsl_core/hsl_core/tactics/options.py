@@ -314,8 +314,6 @@ class OptionRegistry:
         if goal.localization_epoch != context.localization_epoch:
             return PredicateDecision(False, "localization_epoch_mismatch")
         if goal.kind == OptionKind.HOLD_SAFE:
-            if goal.deadline_ns <= context.now_ns:
-                return PredicateDecision(False, "goal_deadline_expired")
             if goal.role != context.role:
                 return PredicateDecision(False, "role_mismatch")
             if (
@@ -401,14 +399,13 @@ class OptionRegistry:
         if not isinstance(executing, bool):
             raise ValueError("executing must be boolean")
         if goal.stage_id != context.stage_id or context.stage_phase in (
-            StagePhase.INIT,
-            StagePhase.TERMINAL,
+            StagePhase.INIT, StagePhase.TERMINAL
         ):
             return OptionOutcome.STAGE_ENDED, "stage_ended"
-        if context.now_ns >= goal.deadline_ns or context.now_ns >= context.stage_ends_at_ns:
-            return OptionOutcome.TIMEOUT, "deadline_reached"
         if goal.kind == OptionKind.HOLD_SAFE:
             return None, "running"
+        if context.now_ns >= goal.deadline_ns or context.now_ns >= context.stage_ends_at_ns:
+            return OptionOutcome.TIMEOUT, "deadline_reached"
         if context.safety_stop:
             return OptionOutcome.SAFETY_STOP, "safety_stop_active"
         if context.feasibility_lost:

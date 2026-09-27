@@ -18,8 +18,15 @@ class KinematicPlant:
         max_linear_mps: float = 1.0,
         max_angular_rps: float = 4.0,
     ) -> None:
-        if max_linear_mps <= 0.0 or max_angular_rps <= 0.0:
-            raise ValueError("plant limits must be positive")
+        if (
+            isinstance(max_linear_mps, bool)
+            or not math.isfinite(float(max_linear_mps))
+            or max_linear_mps <= 0.0
+            or isinstance(max_angular_rps, bool)
+            or not math.isfinite(float(max_angular_rps))
+            or max_angular_rps <= 0.0
+        ):
+            raise ValueError("plant limits must be positive and finite")
         self._pose = initial_pose
         self._stamp_s = 0.0
         self._max_linear = float(max_linear_mps)
@@ -29,14 +36,26 @@ class KinematicPlant:
     def state(self) -> PlantState:
         return PlantState(self._stamp_s, self._pose)
 
-    def step(self, command: Actuation, dt_s: float) -> PlantState:
-        if not math.isfinite(float(dt_s)) or dt_s <= 0.0:
+    def validate_step(self, command: Actuation, dt_s: float) -> None:
+        self.predict_step(command, dt_s)
+
+    def predict_step(self, command: Actuation, dt_s: float) -> Pose2D:
+        """Validate and return the next pose without committing plant state."""
+        if not isinstance(command, Actuation):
+            raise ValueError("command must be an Actuation")
+        if (
+            isinstance(dt_s, bool)
+            or not isinstance(dt_s, (int, float))
+            or not math.isfinite(float(dt_s))
+            or dt_s <= 0.0
+        ):
             raise ValueError("dt_s must be positive and finite")
         if abs(command.linear_mps) > self._max_linear:
             raise ValueError("linear command exceeds plant limit")
         if abs(command.angular_rps) > self._max_angular:
             raise ValueError("angular command exceeds plant limit")
-
+        if not math.isfinite(self._stamp_s + float(dt_s)):
+            raise ValueError("plant time exceeds finite range")
         theta = self._pose.theta_rad
         omega = command.angular_rps
         if abs(omega) < 1e-12:
@@ -47,11 +66,14 @@ class KinematicPlant:
             theta_next = theta + omega * dt_s
             dx = radius * (math.sin(theta_next) - math.sin(theta))
             dy = radius * (-math.cos(theta_next) + math.cos(theta))
-        self._pose = Pose2D(
+        return Pose2D(
             self._pose.x_m + dx,
             self._pose.y_m + dy,
             theta + omega * dt_s,
         )
+
+    def step(self, command: Actuation, dt_s: float) -> PlantState:
+        next_pose = self.predict_step(command, dt_s)
+        self._pose = next_pose
         self._stamp_s += dt_s
         return self.state
-

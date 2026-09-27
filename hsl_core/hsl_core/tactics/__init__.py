@@ -14,10 +14,24 @@ from .options import (
     OptionResult,
     PredicateDecision,
 )
+from .fsm import (
+    CandidateEvaluation,
+    InterceptionTiming,
+    MAX_TACTICAL_PROPOSALS,
+    OptionProposal,
+    SelectionResult,
+    TacticalGuard,
+    TacticalSelector,
+    TacticalSnapshot,
+)
+from .utility import ROLE_FEATURES, UtilityProfile, UtilityResult, score
 
 __all__ = [
     "ActionAdmission",
+    "CandidateEvaluation",
     "ExecutionState",
+    "InterceptionTiming",
+    "MAX_TACTICAL_PROPOSALS",
     "OptionAuditRecord",
     "OptionAuthority",
     "OptionContext",
@@ -26,7 +40,16 @@ __all__ = [
     "OptionKind",
     "OptionOutcome",
     "OptionPhase",
+    "OptionProposal",
     "OptionRegistry",
     "OptionResult",
     "PredicateDecision",
+    "ROLE_FEATURES",
+    "SelectionResult",
+    "TacticalGuard",
+    "TacticalSelector",
+    "TacticalSnapshot",
+    "UtilityProfile",
+    "UtilityResult",
+    "score",
 ]

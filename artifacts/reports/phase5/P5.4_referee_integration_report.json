@@ -1,0 +1,47 @@
+{
+  "phase": "P5.4",
+  "status": "BOUNDED_KINEMATIC_SIL_IMPLEMENTED_WITH_EXTERNAL_AND_RUNTIME_BLOCKERS",
+  "authority": {
+    "technical_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "architecture": "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "phase_document": "docs/HSL26_PHASE5_MATCH_AND_TACTICS.md",
+    "physical_authority": false,
+    "official_scoring_authority": false,
+    "ros_namespace_and_dds_verified": false,
+    "mvsim_fidelity_verified": false,
+    "competition_acceptance": false,
+    "g4_status": "NOT_RUN"
+  },
+  "implementation": {
+    "continuous_footprint_arrival": "hsl_core/hsl_core/rules.py::first_footprint_arrival",
+    "arrival_model": "Circular footprint against a validated simple CCW polygon; exact edge-offset and vertex-circle contact along piecewise-linear center segments; initial overlap rejected.",
+    "continuous_capture": "hsl_core/hsl_core/rules.py::first_capture_interval",
+    "capture_predicate": "Strict distance < 0.45 m, inclusive directed bearing <= pi/4, noncoincident origins, and LOS clear at the same time; UNKNOWN is not accepted.",
+    "capture_interval_method": "Paired nanosecond pose samples are linearly interpolated. Distance and bearing are bounded over subintervals, LOS is checked against the convex swept envelope for static segments and circular occluders, and unresolved intervals are subdivided to a fixed depth and fail closed.",
+    "two_role_runner": "sim/kinematic/match.py::TwoRobotMatch",
+    "policy_truth_boundary": "Callbacks receive only their role, absolute role namespace, own clock stamp and own SensorObservation. Referee truth is evaluation output, not callback input.",
+    "event_adapter": "capture_rule_event creates a SIM_TRUTH CAPTURE RuleEvent with caller-supplied stage/epoch/provenance/authorization; it does not mark the event OFFICIAL or bypass StageManager authorization.",
+    "collision_truth": "Swept relative center distance for the two circular robot footprints; this is an evaluation predicate, not a motion safety or wall-collision proof.",
+    "goal_arrival_authority": "No goal zone is configured or inferred; this runner emits no ARRIVAL event."
+  },
+  "verification": {
+    "dedicated_command": "$env:PYTHONPATH = 'hsl_core;ros_ws\\src\\hsl_safety'; python -m pytest sim\\kinematic\\test_p54_referee.py -q",
+    "dedicated_result": "17 passed",
+    "full_regression_command": "$env:PYTHONPATH = 'hsl_core;ros_ws\\src\\hsl_safety'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "full_regression_result": "506 passed in 3.52s",
+    "compileall": "PASS",
+    "git_diff_check": "PASS",
+    "scenario_manifest_json": "PASS",
+    "adjudication_ambiguity": "Existing P5.1 tests verify overlapping closed intervals remain AMBIGUOUS independent of arrival order; P5.4 does not wire the runner directly to StageManager."
+  },
+  "limitations": [
+    "The runner is kinematic SIL only; no robot, ROS graph, DDS isolation, action server, MVSim, replay fidelity, physical stop or G4 evidence.",
+    "Role policies are injected callbacks; the P5.3 TacticalSelector and OptionAuthority are not wired into this runner.",
+    "Capture and arrival operate on piecewise-linear sampled center trajectories, not the exact curved path between plant samples.",
+    "Capture subdivision is bounded. Narrow or isolated events may be missed at the refinement limit; ambiguous intervals never become positive solely from endpoint distance crossing.",
+    "The capture time bracket is the containing sample segment, not a sub-nanosecond root estimate.",
+    "The swept LOS convex envelope is conservative and may reject a real clear interval; no formal exact-arithmetic proof is claimed.",
+    "Stage-start trigger, official durations/scoring, simultaneous-event policy, accepted target-zone metadata and memory-retention approval remain unresolved."
+  ],
+  "next_work": "The bounded P5.5 lifecycle rehearsal is reported separately. Remaining work is to wire P5.3/OptionAuthority and the safety/mux chain, add diagnostics and ROS namespace/DDS integration when runtime is available, obtain approved goal/stage inputs, and maintain separate G4 evidence."
+}

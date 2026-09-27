@@ -9,9 +9,10 @@
 ## 1. Purpose, entry conditions and limits
 
 This plan records the no-hardware SIL preparation and implementation sequence
-for stage lifecycle, adjudication, option authority and both tactical roles.
-It follows the evidence-led setup used for Phases 3 and 4. P5.1 and the pure
-core of P5.2 are implemented and tested; this does not claim G4, ROS runtime
+for stage lifecycle, adjudication, option authority, both tactical roles and
+the bounded P5.4 kinematic referee runner. It follows the evidence-led setup
+used for Phases 3 and 4. Pure-core P5.1-P5.3 and the bounded P5.4/P5.5 kinematic referee/rehearsal slices are
+implemented and tested; this does not claim G4, ROS runtime
 integration, MVSim fidelity or competition readiness.
 
 The current repository provides useful SIL inputs:
@@ -25,8 +26,8 @@ The current repository provides useful SIL inputs:
 - P4 tracking/belief contracts and a synthetic-detection profile; real-cloud,
   registered-scan, MVSim fidelity and physical G3 evidence remain blocked.
 - Existing deterministic plant, sensor, referee, trace and scenario
-  infrastructure under `sim/kinematic/`. It is not yet a two-robot P5 match
-  runner, and the present referee only exposes its existing collision result.
+  infrastructure under `sim/kinematic/`, extended by `match.py` for role-
+  scoped two-robot SIL ticks and private capture/collision truth output.
 
 Therefore P5 may start with the kinematic + `SYNTHETIC_DETECTION` profile for
 contract and policy work. Entry to real motion, G4 release or an official
@@ -38,12 +39,12 @@ it must not be guessed from the map, farthest node or fixture coordinates.
 
 | Asset | Purpose | Preparation status |
 |---|---|---|
-| `sim/kinematic/scenarios/match_tactics.json` | Seeded P5 case inventory for stage races, adjudication boundaries, both roles and truth isolation | Prepared as a test fixture manifest; not yet consumed by a P5 runner |
+| `sim/kinematic/scenarios/match_tactics.json` | Seeded P5 case inventory for stage races, adjudication boundaries, both roles and truth isolation | Consumed as case inventory; no inferred official timing or goal geometry |
 | `sim/kinematic/README.md` | Declares P5 SIL profile, fixture limitations and truth boundary | Updated |
 | `artifacts/reports/phase5/P5_environment_baseline.json` | Machine-readable environment, inherited gate evidence, dependencies and blockers | Prepared |
 | `docs/HSL26_PHASE5_IMPLEMENTATION_PLAN.md` | Ordered P5.1-P5.5 implementation and verification plan | Prepared |
 | `hsl_core/hsl_core/match.py` and `tactics/options.py` | Pure stage and option authority boundaries | P5.1/P5.2 core slices implemented; not connected to a ROS action server |
-| Existing planning, control, perception and `sim/kinematic` code | Reusable pure-core and SIL contracts | Available; P5 end-to-end behavior is not yet implemented |
+| `hsl_core/hsl_core/rules.py`, `sim/kinematic/match.py` | Continuous modeled footprint contact, capture interval and role-scoped policy/referee boundary | Bounded kinematic SIL slice; not ROS/MVSim/G4 evidence |
 
 The P5 manifest references existing Phase 3/4 fixtures. Its coordinates, seed
 and case inputs are software test data only. They are not competition layout,
@@ -88,13 +89,16 @@ Focused P5 commands to use as the work packages add tests:
 ```powershell
 $env:PYTHONPATH = "hsl_core"
 python -m pytest sim\kinematic\test_p5_manifest.py -q
-python -m pytest hsl_core\tests\test_p51_match.py hsl_core\tests\test_p52_option_authority.py ros_ws\src\hsl_interfaces\test\test_contract_schema.py -q
+python -m pytest sim\kinematic\test_p54_referee.py hsl_core\tests\test_p13_foundation.py -q
+python -m pytest sim\kinematic\test_p55_rehearsal.py sim\kinematic\test_p54_referee.py sim\kinematic\test_p5_manifest.py -q
+python -m pytest hsl_core\tests\test_p51_match.py hsl_core\tests\test_p52_option_authority.py hsl_core\tests\test_p53_tactics.py ros_ws\src\hsl_interfaces\test\test_contract_schema.py -q
 ```
 
-The first command validates only the prepared manifest and existing Phase-3
-scenario envelope. The focused command covers P5.1/P5.2 pure-core contracts.
-There is no P5 ROS action-server adapter, DDS race test or two-robot match
-runner yet.
+The first focused commands validate the manifest, P5.4 referee geometry and
+runner, and P5.5 lifecycle/fault rehearsal. The pure-core command covers
+P5.1-P5.3 contracts. There is no P5 ROS action-server adapter, DDS race test,
+automatic referee-to-StageManager event wiring or complete architectural
+baseline rehearsal.
 
 ## 4. Ordered work packages
 
@@ -103,9 +107,9 @@ runner yet.
 | P5.0 Environment and contract freeze | Prepared | This plan, baseline report, role/stage case manifest, profile and blockers | JSON parses; inputs and assumptions are explicit; inherited regression passes |
 | P5.1 Stage and semantic zones | 1 | `hsl_core/hsl_core/match.py`: `ResetStage`, `SetGoalZone`, `StartStage`, `ResolveEvent`; stage ID/epoch; freeze/active/terminal timers; reset/epoch acknowledgement barriers; leased MatchState; append-only in-memory transition/request journal | T01-T05/T14/T28/T30; I04/I12/I13; duplicate-start, stale-state, delayed-event, ambiguity and reset-race traces |
 | P5.2 Option authority | Implemented in pure core + message-shaped safety boundary | `tactics/options.py`: one `OptionRegistry`, strict goal/context contracts, `OptionAuthority` lifecycle, exact deadline/effect-instance checks, single `ExecutionState` projection, bounded causal journal; lease generation rotates on replan and is carried through `ExecutionState`/`MotionCandidate`; planning lease and safety adapter reject stale generation/stage/map/topology | Dedicated adversarial tests; ROS action server, DDS/QoS, process-failure and G4 evidence remain open |
-| P5.3 Role tactics | 3 | Guardian and explorer feasible-option selection, bounded utility, deterministic tie-break, hysteresis/dwell and safe fallback | T28/T29; I12/I13; per-role selected-option, alternatives and reason trace |
-| P5.4 Referee and simulation integration | 4 | Continuous first-contact and capture/LOS event evaluation; interval ordering/ambiguity; two isolated robot namespaces and referee-only truth | T01-T05/T14; I12/I14; truth/evidence and isolation comparison |
-| P5.5 Full-baseline rehearsal | 5 | Cold start, freeze, both roles, role swap, terminal/reset, injected faults, diagnostics and runbook | I04/I08/I11-I14; G4 matrix with profile-specific evidence |
+| P5.3 Role tactics | Implemented in pure core | `tactics/fsm.py`: role/guard-constrained priority selection, evidence-bearing proposals, strict interception timing comparison, explorer ordinal urgency, fixed deterministic tie-break, <=256 proposal work bound, bounded utility/hysteresis/dwell, health/authority gates and mandatory HOLD_SAFE; `tactics/utility.py`: versioned normalized features and L1-bounded score | Dedicated adversarial selector/utility suite and full regression; ROS tactics node, evidence-source authentication, referee integration and G4 remain open |
+| P5.4 Referee and simulation integration | Bounded kinematic SIL slice implemented | Piecewise-linear circular-footprint first contact; conservative capture/LOS interval; two injected role-scoped policy callbacks and separate referee truth output. TacticalSelector/OptionAuthority wiring, StageManager event wiring, accepted-zone result, ROS/MVSim and complete rehearsal remain open. | Dedicated P5.4 adversarial tests and existing P5.1 overlapping-event ambiguity tests; I12/I14 partial, G4 not run |
+| P5.5 Full-baseline rehearsal | Bounded kinematic lifecycle/fault rehearsal implemented | StageManager-gated snapshots and per-role zero veto; cold start/freeze, sequential role swap, timeout, reset barrier, deterministic trace and clock/planner/sensor/watchdog injections. Test timings are fixture assumptions. | Dedicated P5.5/P5.4/manifest tests; diagnostics, P5.3/OptionAuthority chain, ROS/DDS, MVSim, accepted goal and physical G4 remain BLOCKED/NOT_RUN |
 
 Implement pure-core state/rule/option contracts before ROS wrappers or the
 full simulator loop. Add small deterministic fixtures and negative tests at
@@ -119,6 +123,14 @@ the pure authority does not infer capture, arrival or LOS. The adapter must
 translate the ROS action UUID and `ContractHeader` into validated core
 contracts, publish the sole `ExecutionState`, and use the same
 `ExecutionLease` as candidate generation.
+
+P5.3 consumes proposals from role-specific perception/planning/referee
+assessors; it does not derive visibility, capture, physical escape or route
+feasibility from truth. Every guard and ordinal urgency input carries an
+evidence ID for traceability, but this core cannot authenticate the producer.
+Utility weights are explicit versioned inputs; test profiles are fixtures,
+not tuned or competition-approved deployment policy. Tactics outputs an
+`OptionGoal` proposal only; `OptionAuthority` still performs final admission.
 
 ## 5. Normative test and scenario sequence
 
@@ -193,12 +205,14 @@ manifest-focused command reports **3 passed**. `compileall` and `git diff
 --check` also pass; these results are recorded in
 `artifacts/reports/phase5/P5_environment_baseline.json`.
 
-The next implementation task is P5.2 option authority, reusing P5.1 stage IDs,
-clock/localization epochs, reset barrier and leases. Keep
-`P5_environment_baseline.json` as the entry snapshot; append work-package
-result reports under `artifacts/reports/phase5/` and a separate G4 acceptance
-record only when each result is backed by executable evidence. Do not
-overwrite inherited P1-P4 reports or convert their blockers into P5 passes.
+This is the entry snapshot, not the current implementation status. P5.4 and
+the bounded kinematic P5.5 rehearsal evidence are recorded separately in
+[`P5.4_referee_integration_report.json`](../artifacts/reports/phase5/P5.4_referee_integration_report.json)
+and [`P5.5_rehearsal_report.json`](../artifacts/reports/phase5/P5.5_rehearsal_report.json).
+Keep `P5_environment_baseline.json` as the entry snapshot; maintain separate
+work-package result reports and a G4 acceptance record only when each result
+is backed by complete profile-specific executable evidence. Do not overwrite
+inherited P1-P4 reports or convert external/runtime blockers into P5 passes.
 
 ### 7.1 P5.1 implementation boundary
 
@@ -248,3 +262,52 @@ and **321 passed** in the combined core, kinematic, interface and safety
 regression. `compileall`, JSON validation and `git diff --check` passed. Exact
 commands and results are recorded in
 [`P5.1_stage_lifecycle_report.json`](../artifacts/reports/phase5/P5.1_stage_lifecycle_report.json).
+
+### 7.2 P5.4 bounded kinematic integration
+
+The pure rule layer detects the first contact of a circular footprint against
+a validated simple polygon along piecewise-linear trajectory segments,
+including between-sample enter/exit and vertex tangency. Initial footprint
+overlap is a setup error. Capture requires simultaneous strict range,
+inclusive bearing and clear LOS. The interval checker certifies range/bearing
+over a subinterval and rejects any subinterval whose conservative swept LOS
+envelope intersects a static segment or circular occluder. Ambiguous
+subdivisions fail closed at the fixed depth, so bounded SIL can miss very
+narrow/isolated events; it does not widen rule thresholds or promote unknown
+LOS.
+
+`sim/kinematic/match.py` steps guardian and explorer plants independently,
+uses distinct absolute role namespaces and gives each callback only its own
+role/namespace/clock and observation. Referee truth is returned separately
+for evaluation, never passed to either callback. Its explicit
+`capture_rule_event` adapter emits only `SIM_TRUTH` and still requires the
+caller to supply stage/epoch/provenance/authorization. This is not a ROS
+namespace graph, automatic StageManager integration, approved target-zone/
+arrival result, MVSim or G4 test. Exact P5.4 outcomes and limits are recorded
+in [`P5.4_referee_integration_report.json`](../artifacts/reports/phase5/P5.4_referee_integration_report.json).
+
+### 7.3 P5.5 bounded rehearsal
+
+`TwoRobotMatch` can be given a `StageManager`. Each policy callback receives
+the current leased `MatchState`; before plant integration the runner itself
+vetoes motion unless the stage authorizes motion for that endpoint's role and
+the complete tick ends no later than both the lease expiry and stage deadline.
+A tick that straddles either boundary is zeroed in full. Watchdog-unhealthy
+bypasses both policy callbacks and supplies zeros while simulation time
+advances. Sensor, planner and referee exceptions propagate before either
+plant commits; both predicted poses and truth evaluation complete before
+paired plant integration.
+
+The rehearsal tests cold start, freeze, active guardian, stage timeout,
+terminal stop, acknowledged reset and explorer role swap; fault injections
+cover stage clock reversal, sensor exception, planner exception, invalid
+paired command and watchdog loss. Same-seed traces must compare exactly.
+Stage durations and tick intervals are explicitly test-only. No accepted
+zone is supplied, and simulated truth is rejected by a profile that has not
+enabled simulation-truth adjudication.
+
+This does not complete full-baseline P5.5/G4: the runner uses injected raw
+`Actuation` callbacks, not the P5.3 selector/P5.2 authority/P1 safety and mux
+chain. No diagnostics UI, ROS/DDS, MVSim, process watchdog or hardware was
+available/verified. Results and a per-evidence status matrix are recorded in
+[`P5.5_rehearsal_report.json`](../artifacts/reports/phase5/P5.5_rehearsal_report.json).

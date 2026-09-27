@@ -1,0 +1,78 @@
+{
+  "phase": "P5.3",
+  "status": "PASS_PURE_CORE_WITH_PROPOSAL_EVIDENCE_AND_RUNTIME_INTEGRATION_BLOCKERS",
+  "authority": {
+    "technical_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "architecture": "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "phase_document": "docs/HSL26_PHASE5_MATCH_AND_TACTICS.md",
+    "physical_authority": false,
+    "tactics_ros_node_verified": false,
+    "authenticated_evidence_producers_verified": false,
+    "simulator_referee_integration_verified": false,
+    "competition_acceptance": false,
+    "g4_status": "NOT_RUN"
+  },
+  "implementation": {
+    "selector": "hsl_core/hsl_core/tactics/fsm.py::TacticalSelector",
+    "utility": "hsl_core/hsl_core/tactics/utility.py::score",
+    "option_registry": "hsl_core/hsl_core/tactics/options.py::OptionRegistry",
+    "selection_authority": "OptionGoal proposal only; OptionAuthority remains the admission owner",
+    "guardian_priority": [
+      "APPROACH_CAPTURE",
+      "FALLBACK_DEFEND_BASE",
+      "INTERCEPT_PORTAL",
+      "RECOVER_VIEW",
+      "PRESSURE_ROUTE",
+      "SEARCH_PORTAL",
+      "HOLD_SAFE fallback"
+    ],
+    "explorer_priority": [
+      "KEEP_ESCAPE_ROUTE or BREAK_LOS (guarded threat rank)",
+      "TAKE_ALTERNATE_PORTAL",
+      "ADVANCE_BASE",
+      "OBSERVE_SAFE",
+      "HOLD_SAFE fallback"
+    ],
+    "hard_filters_before_ranking": [
+      "system readiness",
+      "safety stop",
+      "stage phase and derived motion authorization",
+      "stage lease",
+      "role allowlist",
+      "validated target and accepted semantic zone",
+      "explicit feasibility and exact per-option guard set"
+    ],
+    "evidence": {
+      "guard_facts": "Every supplied guard has exactly one non-empty evidence ID; the decision trace preserves those IDs.",
+      "explorer_urgency": "KEEP_ESCAPE_ROUTE and BREAK_LOS require an ordinal rank in [0,255] and a non-empty evidence ID; larger ranks preempt lower ranks within the same documented priority class even when nominal utility is lower.",
+      "intercept_vs_base_defense": "Only receives the shared imminent-threat priority when one evidence-bearing integer-nanosecond interval satisfies guardian_arrival_upper + buffer < explorer_arrival_lower; equality/overlap/reversal do not qualify."
+    },
+    "utility": {
+      "feature_range": "[0,1], finite, no missing or extra role features",
+      "profile": "immutable explicit role/schema/profile ID; no implicit deployed default weights",
+      "coefficient_sign": "benefit >= 0; capture_risk and duration_cost <= 0",
+      "bound": "sum(abs(weights)) <= 1 and features in [0,1] prove score in [-1,1]",
+      "hysteresis": "utility-unit delta in [0,2]; switch only for strict improvement above delta after minimum dwell",
+      "tie_break": "priority, urgency, utility, OptionKind, typed target order, stable key; proposal and evidence ordering normalized"
+    },
+    "fallback": "exactly one feasible targetless HOLD_SAFE proposal is mandatory; safety/stage/health failures force it before ranking; malformed/missing fallback fails explicitly.",
+    "computation_bound": "at most 256 proposals per selection; higher configured caps and oversized inputs are rejected",
+    "selection_trace": "SelectionResult includes selected goal, priority, bounded utility contributions/profile, reason, changed flag, and ordered alternative evaluations with rejection reasons and evidence IDs."
+  },
+  "verification": {
+    "dedicated_command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest hsl_core\\tests\\test_p53_tactics.py -q",
+    "dedicated_result": "82 passed in 0.59s",
+    "adjacent_core_command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest hsl_core\\tests\\test_p52_option_authority.py hsl_core\\tests\\test_p53_tactics.py -q",
+    "adjacent_core_result": "156 passed in 1.94s",
+    "repository_regression_result": "489 passed in 6.08s",
+    "compileall": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "limitations": [
+    "Guard, urgency, feasibility and timing evidence IDs are traceability fields, not authentication; a runtime producer/adapter must validate provenance and derive them from observation-only inputs.",
+    "The pure selector does not calculate collision sweeps, visibility, capture geometry, belief calibration, route-time intervals or semantic-zone geometry; it only accepts validated assessor outputs.",
+    "The evidence does not claim organizer-approved production utility weights. Deployment requires frozen per-role profiles and calibration/ablation on held-out maps/opponents.",
+    "No tactics ROS node, ExecuteOption client orchestration, two-robot simulator/referee loop, DDS/QoS behavior, MVSim, physical test or G4 rehearsal was run."
+  ],
+  "next_work": "P5.4 continuous event/referee and isolated two-role simulation integration; keep all ROS, provenance, runtime and G4 gates open until tested."
+}
