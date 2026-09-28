@@ -69,6 +69,8 @@ hsl26/
 │   ├── HSL26_PHASE4_OPPONENT_PERCEPTION.md
 │   ├── HSL26_PHASE5_MATCH_AND_TACTICS.md
 │   ├── HSL26_PHASE6_LEARNING_AND_RELEASE.md
+│   ├── HSL26_PHASE6_IMPLEMENTATION_PLAN.md
+│   ├── HSL26_PHASE6_INDEPENDENT_AUDIT.md
 │   ├── HSL26_SESSION_CHANGELOG.md
 │   ├── runbook_competition.md
 │   ├── rulebook/
@@ -251,6 +253,7 @@ hsl26/
 │   │   ├── sensors.py
 │   │   ├── adapters.py
 │   │   └── scenarios/
+│   │       └── phase6_learning_release.json  # preparation manifest; no dataset
 │   └── mvsim/
 │       ├── worlds/
 │       ├── vehicles/
@@ -370,9 +373,13 @@ Generated files are grouped by meaning:
 
 - `artifacts/models`: non-executable perception model arrays, manifest and held-out validation;
 - `artifacts/policies`: baseline/learned parameters, feature/option schema hashes and validation;
+- `artifacts/learning/datasets/<dataset_id>`: immutable Phase-6 transition logs, schema and split manifests; populated only from eligible, provenance-tagged runs;
 - `artifacts/calibration`: measured braking, latency, footprint, extrinsic and blind-zone evidence;
 - `artifacts/releases`: immutable release manifest with source, image, configuration, model and policy hashes;
-- `artifacts/reports`: benchmark and acceptance reports.
+- `artifacts/reports`: benchmark and acceptance reports, including
+  `phase6/P6_environment_baseline.json` as a preparation snapshot only; it
+  does not assert G4, G5, or G6 acceptance, and
+  `phase6/P6_independent_audit.json` as audit findings, not gate evidence.
 
 Never store safety calibration under a learning-policy directory. Never load Python pickle or another executable artifact for a competition model. Machine-local exploratory measurements may remain uncommitted; promoted release evidence is versioned deliberately and contains operating-condition scope.
 

@@ -1,6 +1,6 @@
 # HSL26 - Phase 5 implementation plan and SIL environment
 
-**Revision:** 1.0 · **Date:** 2026-09-26  
+**Revision:** 1.2 · **Date:** 2026-09-28
 **Authority:** `HSL26_TECHNICAL_SPECIFICATION.md` §§10-11, 14, 17;
 `HSL26_FINAL_ARCHITECTURE.md`; `HSL26_PHASE5_MATCH_AND_TACTICS.md`.  
 **Entry decision:** `READY_FOR_SIL_IMPLEMENTATION_WITH_EXTERNAL_GATE_BLOCKERS`  
@@ -11,8 +11,12 @@
 This plan records the no-hardware SIL preparation and implementation sequence
 for stage lifecycle, adjudication, option authority, both tactical roles and
 the bounded P5.4 kinematic referee runner. It follows the evidence-led setup
-used for Phases 3 and 4. Pure-core P5.1-P5.3 and the bounded P5.4/P5.5 kinematic referee/rehearsal slices are
-implemented and tested; this does not claim G4, ROS runtime
+used for Phases 3 and 4. Pure-core P5.1-P5.3 and the bounded P5.4/P5.5
+kinematic referee/rehearsal slices are implemented and tested. A bounded
+P5.6 slice now connects observation coverage, role selection, option authority,
+versioned planning, lease-controlled candidates and the existing safety
+supervisor. It does not complete both autonomous role policies or the profile
+acceptance matrix. Existing evidence does not claim G4, ROS runtime
 integration, MVSim fidelity or competition readiness.
 
 The current repository provides useful SIL inputs:
@@ -42,9 +46,10 @@ it must not be guessed from the map, farthest node or fixture coordinates.
 | `sim/kinematic/scenarios/match_tactics.json` | Seeded P5 case inventory for stage races, adjudication boundaries, both roles and truth isolation | Consumed as case inventory; no inferred official timing or goal geometry |
 | `sim/kinematic/README.md` | Declares P5 SIL profile, fixture limitations and truth boundary | Updated |
 | `artifacts/reports/phase5/P5_environment_baseline.json` | Machine-readable environment, inherited gate evidence, dependencies and blockers | Prepared |
-| `docs/HSL26_PHASE5_IMPLEMENTATION_PLAN.md` | Ordered P5.1-P5.5 implementation and verification plan | Prepared |
+| `docs/HSL26_PHASE5_IMPLEMENTATION_PLAN.md` | Ordered P5.1-P5.6 implementation and verification plan | P5.6 partial; full integrated baseline blocked |
 | `hsl_core/hsl_core/match.py` and `tactics/options.py` | Pure stage and option authority boundaries | P5.1/P5.2 core slices implemented; not connected to a ROS action server |
 | `hsl_core/hsl_core/rules.py`, `sim/kinematic/match.py` | Continuous modeled footprint contact, capture interval and role-scoped policy/referee boundary | Bounded kinematic SIL slice; not ROS/MVSim/G4 evidence |
+| P5.6, `sim/kinematic/autonomous.py` | Role-scoped selector/authority/plan/safety integration and SIL evidence | Bounded guardian search + explorer observation slice; see `P5.6_autonomous_integration_report.json`; not promotion evidence |
 
 The P5 manifest references existing Phase 3/4 fixtures. Its coordinates, seed
 and case inputs are software test data only. They are not competition layout,
@@ -91,6 +96,7 @@ $env:PYTHONPATH = "hsl_core"
 python -m pytest sim\kinematic\test_p5_manifest.py -q
 python -m pytest sim\kinematic\test_p54_referee.py hsl_core\tests\test_p13_foundation.py -q
 python -m pytest sim\kinematic\test_p55_rehearsal.py sim\kinematic\test_p54_referee.py sim\kinematic\test_p5_manifest.py -q
+python -m pytest sim\kinematic\test_p56_autonomous.py -q
 python -m pytest hsl_core\tests\test_p51_match.py hsl_core\tests\test_p52_option_authority.py hsl_core\tests\test_p53_tactics.py ros_ws\src\hsl_interfaces\test\test_contract_schema.py -q
 ```
 
@@ -109,7 +115,8 @@ baseline rehearsal.
 | P5.2 Option authority | Implemented in pure core + message-shaped safety boundary | `tactics/options.py`: one `OptionRegistry`, strict goal/context contracts, `OptionAuthority` lifecycle, exact deadline/effect-instance checks, single `ExecutionState` projection, bounded causal journal; lease generation rotates on replan and is carried through `ExecutionState`/`MotionCandidate`; planning lease and safety adapter reject stale generation/stage/map/topology | Dedicated adversarial tests; ROS action server, DDS/QoS, process-failure and G4 evidence remain open |
 | P5.3 Role tactics | Implemented in pure core | `tactics/fsm.py`: role/guard-constrained priority selection, evidence-bearing proposals, strict interception timing comparison, explorer ordinal urgency, fixed deterministic tie-break, <=256 proposal work bound, bounded utility/hysteresis/dwell, health/authority gates and mandatory HOLD_SAFE; `tactics/utility.py`: versioned normalized features and L1-bounded score | Dedicated adversarial selector/utility suite and full regression; ROS tactics node, evidence-source authentication, referee integration and G4 remain open |
 | P5.4 Referee and simulation integration | Bounded kinematic SIL slice implemented | Piecewise-linear circular-footprint first contact; conservative capture/LOS interval; two injected role-scoped policy callbacks and separate referee truth output. TacticalSelector/OptionAuthority wiring, StageManager event wiring, accepted-zone result, ROS/MVSim and complete rehearsal remain open. | Dedicated P5.4 adversarial tests and existing P5.1 overlapping-event ambiguity tests; I12/I14 partial, G4 not run |
-| P5.5 Full-baseline rehearsal | Bounded kinematic lifecycle/fault rehearsal implemented | StageManager-gated snapshots and per-role zero veto; cold start/freeze, sequential role swap, timeout, reset barrier, deterministic trace and clock/planner/sensor/watchdog injections. Test timings are fixture assumptions. | Dedicated P5.5/P5.4/manifest tests; diagnostics, P5.3/OptionAuthority chain, ROS/DDS, MVSim, accepted goal and physical G4 remain BLOCKED/NOT_RUN |
+| P5.5 Bounded lifecycle rehearsal | Bounded kinematic lifecycle/fault rehearsal implemented | StageManager-gated snapshots and per-role zero veto; cold start/freeze, sequential role swap, timeout, reset barrier, deterministic trace and clock/planner/sensor/watchdog injections. Test timings are fixture assumptions. | Dedicated P5.5/P5.4/manifest tests; diagnostics, P5.3/OptionAuthority chain, ROS/DDS, MVSim, accepted goal and physical G4 remain BLOCKED/NOT_RUN |
+| P5.6 Kinematic decision-loop integration | Bounded slice implemented; full baseline remains open | Role-scoped pose/coverage/topology adapters; Guardian `SEARCH_PORTAL` selector→authority→versioned plan/candidate→lease→supported safety; Explorer no-motion `OBSERVE_SAFE`; preserve the `TwoRobotMatch` referee/transaction boundary | `sim/kinematic/test_p56_autonomous.py` and report; missing opponent belief, Explorer navigation, ROS/MVSim and full T/I evidence keep G4 blocked |
 
 Implement pure-core state/rule/option contracts before ROS wrappers or the
 full simulator loop. Add small deterministic fixtures and negative tests at
@@ -168,11 +175,12 @@ PASS never transfers automatically to MVSim or hardware.
 
 ## 6. P5 gate and open decisions
 
-The P5 implementation target is **G4 in a declared SIL profile**, not real
-competition readiness. G4 remains `NOT_RUN` until the listed P5 implementation,
-test and integration evidence exists. Preserve separate gate status for
-software contracts, ROS runtime, MVSim/replay fidelity, physical safety and
-organizer approval.
+The P5 implementation target is **G4 in a declared profile**, not real
+competition readiness. The current P5.5 report records G4 as
+`BLOCKED_NOT_RUN`. P5.6 implementation and all applicable tests/review are
+still required for an integrated kinematic-policy claim. A kinematic profile
+result cannot close ROS/runtime, MVSim/replay fidelity, physical safety or
+organizer-approval gates; preserve each status separately.
 
 Before claiming goal arrival, base defense or official result, obtain and
 version the accepted zone provider, coordinates, frame, authorization and
@@ -213,6 +221,10 @@ Keep `P5_environment_baseline.json` as the entry snapshot; maintain separate
 work-package result reports and a G4 acceptance record only when each result
 is backed by complete profile-specific executable evidence. Do not overwrite
 inherited P1-P4 reports or convert external/runtime blockers into P5 passes.
+The autonomous integration work is P5.6, not an inferred property of the
+P5.5 fixed-Actuation callbacks. The independent review and interface
+constraints are documented in
+[`HSL26_PHASE6_INDEPENDENT_AUDIT.md`](HSL26_PHASE6_INDEPENDENT_AUDIT.md).
 
 ### 7.1 P5.1 implementation boundary
 

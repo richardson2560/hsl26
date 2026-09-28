@@ -196,7 +196,8 @@ def test_two_role_runner_exposes_only_role_scoped_sensor_inputs_to_policies():
             assert isinstance(frame, PolicyInput)
             seen[role] = frame
             assert {field.name for field in fields(frame)} == {
-                "role", "namespace", "stamp_ns", "observation", "match_state"
+                "role", "namespace", "stamp_ns", "observation", "match_state",
+                "pose_estimate", "topology_graph", "robot_radius_m",
             }
             assert frame.role is role
             assert frame.namespace == f"/robot_{role.value}"

@@ -1,0 +1,101 @@
+{
+  "schema": "hsl26.phase6.independent-audit.v1",
+  "date": "2026-09-28",
+  "status": "REVIEW_COMPLETE_GATES_UNCHANGED",
+  "scope": [
+    "User-supplied external auditor text #1 and #2",
+    "Current P5/P6 source, tests and evidence reports",
+    "Technical specification revision 2.2",
+    "Repository structure and release-tool targets"
+  ],
+  "authority": {
+    "g4_status": "BLOCKED_NOT_RUN",
+    "g5_status": "NOT_RUN",
+    "g6_status": "BLOCKED",
+    "physical_authority": false,
+    "competition_acceptance": false
+  },
+  "findings": [
+    {
+      "id": "A1",
+      "claim": "P5.5 direct-command callbacks do not exercise autonomous tactical integration.",
+      "disposition": "CONFIRMED_SCOPED_TO_P5_5",
+      "evidence": [
+        "sim/kinematic/test_p55_rehearsal.py",
+        "artifacts/reports/phase5/P5.5_rehearsal_report.json"
+      ]
+    },
+    {
+      "id": "A2",
+      "claim": "TacticalSelector generates role proposals from observations.",
+      "disposition": "REJECTED_SELECTOR_CONSUMES_PREBUILT_TACTICAL_SNAPSHOT",
+      "evidence": [
+        "hsl_core/hsl_core/tactics/fsm.py"
+      ]
+    },
+    {
+      "id": "A3",
+      "claim": "Dirichlet and option-value files are completely empty.",
+      "disposition": "FUNCTIONALLY_STUBS_FILES_CONTAIN_ONLY_COMMENTS",
+      "evidence": [
+        "hsl_core/hsl_core/learning/dirichlet.py",
+        "hsl_core/hsl_core/learning/option_value.py",
+        "hsl_core/hsl_core/learning/evolution.py"
+      ]
+    },
+    {
+      "id": "A4",
+      "claim": "A direct selector-to-A*-to-safety agent can close G4 after a match.",
+      "disposition": "UNSUPPORTED_REQUIRES_TYPED_ADAPTERS_PROFILE_TESTS_AND_REVIEW",
+      "evidence": [
+        "sim/kinematic/match.py",
+        "hsl_core/hsl_core/tactics/options.py",
+        "hsl_core/hsl_core/planning/astar.py",
+        "hsl_core/hsl_core/control/safety.py"
+      ]
+    },
+    {
+      "id": "A5",
+      "claim": "One hundred games, uniform alpha=1, or empirical Kemeny-Snell equality are normative.",
+      "disposition": "NOT_NORMATIVE_PREREGISTER_STATISTICAL_DESIGN_AND_VERSION_PRIOR",
+      "evidence": [
+        "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+        "docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md"
+      ]
+    },
+    {
+      "id": "A6",
+      "claim": "release_freeze.py must be created.",
+      "disposition": "PATH_EXISTS_AS_COMMENT_ONLY_PLACEHOLDER_IMPLEMENT_EXISTING_TARGET",
+      "evidence": [
+        "tools/release_freeze.py",
+        "tools/preflight_check.py"
+      ]
+    },
+    {
+      "id": "A7",
+      "claim": "P6 requires producing GPIS from CAD and freezing champion YAML.",
+      "disposition": "MISPLACED_OR_UNSUPPORTED_FOLLOW_P4_MODEL_AND_SECTION_15_4_ARTIFACT_CONTRACT",
+      "evidence": [
+        "docs/HSL26_PHASE4_OPPONENT_PERCEPTION.md",
+        "docs/HSL26_TECHNICAL_SPECIFICATION.md"
+      ]
+    },
+    {
+      "id": "A8",
+      "claim": "Docker/MVSim two assumed 10-minute stages can close G6 without hardware.",
+      "disposition": "REJECTED_G6_REQUIRES_APPROVED_FINAL_TARGET_AND_OPERATING_SCOPE",
+      "evidence": [
+        "docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md",
+        "artifacts/reports/phase5/P5.5_rehearsal_report.json"
+      ]
+    }
+  ],
+  "required_next_work": [
+    "Implement P5.6 kinematic observation-to-option-to-safety integration without changing normative authority or truth boundaries.",
+    "Permit P6.1 schema/collector and P6.2 pure algorithm work in parallel, but block empirical learning evidence until an accepted baseline and eligible provenance-tagged data exist.",
+    "Keep G4 profile-specific and unaccepted until its full applicable evidence matrix is reviewed.",
+    "Keep G6 blocked until cold-start and two-stage rehearsal evidence exists in the authorized final target."
+  ],
+  "report": "docs/HSL26_PHASE6_INDEPENDENT_AUDIT.md"
+}

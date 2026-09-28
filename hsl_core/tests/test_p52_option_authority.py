@@ -123,6 +123,26 @@ def test_registry_role_target_and_semantic_zone_matrix_is_exact():
     assert actual == expected
 
 
+def test_observe_safe_is_authorized_as_a_no_motion_option():
+    authority = OptionAuthority()
+    context = _context(role=Role.EXPLORER)
+    goal = _goal(
+        OptionKind.OBSERVE_SAFE,
+        role=Role.EXPLORER,
+        has_target_node=False,
+        target_node_id=0,
+    )
+    admission = authority.submit("observe-action", goal, context)
+    assert admission.accepted
+    executing_context = _context(
+        role=Role.EXPLORER,
+        path_valid=True,
+    )
+    state = authority.mark_executing("observe-action", executing_context)
+    assert state.phase == OptionPhase.EXECUTING
+    assert not state.candidate_authorized
+
+
 def test_registry_rejects_duplicate_incomplete_or_invalid_definitions():
     defaults = OptionRegistry().definitions
     with pytest.raises(ValueError, match="duplicate"):

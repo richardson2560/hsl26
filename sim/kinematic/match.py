@@ -14,11 +14,12 @@ from hsl_core.match import (
     StageManager,
     TerminalKind,
 )
+from hsl_core.topology import TopologyGraph
 from hsl_core.rules import CaptureEventInterval, TimedPose, first_capture_interval
 from hsl_core.types import Pose2D
 
-from .common import Actuation, CircleTarget, Segment, SensorObservation, WorldGeometry
-from .plant import KinematicPlant
+from .common import Actuation, CircleTarget, PoseEstimate, Segment, SensorObservation, WorldGeometry
+from .plant import KinematicPlant, SilDeadReckoningEstimator
 from .sensors import LidarSensor
 
 
@@ -36,6 +37,9 @@ class PolicyInput:
     stamp_ns: int
     observation: SensorObservation
     match_state: MatchState | None = None
+    pose_estimate: PoseEstimate | None = None
+    topology_graph: TopologyGraph | None = None
+    robot_radius_m: float | None = None
 
 
 Policy = Callable[[PolicyInput], Actuation]
@@ -49,6 +53,8 @@ class RoleEndpoint:
     sensor: LidarSensor
     policy: Policy
     radius_m: float
+    pose_estimator: SilDeadReckoningEstimator | None = None
+    topology_graph: TopologyGraph | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.role, MatchRole):
@@ -59,6 +65,13 @@ class RoleEndpoint:
             raise ValueError("role endpoint requires a kinematic plant and sensor")
         if not callable(self.policy):
             raise ValueError("role endpoint requires a policy callable")
+        if (
+            self.pose_estimator is not None
+            and not isinstance(self.pose_estimator, SilDeadReckoningEstimator)
+        ):
+            raise ValueError("pose_estimator must be a SilDeadReckoningEstimator")
+        if self.topology_graph is not None and not isinstance(self.topology_graph, TopologyGraph):
+            raise ValueError("topology_graph must be a versioned TopologyGraph")
         if (
             isinstance(self.radius_m, bool)
             or not isinstance(self.radius_m, (int, float))
@@ -235,6 +248,29 @@ class TwoRobotMatch:
         self._stage_manager = stage_manager
         self._referee = _TruthReferee(geometry, guardian.radius_m, explorer.radius_m)
         self._stamp_ns = round(guardian_state.stamp_s * 1_000_000_000)
+        topology_snapshots = tuple(
+            endpoint.topology_graph
+            for endpoint in (guardian, explorer)
+            if endpoint.topology_graph is not None
+        )
+        if len(topology_snapshots) == 2:
+            first_graph, second_graph = topology_snapshots
+            if (
+                first_graph.map_version != second_graph.map_version
+                or first_graph.topology_version != second_graph.topology_version
+                or first_graph.localization_epoch != second_graph.localization_epoch
+            ):
+                raise ValueError("P5.6 role endpoints require one coherent topology identity")
+            self._map_version = first_graph.map_version
+            self._topology_version = first_graph.topology_version
+        else:
+            self._map_version = 0
+            self._topology_version = 0
+        for endpoint in (guardian, explorer):
+            if endpoint.pose_estimator is not None:
+                estimate = endpoint.pose_estimator.estimate
+                if estimate.stamp_ns != self._stamp_ns:
+                    raise ValueError("pose estimator clock must match the plant clock")
 
     @property
     def stamp_ns(self) -> int:
@@ -265,7 +301,11 @@ class TwoRobotMatch:
         ):
             raise ValueError("role plant clock diverged from match clock")
         match_state = (
-            self._stage_manager.snapshot(now_ns=start_ns)
+            self._stage_manager.snapshot(
+                now_ns=start_ns,
+                map_version=self._map_version,
+                topology_version=self._topology_version,
+            )
             if self._stage_manager is not None
             else None
         )
@@ -301,6 +341,13 @@ class TwoRobotMatch:
                     start_ns,
                     guardian_observation,
                     match_state,
+                    (
+                        self.guardian.pose_estimator.estimate
+                        if self.guardian.pose_estimator is not None
+                        else None
+                    ),
+                    self.guardian.topology_graph,
+                    self.guardian.radius_m,
                 )
             )
             explorer_command = self.explorer.policy(
@@ -310,6 +357,13 @@ class TwoRobotMatch:
                     start_ns,
                     explorer_observation,
                     match_state,
+                    (
+                        self.explorer.pose_estimator.estimate
+                        if self.explorer.pose_estimator is not None
+                        else None
+                    ),
+                    self.explorer.topology_graph,
+                    self.explorer.radius_m,
                 )
             )
         else:
@@ -336,6 +390,16 @@ class TwoRobotMatch:
             explorer_command = Actuation(0.0, 0.0)
         guardian_next_pose = self.guardian.plant.predict_step(guardian_command, dt_s)
         explorer_next_pose = self.explorer.plant.predict_step(explorer_command, dt_s)
+        guardian_pose_estimate = (
+            self.guardian.pose_estimator.predict(guardian_command, dt_s)
+            if self.guardian.pose_estimator is not None
+            else None
+        )
+        explorer_pose_estimate = (
+            self.explorer.pose_estimator.predict(explorer_command, dt_s)
+            if self.explorer.pose_estimator is not None
+            else None
+        )
         truth = self._referee.evaluate(
             start_ns,
             end_ns,
@@ -346,6 +410,10 @@ class TwoRobotMatch:
         )
         self.guardian.plant.step(guardian_command, dt_s)
         self.explorer.plant.step(explorer_command, dt_s)
+        if guardian_pose_estimate is not None:
+            self.guardian.pose_estimator.commit(guardian_pose_estimate)
+        if explorer_pose_estimate is not None:
+            self.explorer.pose_estimator.commit(explorer_pose_estimate)
         self._stamp_ns = end_ns
         return MatchTick(
             end_ns,

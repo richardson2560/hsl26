@@ -7,12 +7,21 @@
 
 Requires a G4 deterministic baseline, validated G0–G3 prerequisites in the intended execution profile, and recorded organizer decisions for all information required by the chosen policy. Official score fields remain unavailable until the organizer supplies them; surrogate rewards are explicitly labeled. Learning never changes rule predicates, option realizers, geometry inflation, speed/braking bounds, ROS authority or truth access.
 
+The current P5.5 evidence records G4 as `BLOCKED_NOT_RUN`. A bounded P5.6
+decision-to-actuation SIL slice exists, but the full role baseline and G4
+acceptance remain open. P6.1 schema/collector contracts and P6.2 algorithms may be implemented and tested
+with normative fixtures while that work proceeds; they do not authorize
+empirical training, a valid dataset, G5 promotion or a release before an
+accepted baseline/profile and required provenance exist. The independent
+handoff review and detailed prerequisite roadmap are recorded in
+[`HSL26_PHASE6_INDEPENDENT_AUDIT.md`](HSL26_PHASE6_INDEPENDENT_AUDIT.md).
+
 ## 2. Work packages
 
 | ID / owner role | Subtasks and target files | Observable deliverable | Verification |
 |---|---|---|---|
-| P6.1 Dataset and abstraction | **a** define role/feature/state/option/outcome schema IDs; **b** collect durations, cancellations, safety interventions and censored episodes; **c** split map/opponent/seed banks without leakage. `learning/dirichlet.py`, transition log. | Versioned dataset manifest and valid transition counts. | §15.1/15.4; normalization and schema tests. |
-| P6.2 Offline values | **a** positive Dirichlet prior and posterior; **b** continuous-time discounted option return; **c** terminal/no-bootstrap and failure samples; **d** reject unsupported state fusion. `learning/option_value.py`. | Convergent/bounded value-table fixtures and interpretation report. | T18/T27 and §15.2 fixtures. |
+| P6.1 Dataset and abstraction | **a** define role/feature/state/option/outcome schema IDs; **b** implement collection of durations, cancellations, safety interventions and censored episodes; **c** split independent map/opponent/seed banks without leakage. `learning/dirichlet.py`, transition log. | Versioned dataset manifest and valid transition counts. | §15.1/15.4; normalization and schema tests. Pure contract work may precede G4; empirical dataset acceptance requires an accepted baseline and provenance. |
+| P6.2 Offline values | **a** positive immutable Dirichlet prior and posterior; **b** continuous-time discounted option return; **c** terminal/no-bootstrap and failure samples; **d** reject unsupported state fusion. `learning/option_value.py`. | Bounded/convergent value-table fixtures and interpretation report. | T18/T27 and §15.2 fixtures. Pure implementation may precede G4; empirical conclusions require eligible data. |
 | P6.3 Bounded evolution and shadow | **a** bounded tactical genome; **b** paired training on both roles; **c** safety hard exclusion; **d** validation selection and once-only held-out report; **e** shadow logging before promotion. `learning/evolution.py`, `benchmark_policy.py`. | Baseline versus candidate paired outcomes, confidence intervals and safety metrics. | I15; G5 PASS only if preset criterion met. |
 | P6.4 Frozen release inputs | **a** verify official zone/timing/score/memory provenance; **b** pin source, image digest, IDL, config, calibration, model, baseline or accepted policy; **c** check config and topic/TF ownership; **d** exclude sim truth and hardware devices in sim/replay. `validate_config.py`, `preflight_check.py`, `release_freeze.py`. | Signed-off manifest and cold-start checklist, with every unresolved item explicit. | I01–I05/I14, static/runtime authority checks. |
 | P6.5 Final rehearsal and rollback | **a** offline cold boot in final image; **b** freeze/active/terminal over two role-swapped stages; **c** fault injection and recovery with permitted workflow; **d** record scores as official only on official evidence; **e** verify rollback. `runbook_competition.md`, `artifacts/releases/*`. | Complete two-stage run, logs, final gate matrix and last accepted release. | I16 plus G0–G4 prerequisites; optional I15. |

@@ -44,6 +44,7 @@ class LidarSensor:
             raise ValueError("stamp_s must be finite")
         ranges = []
         valid = []
+        coverage = []
         for index in range(self._beam_count):
             local_angle = -math.pi + 2.0 * math.pi * index / self._beam_count
             world_angle = pose.theta_rad + local_angle
@@ -60,9 +61,16 @@ class LidarSensor:
             if distance is None:
                 ranges.append(self._max_range)
                 valid.append(False)
+                coverage.append(not blind)
             else:
                 measured = max(0.0, min(self._max_range, distance + self._rng.gauss(0.0, self._noise_std)))
                 ranges.append(measured)
                 valid.append(True)
-        return SensorObservation(stamp_s, self._frame_id, tuple(ranges), tuple(valid))
-
+                coverage.append(True)
+        return SensorObservation(
+            stamp_s,
+            self._frame_id,
+            tuple(ranges),
+            tuple(valid),
+            tuple(coverage),
+        )

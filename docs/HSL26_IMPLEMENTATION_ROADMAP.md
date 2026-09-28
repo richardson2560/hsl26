@@ -19,19 +19,28 @@ The supplied changelog is evidence of a reported scaffold and selected correctio
 | P2 / `HSL26_PHASE2_SENSING_AND_CALIBRATION.md` | Sensor/state/coverage and measured envelope; G0 physical + G1 | P1 software gate; access to permitted test hardware for physical subgate | Driver timeout and response traces, low-object/blind-zone evidence, timestamp/deskew tests |
 | P3 / `HSL26_PHASE3_WORLD_AND_NAVIGATION.md` | Valid structural world and controlled route following; G2 | P2 observation contracts; physically enabled motion only after G0 physical/G1 | Maze fixtures, graph/spectrum tests, A* versus reference, path/control and obstacle insertion |
 | P4 / `HSL26_PHASE4_OPPONENT_PERCEPTION.md` | Registered opponent origin and finite-speed occlusion belief; G3 | P2 sensors and P3 graph/version contract | Held-out view/error and yaw-valid reports, filter/reacquisition and belief propagation |
-| P5 / `HSL26_PHASE5_MATCH_AND_TACTICS.md` | Both roles, stage lifecycle and full baseline; G4 | P1 safety, P3 routes, P4 belief or validated degraded input | Stage/action races, zone provenance, two-role integration, sampled-event ambiguity |
-| P6 / `HSL26_PHASE6_LEARNING_AND_RELEASE.md` | Optional G5 learned promotion; mandatory G6 frozen rehearsal | G4 baseline; physical/organizer gates before real release | Paired optional policy evidence, immutable manifests, offline cold start, two-stage rehearsal |
+| P5 / `HSL26_PHASE5_MATCH_AND_TACTICS.md` | Both roles, stage lifecycle and full baseline; G4 | P1 safety, P3 routes, P4 belief or validated degraded input | Stage/action races, zone provenance, two-role integration, sampled-event ambiguity, and executable observation-to-option-to-safety SIL wiring (P5.6) |
+| P6 / `HSL26_PHASE6_LEARNING_AND_RELEASE.md` | Optional G5 learned promotion; mandatory G6 frozen rehearsal | Profile-accepted G4 baseline; P5.6 for autonomous SIL episode collection; physical/organizer gates before real release | Paired optional policy evidence, immutable manifests, offline cold start, two-stage rehearsal |
 
 Gate numbers refer to blueprint architecture §14 and test IDs to blueprint §17. The order is logical, not a blanket prohibition on parallel pure-core and simulation work. A later phase may build/test its own pure code while an earlier hardware test remains BLOCKED; it cannot mark an integrated or real-motion gate PASS until its actual prerequisites pass. If optional G5 fails, keep the accepted baseline and still evaluate G6.
+
+P5.5 currently reports a bounded fixed-callback kinematic rehearsal and
+`G4=BLOCKED_NOT_RUN`; it does not exercise the tactical selector, option
+authority, route candidate and safety chain end-to-end. P5.6 is the concrete
+integration work needed before such autonomous episodes can be used as the
+P6 empirical baseline. Pure-core P6.1/P6.2 implementation and normative
+fixtures can proceed in parallel, but dataset acceptance, promotion, and
+release gates remain tied to their required evidence.
 
 ```mermaid
 flowchart TD
     P1["P1 G0 software authority"] --> P2["P2 sensing and G0 physical/G1"]
     P2 --> P3["P3 world and navigation G2"]
     P3 --> P4["P4 opponent estimation G3"]
-    P4 --> P5["P5 roles and stage G4"]
-    P5 --> P6["P6 release G6"]
-    P5 --> Optional["Optional learned-policy G5"]
+    P4 --> P5["P5 roles and stage contracts (G4 open)"]
+    P5 --> P56["P5.6 autonomous kinematic integration"]
+    P56 --> P6["P6 release G6"]
+    P56 --> Optional["Optional learned-policy G5"]
     Optional --> P6
 ```
 

@@ -12,11 +12,12 @@ from hsl_core.types import Pose2D
 from sim.kinematic.common import (
     Actuation,
     CircleTarget,
+    PoseEstimate,
     Segment,
     SensorObservation,
     WorldGeometry,
 )
-from sim.kinematic.plant import KinematicPlant
+from sim.kinematic.plant import KinematicPlant, SilDeadReckoningEstimator
 from sim.kinematic.raycaster import FirstHitRaycaster
 from sim.kinematic.referee import Referee
 from sim.kinematic.scenario import load_scenario
@@ -56,7 +57,50 @@ def test_sensor_blind_sector_is_invalid_not_a_max_range_hit():
     geometry = WorldGeometry((Segment((2.0, -0.1), (2.0, 0.1)),))
     observation = sensor.observe(Pose2D(0.0, 0.0, 0.0), 1.0, geometry)
     assert observation.valid_mask[4] is False
+    assert observation.coverage_mask[4] is False
     assert observation.ranges_m[4] == 8.0
+
+
+def test_no_return_means_covered_free_range_but_not_a_hit():
+    observation = _sensor().observe(Pose2D(0.0, 0.0, 0.0), 1.0, WorldGeometry(()))
+    assert all(value is False for value in observation.valid_mask)
+    assert all(value is True for value in observation.coverage_mask)
+    assert all(value == 8.0 for value in observation.ranges_m)
+
+
+def test_coverage_cannot_be_claimed_for_invalid_or_blind_ranges():
+    with pytest.raises(ValueError, match="valid return"):
+        SensorObservation(0.0, "lidar_link", (1.0,), (True,), (False,))
+    with pytest.raises(ValueError, match="coverage mask"):
+        SensorObservation(0.0, "lidar_link", (1.0,), (False,), ())
+
+
+def test_pose_estimator_advances_only_from_commands_and_grows_declared_bounds():
+    estimator = SilDeadReckoningEstimator(
+        PoseEstimate(
+            0,
+            "odom",
+            "clock-a",
+            "loc-a",
+            Pose2D(1.0, 2.0, 0.0),
+            0.01,
+            0.02,
+        ),
+        position_drift_bound_per_m=0.1,
+        yaw_drift_bound_per_rad=0.2,
+    )
+    predicted = estimator.predict(Actuation(0.5, 1.0), 0.2)
+    assert estimator.estimate.stamp_ns == 0
+    assert predicted.stamp_ns == 200_000_000
+    assert predicted.pose.x_m == pytest.approx(1.0 + 0.5 * math.sin(0.2))
+    assert predicted.pose.y_m == pytest.approx(2.0 + 0.5 * (1.0 - math.cos(0.2)))
+    assert predicted.position_error_bound_m == pytest.approx(0.02)
+    assert predicted.yaw_error_bound_rad == pytest.approx(0.06)
+    assert predicted.linear_velocity_mps == pytest.approx(0.5)
+    assert predicted.angular_velocity_rps == pytest.approx(1.0)
+    estimator.commit(predicted)
+    with pytest.raises(ValueError, match="monotonically"):
+        estimator.commit(predicted)
 
 
 def test_sensor_observation_contains_no_truth_identity_or_pose():
@@ -67,7 +111,13 @@ def test_sensor_observation_contains_no_truth_identity_or_pose():
         WorldGeometry((), (CircleTarget((1.0, 0.0), 0.2, "secret"),)),
     )
     fields = asdict(observation)
-    assert set(fields) == {"stamp_s", "frame_id", "ranges_m", "valid_mask"}
+    assert set(fields) == {
+        "stamp_s",
+        "frame_id",
+        "ranges_m",
+        "valid_mask",
+        "coverage_mask",
+    }
     assert "secret" not in repr(observation)
 
 

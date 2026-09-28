@@ -144,3 +144,11 @@ Read [`docs/HSL26_PHASE1_TECHNICAL_DESIGN.md`](docs/HSL26_PHASE1_TECHNICAL_DESIG
 for normative APIs, algorithms, timing, and safety behavior. Read
 [`docs/HSL26_IMPLEMENTATION_ROADMAP.md`](docs/HSL26_IMPLEMENTATION_ROADMAP.md)
 for task status and acceptance evidence.
+
+For Phase 6 learning and release preparation, read
+[`docs/HSL26_PHASE6_IMPLEMENTATION_PLAN.md`](docs/HSL26_PHASE6_IMPLEMENTATION_PLAN.md)
+and [`docs/HSL26_PHASE6_INDEPENDENT_AUDIT.md`](docs/HSL26_PHASE6_INDEPENDENT_AUDIT.md),
+plus [`artifacts/reports/phase6/P6_environment_baseline.json`](artifacts/reports/phase6/P6_environment_baseline.json).
+A bounded P5.6 decision-loop slice is implemented, but the full role baseline
+is still open, G4 is blocked/not run, and no training data is declared;
+software fixtures do not imply hardware/G5/G6 acceptance.

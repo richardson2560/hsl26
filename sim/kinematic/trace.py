@@ -31,6 +31,7 @@ class DeterministicTrace:
             "frame_id": observation.frame_id,
             "ranges_m": list(observation.ranges_m),
             "valid_mask": list(observation.valid_mask),
+            "coverage_mask": list(observation.coverage_mask),
         })
 
     def digest(self) -> str:

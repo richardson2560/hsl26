@@ -66,6 +66,16 @@ and [`P5_environment_baseline.json`](../../artifacts/reports/phase5/P5_environme
 The bounded P5.5 evidence matrix is in
 [`P5.5_rehearsal_report.json`](../../artifacts/reports/phase5/P5.5_rehearsal_report.json).
 
+`autonomous.py` is the bounded P5.6 slice: it adds explicit per-beam coverage,
+a separate estimated-pose input, shared topology identity, Guardian
+`SEARCH_PORTAL` planning/authority/lease/safety composition and a no-motion
+Explorer `OBSERVE_SAFE` path. Its curvature-free supervisor limits usable
+motion to supported commands; fixture values are not hardware calibration.
+It does not supply opponent belief, accepted goal zones, full Explorer
+navigation or G4 evidence. See
+[`P5.6_autonomous_integration_report.json`](../../artifacts/reports/phase5/P5.6_autonomous_integration_report.json)
+and [`test_p56_autonomous.py`](test_p56_autonomous.py).
+
 ## Optional visualizer
 
 `visualizer.py` is a diagnostic satellite and is not imported by policy,

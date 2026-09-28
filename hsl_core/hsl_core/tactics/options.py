@@ -562,7 +562,10 @@ class OptionAuthority:
                     instance, OptionOutcome.FEASIBILITY_LOST, "path_invalid", context
                 )
                 return self._state
-            candidate_authorized = instance.goal.kind != OptionKind.HOLD_SAFE
+            candidate_authorized = instance.goal.kind not in (
+                OptionKind.HOLD_SAFE,
+                OptionKind.OBSERVE_SAFE,
+            )
             self.lease.set_candidate_authorized(
                 instance.goal.option_instance_id,
                 instance.lease_generation,
@@ -699,7 +702,10 @@ class OptionAuthority:
     def _publish(self, instance: _OptionInstance, context: OptionContext, reason: str) -> None:
         candidate_authorized = (
             instance.phase == OptionPhase.EXECUTING
-            and instance.goal.kind != OptionKind.HOLD_SAFE
+            and instance.goal.kind not in (
+                OptionKind.HOLD_SAFE,
+                OptionKind.OBSERVE_SAFE,
+            )
             and context.motion_authorized
             and context.lease_valid
             and not context.safety_stop

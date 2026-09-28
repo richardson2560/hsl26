@@ -106,11 +106,11 @@ def render_top_view(
 
     origin = pixel((pose.x_m, pose.y_m))
     count = len(observation.ranges_m)
-    for index, (distance, valid) in enumerate(zip(observation.ranges_m, observation.valid_mask)):
+    for index, (distance, covered) in enumerate(zip(observation.ranges_m, observation.coverage_mask)):
         angle = pose.theta_rad - math.pi + 2.0 * math.pi * index / count
-        length = min(distance if valid else config.ray_length_m, config.ray_length_m)
+        length = min(distance if observation.valid_mask[index] else config.ray_length_m, config.ray_length_m)
         endpoint = (pose.x_m + length * math.cos(angle), pose.y_m + length * math.sin(angle))
-        draw_line(origin, pixel(endpoint), (35, 170, 70) if valid else (210, 60, 60))
+        draw_line(origin, pixel(endpoint), (35, 170, 70) if covered else (210, 60, 60))
     heading = (pose.x_m + 0.35 * math.cos(pose.theta_rad), pose.y_m + 0.35 * math.sin(pose.theta_rad))
     draw_line(origin, pixel(heading), (20, 80, 220))
     return image
