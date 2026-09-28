@@ -7,6 +7,7 @@ frame, timestamp, coverage flag, and epoch identity.
 """
 
 from dataclasses import dataclass
+from enum import IntEnum
 import math
 from typing import Tuple
 
@@ -21,6 +22,13 @@ from .braking import (
 STOP = 0
 ADMIT = 1
 LIMIT = 2
+
+
+class ControlMode(IntEnum):
+    HOLD = 0
+    TRACK_PATH = 1
+    ALIGN = 2
+    APPROACH_CAPTURE = 3
 
 
 def _finite(value: float, name: str) -> float:
@@ -51,6 +59,10 @@ class LimitsProfile:
     response_bound_s: float
     clearance_margin_m: float
     acceleration_delay_mps2: float = 0.0
+    rotation_radius_m: float = 0.0
+    rotation_clearance_margin_m: float = 0.0
+    linear_rest_tolerance_mps: float = 0.0
+    angular_acceleration_max_rps2: float = 0.0
 
     def __post_init__(self) -> None:
         if (
@@ -78,6 +90,10 @@ class LimitsProfile:
             (self.response_bound_s, "response_bound_s"),
             (self.clearance_margin_m, "clearance_margin_m"),
             (self.acceleration_delay_mps2, "acceleration_delay_mps2"),
+            (self.rotation_radius_m, "rotation_radius_m"),
+            (self.rotation_clearance_margin_m, "rotation_clearance_margin_m"),
+            (self.linear_rest_tolerance_mps, "linear_rest_tolerance_mps"),
+            (self.angular_acceleration_max_rps2, "angular_acceleration_max_rps2"),
         ):
             _nonnegative(value, name)
         if self.b_forward_min_mps2 <= 0.0:
@@ -139,6 +155,12 @@ class SafetySnapshot:
     option_instance_id: str = ""
     expected_option_instance_id: str = ""
     received_steady_ns: int = 0
+    control_mode: ControlMode = ControlMode.TRACK_PATH
+    free_distance_360_m: float = 0.0
+    coverage_360_valid: bool = False
+    position_error_bound_m: float = 0.0
+    control_period_s: float = 0.0
+    ego_angular_velocity_rps: float = 0.0
 
     def __post_init__(self) -> None:
         if (
@@ -151,7 +173,11 @@ class SafetySnapshot:
             (self.candidate_v_mps, "candidate_v_mps"),
             (self.candidate_omega_rps, "candidate_omega_rps"),
             (self.free_distance_m, "free_distance_m"),
+            (self.free_distance_360_m, "free_distance_360_m"),
             (self.ego_speed_mps, "ego_speed_mps"),
+            (self.position_error_bound_m, "position_error_bound_m"),
+            (self.control_period_s, "control_period_s"),
+            (self.ego_angular_velocity_rps, "ego_angular_velocity_rps"),
         ):
             _finite(value, name)
         for value, name in (
@@ -180,8 +206,19 @@ class SafetySnapshot:
             raise ValueError("candidate lease must be positive")
         if self.free_distance_m < 0.0:
             raise ValueError("free_distance_m must be non-negative")
+        if self.free_distance_360_m < 0.0 or self.position_error_bound_m < 0.0:
+            raise ValueError("rotation clearance and position bound must be non-negative")
+        if self.control_period_s < 0.0:
+            raise ValueError("control_period_s must be non-negative")
+        try:
+            mode = ControlMode(self.control_mode)
+        except (TypeError, ValueError) as error:
+            raise ValueError("invalid control mode") from error
+        object.__setattr__(self, "control_mode", mode)
         if not isinstance(self.coverage_valid, bool):
             raise ValueError("coverage_valid must be boolean")
+        if not isinstance(self.coverage_360_valid, bool):
+            raise ValueError("coverage_360_valid must be boolean")
         for value, name in (
             (self.frame_id, "frame_id"),
             (self.expected_frame_id, "expected_frame_id"),
@@ -284,6 +321,17 @@ class SafetySupervisor:
             return self._result(
                 snapshot, STOP, reasons[0], reasons, 0.0, required, processing_ns
             )
+        if snapshot.control_mode is ControlMode.ALIGN:
+            return self._evaluate_align(snapshot, processing_ns)
+        if snapshot.control_mode not in (
+            ControlMode.HOLD,
+            ControlMode.TRACK_PATH,
+            ControlMode.APPROACH_CAPTURE,
+        ):
+            return self._result(
+                snapshot, STOP, "LIMITS_INVALID", ("LIMITS_INVALID",),
+                0.0, required, processing_ns
+            )
         if (
             snapshot.candidate_omega_rps != 0.0
             or snapshot.candidate_v_mps < 0.0
@@ -341,6 +389,82 @@ class SafetySupervisor:
             processing_ns,
         )
 
+    def _evaluate_align(
+        self, snapshot: SafetySnapshot, processing_ns: int
+    ) -> SafetyEvaluation:
+        clearance = snapshot.free_distance_360_m
+        required_clearance = (
+            self._limits.rotation_radius_m
+            + snapshot.position_error_bound_m
+            + self._limits.rotation_clearance_margin_m
+        )
+        if snapshot.candidate_v_mps != 0.0:
+            return self._result(
+                snapshot, STOP, "LIMITS_INVALID", ("LIMITS_INVALID",),
+                0.0, 0.0, processing_ns, checked_clearance_m=clearance
+            )
+        if abs(snapshot.ego_speed_mps) > self._limits.linear_rest_tolerance_mps:
+            return self._result(
+                snapshot, STOP, "WAITING_LINEAR_REST", ("WAITING_LINEAR_REST",),
+                0.0, 0.0, processing_ns, checked_clearance_m=clearance
+            )
+        if not snapshot.coverage_360_valid:
+            return self._result(
+                snapshot, STOP, "OUTSIDE_COVERAGE", ("OUTSIDE_COVERAGE",),
+                0.0, 0.0, processing_ns, checked_clearance_m=clearance
+            )
+        if (
+            self._limits.rotation_radius_m <= 0.0
+            or self._limits.rotation_clearance_margin_m <= 0.0
+            or self._limits.linear_rest_tolerance_mps <= 0.0
+            or self._limits.angular_acceleration_max_rps2 <= 0.0
+            or snapshot.control_period_s <= 0.0
+        ):
+            return self._result(
+                snapshot, STOP, "ROTATION_PROFILE_INVALID", ("ROTATION_PROFILE_INVALID",),
+                0.0, 0.0, processing_ns, checked_clearance_m=clearance
+            )
+        if clearance < required_clearance:
+            return self._result(
+                snapshot, STOP, "ROTATION_CLEARANCE_INSUFFICIENT",
+                ("ROTATION_CLEARANCE_INSUFFICIENT",), 0.0, 0.0,
+                processing_ns, checked_clearance_m=clearance
+            )
+        if abs(snapshot.candidate_omega_rps) > self._limits.yaw_rate_max_rps:
+            return self._result(
+                snapshot, STOP, "LIMITS_INVALID", ("LIMITS_INVALID",),
+                0.0, 0.0, processing_ns, checked_clearance_m=clearance
+            )
+        if not wheel_rates_within_limits(
+            0.0,
+            snapshot.candidate_omega_rps,
+            self._limits.wheel_separation_m,
+            self._limits.wheel_radius_m,
+            self._limits.max_wheel_rate_radps,
+        ):
+            return self._result(
+                snapshot, STOP, "LIMITS_INVALID", ("LIMITS_INVALID",),
+                0.0, 0.0, processing_ns, checked_clearance_m=clearance
+            )
+        max_delta_omega = (
+            self._limits.angular_acceleration_max_rps2
+            * snapshot.control_period_s
+        )
+        if abs(snapshot.candidate_omega_rps - snapshot.ego_angular_velocity_rps) > (
+            max_delta_omega + 1e-12
+        ):
+            return self._result(
+                snapshot, STOP, "ANGULAR_ACCELERATION_EXCEEDED",
+                ("ANGULAR_ACCELERATION_EXCEEDED",), 0.0, 0.0,
+                processing_ns, checked_clearance_m=clearance
+            )
+        return self._result(
+            snapshot, ADMIT, "NONE", ("NONE",),
+            0.0, 0.0, processing_ns,
+            applied_omega=snapshot.candidate_omega_rps,
+            checked_clearance_m=clearance,
+        )
+
     def _validation_reasons(
         self, snapshot: SafetySnapshot, now_ros_ns: int
     ) -> Tuple[str, ...]:
@@ -377,6 +501,8 @@ class SafetySupervisor:
             reasons.append("LIMITS_INVALID")
         if not snapshot.coverage_valid:
             reasons.append("OUTSIDE_COVERAGE")
+        if snapshot.control_mode is ControlMode.ALIGN and not snapshot.coverage_360_valid:
+            reasons.append("OUTSIDE_COVERAGE")
         if (
             snapshot.expected_option_instance_id
             and snapshot.option_instance_id != snapshot.expected_option_instance_id
@@ -400,6 +526,9 @@ class SafetySupervisor:
         applied_v: float,
         required: float,
         processing_time_ns: int,
+        *,
+        applied_omega: float = 0.0,
+        checked_clearance_m: float | None = None,
     ) -> SafetyEvaluation:
         return SafetyEvaluation(
             decision=decision,
@@ -409,8 +538,12 @@ class SafetySupervisor:
             proposed_v_mps=snapshot.candidate_v_mps,
             proposed_omega_rps=snapshot.candidate_omega_rps,
             applied_v_mps=applied_v,
-            applied_omega_rps=0.0,
-            checked_clearance_m=snapshot.free_distance_m,
+            applied_omega_rps=applied_omega,
+            checked_clearance_m=(
+                snapshot.free_distance_m
+                if checked_clearance_m is None
+                else checked_clearance_m
+            ),
             required_stop_distance_m=required,
             response_bound_s=self._limits.response_bound_s,
             processing_time_s=processing_time_ns * 1e-9,

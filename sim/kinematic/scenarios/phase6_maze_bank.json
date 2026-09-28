@@ -1,0 +1,82 @@
+{
+  "schema": "hsl26.phase6.synthetic-maze-bank.v1",
+  "bank_id": "phase6-synthetic-maze-fixtures-v1",
+  "purpose": "software_fixture_only",
+  "physical_authority": false,
+  "competition_map": false,
+  "cell_size_m": 1.0,
+  "held_out_policy": "reserved_for_once_only_final_evaluation_after_preregistration",
+  "scenarios": [
+    {
+      "scenario_id": "maze_loop_o_train",
+      "split": "training",
+      "map_bank_id": "map-training-loop-v1",
+      "opponent_bank_id": "opponent-training-v1",
+      "seed_bank_id": "seed-training-v1",
+      "seed": 6101,
+      "grid": [
+        ".....",
+        ".###.",
+        ".#.#.",
+        ".###.",
+        "....."
+      ],
+      "guardian_start_rc": [0, 0],
+      "explorer_start_rc": [4, 4],
+      "synthetic_goal_rc": [4, 0]
+    },
+    {
+      "scenario_id": "maze_t_junction_train",
+      "split": "training",
+      "map_bank_id": "map-training-t-v1",
+      "opponent_bank_id": "opponent-training-v1",
+      "seed_bank_id": "seed-training-v1",
+      "seed": 6102,
+      "grid": [
+        "##.##",
+        "##.##",
+        ".....",
+        "#####",
+        "#####"
+      ],
+      "guardian_start_rc": [0, 2],
+      "explorer_start_rc": [2, 0],
+      "synthetic_goal_rc": [2, 4]
+    },
+    {
+      "scenario_id": "maze_offset_rooms_validation",
+      "split": "validation",
+      "map_bank_id": "map-validation-offset-v1",
+      "opponent_bank_id": "opponent-validation-v1",
+      "seed_bank_id": "seed-validation-v1",
+      "seed": 6201,
+      "grid": [
+        "#######",
+        "#...###",
+        "#.....#",
+        "###...#",
+        "#######"
+      ],
+      "guardian_start_rc": [1, 1],
+      "explorer_start_rc": [3, 5],
+      "synthetic_goal_rc": [1, 3]
+    },
+    {
+      "scenario_id": "maze_grid_4x4_held_out",
+      "split": "held_out",
+      "map_bank_id": "map-held-out-grid-v1",
+      "opponent_bank_id": "opponent-held-out-v1",
+      "seed_bank_id": "seed-held-out-v1",
+      "seed": 6301,
+      "grid": [
+        "....",
+        ".#..",
+        "....",
+        "..#."
+      ],
+      "guardian_start_rc": [0, 0],
+      "explorer_start_rc": [3, 3],
+      "synthetic_goal_rc": [3, 0]
+    }
+  ]
+}

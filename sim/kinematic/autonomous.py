@@ -1,11 +1,12 @@
 """Fail-closed role policy composition for the bounded P5.6 SIL profile."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 
 from hsl_core.control import PursuitConfig, make_candidate
 from hsl_core.control.safety import (
     ADMIT,
+    ControlMode,
     LIMIT,
     LimitsProfile,
     SafetySnapshot,
@@ -29,6 +30,7 @@ from hsl_core.tactics import (
     UtilityProfile,
 )
 from hsl_core.topology import EdgeState, NodeKind, TopologyGraph
+from hsl_core.types import MotionCandidate
 
 from .common import Actuation, PoseEstimate
 from .match import MatchRole, PolicyInput
@@ -51,7 +53,7 @@ class P56Profile:
     pose_error_limit_m: float = 0.10
     yaw_error_limit_rad: float = 0.10
     robot_radius_m: float = 0.15
-    ego_yaw_rate_tolerance_rps: float = 0.0
+    ego_yaw_rate_tolerance_rps: float = 0.50
     candidate_lease_s: float = 0.10
     speed_max_mps: float = 0.20
     planner_yaw_rate_max_rps: float = 1.5
@@ -62,6 +64,15 @@ class P56Profile:
     response_bound_s: float = 0.075
     clearance_margin_m: float = 0.20
     processing_budget_s: float = 0.01
+    rotation_radius_m: float = 0.20
+    rotation_clearance_margin_m: float = 0.05
+    linear_rest_tolerance_mps: float = 0.005
+    align_yaw_rate_max_rps: float = 0.50
+    angular_acceleration_max_rps2: float = 0.50
+    align_yaw_tolerance_rad: float = 0.05
+    rotation_minimum_scan_beams: int = 360
+    rotation_range_error_bound_m: float = 0.0
+    control_period_s: float = 0.05
     lookahead_m: float = 0.25
     lateral_acceleration_max_mps2: float = 0.5
     goal_tolerance_m: float = 0.10
@@ -87,6 +98,13 @@ class P56Profile:
             (self.response_bound_s, "response_bound_s"),
             (self.clearance_margin_m, "clearance_margin_m"),
             (self.processing_budget_s, "processing_budget_s"),
+            (self.rotation_radius_m, "rotation_radius_m"),
+            (self.rotation_clearance_margin_m, "rotation_clearance_margin_m"),
+            (self.linear_rest_tolerance_mps, "linear_rest_tolerance_mps"),
+            (self.align_yaw_rate_max_rps, "align_yaw_rate_max_rps"),
+            (self.angular_acceleration_max_rps2, "angular_acceleration_max_rps2"),
+            (self.align_yaw_tolerance_rad, "align_yaw_tolerance_rad"),
+            (self.control_period_s, "control_period_s"),
             (self.lookahead_m, "lookahead_m"),
             (self.lateral_acceleration_max_mps2, "lateral_acceleration_max_mps2"),
             (self.goal_tolerance_m, "goal_tolerance_m"),
@@ -100,10 +118,21 @@ class P56Profile:
         if self.clearance_margin_m < self.robot_radius_m:
             raise ValueError("clearance_margin_m must include at least the robot radius")
         if (
+            not isinstance(self.rotation_minimum_scan_beams, int)
+            or isinstance(self.rotation_minimum_scan_beams, bool)
+            or self.rotation_minimum_scan_beams < 4
+        ):
+            raise ValueError("rotation_minimum_scan_beams must be an integer >= 4")
+        if (
             not math.isfinite(self.ego_yaw_rate_tolerance_rps)
             or self.ego_yaw_rate_tolerance_rps < 0.0
         ):
             raise ValueError("ego_yaw_rate_tolerance_rps must be finite and non-negative")
+        if (
+            not math.isfinite(self.rotation_range_error_bound_m)
+            or self.rotation_range_error_bound_m < 0.0
+        ):
+            raise ValueError("rotation_range_error_bound_m must be finite and non-negative")
 
 
 @dataclass(frozen=True)
@@ -158,6 +187,9 @@ class KinematicAutonomousPolicy:
         *,
         profile: P56Profile = P56Profile(),
         supervisor: SafetySupervisor | None = None,
+        utility_profile: UtilityProfile | None = None,
+        hysteresis_delta_u: float = 0.0,
+        minimum_dwell_ns: int = 0,
     ) -> None:
         if not isinstance(role, MatchRole):
             raise ValueError("role must be a MatchRole")
@@ -166,13 +198,16 @@ class KinematicAutonomousPolicy:
         self.role = role
         core_role = _core_role(role)
         self.profile = profile
+        selected_utility = utility_profile or _utility_profile(core_role)
+        if selected_utility.role is not core_role:
+            raise ValueError("utility profile role does not match policy endpoint")
         self.registry = OptionRegistry()
         self.authority = OptionAuthority(self.registry)
         self.selector = TacticalSelector(
-            _utility_profile(core_role),
+            selected_utility,
             registry=self.registry,
-            hysteresis_delta_u=0.0,
-            minimum_dwell_ns=0,
+            hysteresis_delta_u=hysteresis_delta_u,
+            minimum_dwell_ns=minimum_dwell_ns,
             max_proposals=32,
         )
         self.supervisor = supervisor or SafetySupervisor(
@@ -183,10 +218,14 @@ class KinematicAutonomousPolicy:
                 wheel_radius_m=profile.wheel_radius_m,
                 max_wheel_rate_radps=profile.max_wheel_rate_radps,
                 speed_max_mps=profile.speed_max_mps,
-                yaw_rate_max_rps=0.0,
+                yaw_rate_max_rps=profile.align_yaw_rate_max_rps,
                 b_forward_min_mps2=profile.minimum_braking_deceleration_mps2,
                 response_bound_s=profile.response_bound_s,
                 clearance_margin_m=profile.clearance_margin_m,
+                rotation_radius_m=profile.rotation_radius_m,
+                rotation_clearance_margin_m=profile.rotation_clearance_margin_m,
+                linear_rest_tolerance_mps=profile.linear_rest_tolerance_mps,
+                angular_acceleration_max_rps2=profile.angular_acceleration_max_rps2,
             ),
             TimingProfile(
                 candidate_lease_s=profile.candidate_lease_s,
@@ -200,6 +239,8 @@ class KinematicAutonomousPolicy:
         self._completed_nodes: set[int] = set()
         self._safety_latched = False
         self._last_route_rejection = ""
+        self._last_policy_stamp_ns: int | None = None
+        self._control_period_s = profile.control_period_s
         self.last_trace = PolicyCycleTrace(
             "NOT_RUN", None, "", "", 0, 0.0, 0.0, None, "",
             Actuation(0.0, 0.0), "",
@@ -210,6 +251,13 @@ class KinematicAutonomousPolicy:
             raise ValueError("frame must be a validated PolicyInput")
         if frame.role != self.role:
             raise ValueError("policy role does not match its endpoint")
+        if self._last_policy_stamp_ns is not None:
+            if frame.stamp_ns <= self._last_policy_stamp_ns:
+                return self._stop("non_monotonic_policy_time", frame)
+            self._control_period_s = (
+                frame.stamp_ns - self._last_policy_stamp_ns
+            ) / 1_000_000_000.0
+        self._last_policy_stamp_ns = frame.stamp_ns
         match = frame.match_state
         estimate = frame.pose_estimate
         graph = frame.topology_graph
@@ -482,6 +530,30 @@ class KinematicAutonomousPolicy:
             )
         return coverage_fraction, free_distance, True
 
+    def _rotation_clearance(
+        self, frame: PolicyInput
+    ) -> tuple[bool, float]:
+        observation = frame.observation
+        count = len(observation.ranges_m)
+        coverage = observation.coverage_mask
+        if (
+            count < self.profile.rotation_minimum_scan_beams
+            or len(coverage) != count
+            or not all(coverage)
+        ):
+            return False, 0.0
+        if not observation.ranges_m:
+            return False, 0.0
+        angular_gap_bound = max(observation.ranges_m) * math.sin(
+            math.pi / count
+        )
+        measured_clearance = (
+            min(observation.ranges_m)
+            - angular_gap_bound
+            - self.profile.rotation_range_error_bound_m
+        )
+        return True, max(0.0, measured_clearance)
+
     def _proposals(
         self,
         frame: PolicyInput,
@@ -642,12 +714,17 @@ class KinematicAutonomousPolicy:
             > corridor_clearance_m - self.profile.robot_radius_m
         ):
             raise ValueError("pose is outside the supported open-corridor envelope")
-        points = (projection,) + path.polyline_xy_m[best_index + 1 :]
-        if len(points) < 2:
-            points = (projection, path.polyline_xy_m[-1])
+        points = [projection]
+        points.extend(path.polyline_xy_m[best_index + 1 :])
+        compact_points = [points[0]]
+        for point in points[1:]:
+            if math.dist(point, compact_points[-1]) > 1e-9:
+                compact_points.append(point)
+        if len(compact_points) < 2:
+            raise ValueError("route has no remaining non-zero segment")
         remaining_cost = math.fsum(
             math.hypot(b[0] - a[0], b[1] - a[1])
-            for a, b in zip(points, points[1:])
+            for a, b in zip(compact_points, compact_points[1:])
         )
         return PlannedPath(
             path.map_version,
@@ -657,7 +734,7 @@ class KinematicAutonomousPolicy:
             path.goal_node_id,
             path.node_ids,
             path.edge_ids,
-            tuple(points),
+            tuple(compact_points),
             remaining_cost,
         )
 
@@ -812,20 +889,10 @@ class KinematicAutonomousPolicy:
                 "missing_planning_inputs", goal.kind, selection_reason, "missing_inputs"
             )
         try:
-            candidate = make_candidate(
-                path,
-                frame.pose_estimate.pose,
-                config=PursuitConfig(
-                    lookahead_m=self.profile.lookahead_m,
-                    speed_max_mps=self.profile.speed_max_mps,
-                    yaw_rate_max_rps=self.profile.planner_yaw_rate_max_rps,
-                    lateral_accel_max_mps2=self.profile.lateral_acceleration_max_mps2,
-                    goal_tolerance_m=self.profile.goal_tolerance_m,
-                ),
-                now_s=frame.stamp_ns / 1e9,
-                lease_s=self.profile.candidate_lease_s,
-                source_id=goal.option_instance_id,
-                lease_generation=generation,
+            candidate, control_mode, coverage_360_valid, free_distance_360 = (
+                self._stop_turn_go_candidate(
+                    frame, path, goal, generation
+                )
             )
             envelope = CandidateEnvelope(candidate, path, goal.option_instance_id)
             admitted = self.authority.lease.admit(
@@ -849,7 +916,10 @@ class KinematicAutonomousPolicy:
                     expected_clock_epoch=goal.clock_epoch,
                     localization_epoch=frame.pose_estimate.localization_epoch,
                     expected_localization_epoch=goal.localization_epoch,
-                    coverage_valid=coverage_valid,
+                    coverage_valid=(
+                        coverage_360_valid if control_mode is ControlMode.ALIGN
+                        else coverage_valid
+                    ),
                     free_distance_m=free_distance,
                     ego_speed_mps=frame.pose_estimate.linear_velocity_mps,
                     candidate_map_version=admitted.map_version,
@@ -861,6 +931,16 @@ class KinematicAutonomousPolicy:
                     option_instance_id=goal.option_instance_id,
                     expected_option_instance_id=goal.option_instance_id,
                     received_steady_ns=0,
+                    control_mode=control_mode,
+                    free_distance_360_m=free_distance_360,
+                    coverage_360_valid=coverage_360_valid,
+                    position_error_bound_m=(
+                        frame.pose_estimate.position_error_bound_m
+                    ),
+                    control_period_s=self._control_period_s,
+                    ego_angular_velocity_rps=(
+                        frame.pose_estimate.angular_velocity_rps
+                    ),
                 ),
                 frame.stamp_ns,
                 1,
@@ -907,6 +987,123 @@ class KinematicAutonomousPolicy:
             "",
         )
         return command
+
+    def _stop_turn_go_candidate(
+        self,
+        frame: PolicyInput,
+        path: PlannedPath,
+        goal: OptionGoal,
+        generation: int,
+    ) -> tuple[MotionCandidate, ControlMode, bool, float]:
+        estimate = frame.pose_estimate
+        if estimate is None:
+            raise ValueError("pose estimate is required for stop-turn-go control")
+        current = (estimate.pose.x_m, estimate.pose.y_m)
+        waypoint = next(
+            (
+                point
+                for point in path.polyline_xy_m[1:]
+                if math.dist(current, point) > 1e-9
+            ),
+            None,
+        )
+        if waypoint is None:
+            raise ValueError("planned path has no forward waypoint")
+        desired_yaw = math.atan2(
+            waypoint[1] - current[1], waypoint[0] - current[0]
+        )
+        yaw_error = math.atan2(
+            math.sin(desired_yaw - estimate.pose.theta_rad),
+            math.cos(desired_yaw - estimate.pose.theta_rad),
+        )
+        alignment_needed = (
+            abs(yaw_error) > self.profile.align_yaw_tolerance_rad
+            or abs(estimate.angular_velocity_rps) > 1e-9
+        )
+        now_s = frame.stamp_ns / 1e9
+        if alignment_needed:
+            if self._control_period_s <= 0.0:
+                raise ValueError("alignment control period must be positive")
+            coverage_360_valid, free_distance_360 = self._rotation_clearance(frame)
+            if abs(yaw_error) <= self.profile.align_yaw_tolerance_rad:
+                requested_omega = 0.0
+            else:
+                requested_omega = math.copysign(
+                    min(
+                        self.profile.align_yaw_rate_max_rps,
+                        math.sqrt(
+                            2.0
+                            * self.profile.angular_acceleration_max_rps2
+                            * abs(yaw_error)
+                        ),
+                    ),
+                    yaw_error,
+                )
+            max_omega_delta = (
+                self.profile.angular_acceleration_max_rps2
+                * self._control_period_s
+            )
+            angular = max(
+                estimate.angular_velocity_rps - max_omega_delta,
+                min(
+                    estimate.angular_velocity_rps + max_omega_delta,
+                    requested_omega,
+                ),
+            )
+            candidate = MotionCandidate(
+                0.0,
+                angular,
+                now_s,
+                now_s + self.profile.candidate_lease_s,
+                self.profile.candidate_lease_s,
+                goal.option_instance_id,
+                path.map_version,
+                path.localization_epoch,
+                path.topology_version,
+                generation,
+            )
+            return (
+                candidate,
+                ControlMode.ALIGN,
+                coverage_360_valid,
+                free_distance_360,
+            )
+
+        segment_path = replace(
+            path,
+            polyline_xy_m=(current, waypoint),
+            cost=math.dist(current, waypoint),
+        )
+        candidate = make_candidate(
+            segment_path,
+            estimate.pose,
+            config=PursuitConfig(
+                lookahead_m=self.profile.lookahead_m,
+                speed_max_mps=self.profile.speed_max_mps,
+                yaw_rate_max_rps=self.profile.planner_yaw_rate_max_rps,
+                lateral_accel_max_mps2=self.profile.lateral_acceleration_max_mps2,
+                goal_tolerance_m=self.profile.goal_tolerance_m,
+            ),
+            now_s=now_s,
+            lease_s=self.profile.candidate_lease_s,
+            source_id=goal.option_instance_id,
+            lease_generation=generation,
+        )
+        distance = math.dist(current, waypoint)
+        speed_bound = math.sqrt(
+            2.0 * self.profile.minimum_braking_deceleration_mps2 * distance
+        )
+        candidate = replace(
+            candidate,
+            linear_velocity_mps=min(
+                candidate.linear_velocity_mps,
+                self.profile.speed_max_mps,
+                speed_bound,
+            ),
+            angular_velocity_rps=0.0,
+        )
+        coverage_360_valid, free_distance_360 = self._rotation_clearance(frame)
+        return candidate, ControlMode.TRACK_PATH, coverage_360_valid, free_distance_360
 
     def _execute_observation_option(
         self,

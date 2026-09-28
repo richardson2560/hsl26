@@ -5,6 +5,7 @@ import pytest
 
 from hsl_core.control.safety import (
     ADMIT,
+    ControlMode,
     LIMIT,
     STOP,
     LimitsProfile,
@@ -27,6 +28,10 @@ def _supervisor() -> SafetySupervisor:
             b_forward_min_mps2=0.85,
             response_bound_s=0.075,
             clearance_margin_m=0.05,
+            rotation_radius_m=0.20,
+            rotation_clearance_margin_m=0.05,
+            linear_rest_tolerance_mps=0.005,
+            angular_acceleration_max_rps2=0.5,
         ),
         TimingProfile(
             candidate_lease_s=0.2,
@@ -65,6 +70,12 @@ def _snapshot(**overrides) -> SafetySnapshot:
         expected_topology_version=9,
         candidate_lease_generation=1,
         expected_lease_generation=1,
+        control_mode=ControlMode.TRACK_PATH,
+        free_distance_360_m=1.0,
+        coverage_360_valid=True,
+        position_error_bound_m=0.01,
+        control_period_s=0.05,
+        ego_angular_velocity_rps=0.0,
     )
     values.update(overrides)
     return SafetySnapshot(**values)
@@ -220,3 +231,96 @@ def test_compute_overrun_forces_zero_even_with_valid_inputs():
     assert result.primary_reason == "COMPUTE_OVERRUN"
     assert result.applied_v_mps == 0.0
     assert result.required_stop_distance_m > 0.0
+
+
+def test_align_mode_admits_only_resting_clearance_checked_and_slew_limited_turns():
+    result = _supervisor().evaluate(
+        _snapshot(
+            control_mode=ControlMode.ALIGN,
+            candidate_v_mps=0.0,
+            candidate_omega_rps=0.025,
+        ),
+        1_100_000_000,
+        50,
+    )
+    assert result.decision is ADMIT
+    assert result.applied_v_mps == 0.0
+    assert result.applied_omega_rps == pytest.approx(0.025)
+    assert result.checked_clearance_m == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    "overrides, reason",
+    [
+        ({"candidate_v_mps": 0.01}, "LIMITS_INVALID"),
+        ({"ego_speed_mps": 0.006}, "WAITING_LINEAR_REST"),
+        ({"coverage_360_valid": False}, "OUTSIDE_COVERAGE"),
+        ({"free_distance_360_m": 0.259}, "ROTATION_CLEARANCE_INSUFFICIENT"),
+        ({"candidate_omega_rps": 0.026}, "ANGULAR_ACCELERATION_EXCEEDED"),
+        ({"candidate_omega_rps": 1.01}, "LIMITS_INVALID"),
+        ({"control_period_s": 0.0}, "ROTATION_PROFILE_INVALID"),
+    ],
+)
+def test_align_mode_fails_closed_for_invalid_or_unsafe_rotation(overrides, reason):
+    values = {
+        "control_mode": ControlMode.ALIGN,
+        "candidate_v_mps": 0.0,
+        "candidate_omega_rps": 0.025,
+    }
+    values.update(overrides)
+    result = _supervisor().evaluate(
+        _snapshot(**values), 1_100_000_000, 50
+    )
+    assert result.decision is STOP
+    assert result.primary_reason == reason
+    assert result.applied_v_mps == 0.0
+    assert result.applied_omega_rps == 0.0
+
+
+def test_align_mode_checks_wheel_rate_and_measured_position_uncertainty():
+    low_wheel_supervisor = SafetySupervisor(
+        LimitsProfile(
+            limits_id="limits-low-wheel",
+            calibration_id="calibration-low-wheel",
+            wheel_separation_m=0.23,
+            wheel_radius_m=0.035,
+            max_wheel_rate_radps=3.0,
+            speed_max_mps=0.6,
+            yaw_rate_max_rps=1.0,
+            b_forward_min_mps2=0.85,
+            response_bound_s=0.075,
+            clearance_margin_m=0.05,
+            rotation_radius_m=0.20,
+            rotation_clearance_margin_m=0.05,
+            linear_rest_tolerance_mps=0.005,
+            angular_acceleration_max_rps2=0.5,
+        ),
+        TimingProfile(0.2, 0.2, 0.2, 0.02),
+    )
+    beyond_wheel_rate = low_wheel_supervisor.evaluate(
+        _snapshot(
+            control_mode=ControlMode.ALIGN,
+            candidate_v_mps=0.0,
+            candidate_omega_rps=1.0,
+            ego_angular_velocity_rps=0.975,
+            free_distance_360_m=0.3,
+        ),
+        1_100_000_000,
+        50,
+    )
+    assert beyond_wheel_rate.decision is STOP
+    assert beyond_wheel_rate.primary_reason == "LIMITS_INVALID"
+
+    insufficient_with_pose_error = _supervisor().evaluate(
+        _snapshot(
+            control_mode=ControlMode.ALIGN,
+            candidate_v_mps=0.0,
+            candidate_omega_rps=0.0,
+            free_distance_360_m=0.26,
+            position_error_bound_m=0.02,
+        ),
+        1_100_000_000,
+        50,
+    )
+    assert insufficient_with_pose_error.decision is STOP
+    assert insufficient_with_pose_error.primary_reason == "ROTATION_CLEARANCE_INSUFFICIENT"

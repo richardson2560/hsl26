@@ -9,7 +9,7 @@ from hsl_core.match import Role, StageManager, StageProfile
 from hsl_core.topology import EdgeState, NodeKind, TopologyEdge, TopologyGraph, TopologyNode
 from hsl_core.types import Pose2D
 from sim.kinematic.autonomous import KinematicAutonomousPolicy
-from sim.kinematic.common import PoseEstimate, Segment, SensorObservation, WorldGeometry
+from sim.kinematic.common import Actuation, PoseEstimate, Segment, SensorObservation, WorldGeometry
 from sim.kinematic.match import MatchRole, PolicyInput, RoleEndpoint, TwoRobotMatch
 from sim.kinematic.plant import KinematicPlant, SilDeadReckoningEstimator
 from sim.kinematic.raycaster import FirstHitRaycaster
@@ -151,7 +151,8 @@ def test_guardian_executes_selected_search_through_plan_lease_and_safety():
     observed_motion = False
     effect_completed = False
     for _ in range(120):
-        tick = match.step(0.05)
+        for _ in range(3):
+            tick = match.step(0.05)
         assert "truth" not in {field.name for field in fields(PolicyInput)}
         assert not hasattr(tick.guardian_observation, "target_id")
         if tick.guardian_command.linear_mps > 0.0:
@@ -222,16 +223,59 @@ def test_unreachable_portal_is_not_fabricated_as_a_path():
     )
 
 
-def test_nonzero_curvature_is_rejected_by_existing_safety_supervisor():
+def test_corner_heading_uses_supervised_stop_turn_before_forward_motion():
     match, guardian_policy, _ = _runner(
         Role.GUARDIAN, _graph(diagonal=True)
     )
     for _ in range(3):
         tick = match.step(0.05)
     assert tick.guardian_command.linear_mps == 0.0
-    assert guardian_policy.last_trace.safety_decision == 0
-    assert guardian_policy.last_trace.safety_reason == "LIMITS_INVALID"
+    assert tick.guardian_command.angular_rps > 0.0
+    assert guardian_policy.last_trace.safety_decision == 1
+    assert guardian_policy.last_trace.safety_reason == "NONE"
     assert guardian_policy.last_trace.status == "candidate_supervised"
+
+
+def test_stop_turn_go_finishes_alignment_then_travels_with_zero_curvature():
+    match, policy, _ = _runner(Role.GUARDIAN, _graph(diagonal=True))
+    saw_turn = False
+    saw_straight_travel = False
+    for _ in range(160):
+        tick = match.step(0.05)
+        command = tick.guardian_command
+        if command.angular_rps != 0.0:
+            saw_turn = True
+            assert command.linear_mps == 0.0
+            assert policy.last_trace.safety_decision == 1
+        if command.linear_mps > 0.0:
+            saw_straight_travel = True
+            assert command.angular_rps == 0.0
+        if saw_turn and saw_straight_travel:
+            break
+    assert saw_turn
+    assert saw_straight_travel
+
+
+def test_rotation_requires_fully_covered_scan_and_conservative_radial_clearance():
+    match, policy, _ = _runner(
+        Role.GUARDIAN,
+        _graph(diagonal=True),
+        guardian_blind=((math.pi / 2.0, 0.1),),
+    )
+    for _ in range(3):
+        tick = match.step(0.05)
+    assert tick.guardian_command == Actuation(0.0, 0.0)
+    assert policy.last_trace.safety_reason == "OUTSIDE_COVERAGE"
+
+    match, policy, _ = _runner(
+        Role.GUARDIAN,
+        _graph(diagonal=True),
+        geometry=WorldGeometry((Segment((0.22, -0.3), (0.22, 0.3)),)),
+    )
+    for _ in range(3):
+        tick = match.step(0.05)
+    assert tick.guardian_command == Actuation(0.0, 0.0)
+    assert policy.last_trace.safety_reason == "ROTATION_CLEARANCE_INSUFFICIENT"
 
 
 def test_close_obstacle_limits_candidate_to_zero_before_actuation():
@@ -342,7 +386,7 @@ def test_negative_forward_speed_estimate_is_rejected_by_safety():
     assert policy.last_trace.safety_reason == "LIMITS_INVALID"
 
 
-def test_nonzero_current_yaw_rate_is_not_certified_by_straight_safety_profile():
+def test_nonzero_current_yaw_rate_is_braked_before_straight_travel():
     policy = KinematicAutonomousPolicy(MatchRole.GUARDIAN)
     manager = _manager(Role.GUARDIAN)
     state = manager.snapshot(now_ns=100_000_000)
@@ -372,7 +416,8 @@ def test_nonzero_current_yaw_rate_is_not_certified_by_straight_safety_profile():
         0.15,
     )
     assert policy(frame).linear_mps == 0.0
-    assert policy.last_trace.status == "hold_safe"
+    assert policy.last_trace.command.angular_rps == pytest.approx(0.075)
+    assert policy.last_trace.safety_decision == 1
 
 
 def test_expired_match_state_lease_fails_closed():

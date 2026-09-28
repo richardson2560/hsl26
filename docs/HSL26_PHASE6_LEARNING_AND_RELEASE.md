@@ -26,6 +26,58 @@ handoff review and detailed prerequisite roadmap are recorded in
 | P6.4 Frozen release inputs | **a** verify official zone/timing/score/memory provenance; **b** pin source, image digest, IDL, config, calibration, model, baseline or accepted policy; **c** check config and topic/TF ownership; **d** exclude sim truth and hardware devices in sim/replay. `validate_config.py`, `preflight_check.py`, `release_freeze.py`. | Signed-off manifest and cold-start checklist, with every unresolved item explicit. | I01–I05/I14, static/runtime authority checks. |
 | P6.5 Final rehearsal and rollback | **a** offline cold boot in final image; **b** freeze/active/terminal over two role-swapped stages; **c** fault injection and recovery with permitted workflow; **d** record scores as official only on official evidence; **e** verify rollback. `runbook_competition.md`, `artifacts/releases/*`. | Complete two-stage run, logs, final gate matrix and last accepted release. | I16 plus G0–G4 prerequisites; optional I15. |
 
+## 2.1 Pure P6.1/P6.2 implementation status
+
+The P6.1/P6.2 pure-core contracts are implemented in
+`hsl_core/hsl_core/learning/` and covered by normative/adversarial tests. P6.1
+now has versioned, schema-fingerprinted feature bins and abstract-state IDs,
+immutable option-transition records, explicit censored/truncated outcomes,
+bounded reward-rate intervals, deterministic JSONL/manifest serialization,
+and map/opponent/seed split checks that prevent bank and episode leakage.
+P6.2 implements immutable Dirichlet rows, analytic continuous-time discounted
+returns, explicit terminal/nonterminal SMDP backups, and exact-model-only
+discounted-kernel fusion checks (including T27).
+
+`DatasetManifest.contract_valid` reports structural/schema/split validity only.
+`promotion_eligible` remains false until dataset-quality thresholds and an
+independent promotion review are assessed; neither field accepts G4 or G5.
+No empirical transition dataset was collected for this implementation. The
+machine-readable implementation/evidence boundary is
+[`P6.1_P6.2_learning_contracts.json`](../artifacts/reports/phase6/P6.1_P6.2_learning_contracts.json).
+P6.3 now has bounded genome, paired-assessment, validation-selection, mutation,
+generation, and synthetic maze-fixture contracts. These are preparation only:
+they do not constitute empirical evolution or alter the existing entry gates.
+Physical authority, G4/G5/G6 acceptance, and release acceptance remain outside
+this implementation.
+
+## 2.2 P6.3 SIL preparation boundary
+
+The current P6.3 work is recorded in
+[`P6.3_sil_preparation.json`](../artifacts/reports/phase6/P6.3_sil_preparation.json).
+It implements bounded tactical-genome operations, role-aware paired candidate
+assessment, hard safety/completion exclusions, Student-t uncertainty intervals,
+training-only generation ranking, and validation-only selection. A synthetic,
+connected orthogonal maze bank provides separate training, validation, and
+reserved held-out fixtures. The held-out fixture is not used by selection.
+
+This does **not** authorize empirical evolution. The Phase-6 entry criterion
+requires an accepted deterministic G4 baseline, while the current P5.6 status
+is partial and G4 remains `BLOCKED_NOT_RUN`. The present policy also lacks
+active Explorer navigation and validated rival perception/belief. No
+end-to-end episode runner, held-out use-once ledger, shadow logging, or
+promotion review has been implemented. Training on the current two-role
+autonomy slice would therefore risk optimizing a non-representative task and
+must not be described as a valid P6.3 result.
+
+The stop-turn-go extension is restricted to straight translation and a
+separate, fail-closed stationary `ALIGN` supervisor mode. Its full-scan radial
+clearance estimate is only a bound under the declared SIL geometry and error
+fixtures; it is not evidence for arbitrary or moving obstacles, physical
+swept-volume safety, Kobuki limits, G4, or physical calibration. Continue to
+label the maze bank and all maneuver parameters as synthetic software
+fixtures. No dependency was added; the statistical interval uses the existing
+SciPy dependency.
+
 ## 3. Milestones and branches
 
 | Milestone | Condition |

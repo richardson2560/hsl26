@@ -1,0 +1,60 @@
+{
+  "schema": "hsl26.phase6.learning-contracts.v1",
+  "phase": "P6.1-P6.2",
+  "status": "PURE_CONTRACTS_IMPLEMENTED",
+  "date": "2026-09-28",
+  "authority": {
+    "technical_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "phase_document": "docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md",
+    "physical_authority": false,
+    "empirical_dataset_collected": false,
+    "g4_status": "BLOCKED_NOT_RUN",
+    "g5_status": "NOT_RUN",
+    "g6_status": "BLOCKED",
+    "promotion_eligible": false
+  },
+  "implementation": {
+    "P6.1": {
+      "status": "PURE_SCHEMA_AND_DATA_CONTRACTS_IMPLEMENTED",
+      "features": [
+        "Versioned feature schema with explicit normalized-feature bin boundaries and schema fingerprint",
+        "Role-bound binned abstract states; identifiers are deterministic and truth/oracle feature names are rejected",
+        "Immutable option transition records with stable hashes, outcomes, durations, reward components, interventions, fidelity, scenario, opponent, seed, and provenance",
+        "Explicit complete/censored/truncated labels; censored records cannot fabricate outcomes, next states, or Bellman targets",
+        "Independent map/opponent/seed bank split assignments with cross-dimension, duplicate, and episode leakage checks",
+        "Deterministic JSONL record export and manifest serialization with schema, split, provenance, and content hashes",
+        "Separate structural contract validity from promotion eligibility; quality review is explicitly pending"
+      ]
+    },
+    "P6.2": {
+      "status": "PURE_MATHEMATICAL_CONTRACTS_IMPLEMENTED",
+      "features": [
+        "Immutable positive Dirichlet prior/count rows with registered success and failure/cancellation outcomes",
+        "Posterior mean and variance with uint64 count bounds",
+        "Analytic integration of piecewise-constant reward rates under continuous-time exponential discount",
+        "Terminal impulse discounting and nonterminal SMDP max-option bootstrap",
+        "Explicit eta in (0,1] with schedule identifier; eta is not a physical rate or Dirichlet concentration",
+        "Censored/truncated transitions rejected for completed-option returns and Bellman updates",
+        "Fusion accepted only for exact declared models matching expected discounted rewards, successor kernels, and option availability; empirical estimates cannot certify exact fusion"
+      ]
+    },
+    "dependencies_added": []
+  },
+  "verification": {
+    "focused_command": "Set-Location hsl_core; python -m pytest tests/test_p61_p62_learning.py -q",
+    "focused_result": "23 passed",
+    "regression_command": "$env:PYTHONPATH = \"hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces\"; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "regression_result": "568 passed",
+    "regression_scope": "Core, kinematic simulation, interfaces, safety, and P6.1/P6.2 contracts; no hardware, empirical learning, G4/G5/G6 acceptance.",
+    "compile_command": "python -m compileall -q hsl_core/hsl_core sim",
+    "compile_result": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "non_claims_and_remaining_work": [
+    "No empirical transition dataset, training run, policy candidate, or learned-performance claim was produced.",
+    "P6.1 does not yet provide a persistent collector/storage service; records can be validated, hashed, serialized, and summarized.",
+    "Structural manifest validity does not establish statistical sufficiency, independent review, G4 acceptance, or policy promotion.",
+    "P6.3 bounded evolution/shadow evaluation, P6.4 frozen release inputs, and P6.5 final rehearsal remain unimplemented or blocked.",
+    "No new dependencies were added; no robot hardware or physical authority is available."
+  ]
+}

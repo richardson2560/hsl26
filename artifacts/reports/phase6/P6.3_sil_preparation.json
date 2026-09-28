@@ -1,0 +1,98 @@
+{
+  "schema": "hsl26.phase6.p63-sil-preparation.v1",
+  "phase": "P6.3",
+  "status": "CONTRACTS_AND_FIXTURES_IMPLEMENTED_EMPIRICAL_EVALUATION_BLOCKED",
+  "authority": {
+    "technical_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+    "architecture": "docs/HSL26_FINAL_ARCHITECTURE.md",
+    "phase_document": "docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md",
+    "physical_authority": false,
+    "competition_map_or_goal_authority": false,
+    "official_score_available": false,
+    "empirical_training_performed": false,
+    "policy_promoted": false,
+    "held_out_evaluated": false,
+    "g4_status": "BLOCKED_NOT_RUN",
+    "g5_status": "NOT_RUN",
+    "g6_status": "BLOCKED"
+  },
+  "independent_audit": {
+    "accepted": [
+      "A dedicated stationary ALIGN safety mode is the appropriate extension for stop-turn-go; ordinary translation remains zero-curvature and under the existing forward safety authority.",
+      "Synthetic orthogonal maze fixtures, deterministic seeds, role-paired evaluation, and hard safety exclusions are useful software preparation."
+    ],
+    "qualified_or_rejected": [
+      "A dense 360-degree scan and radial clearance bound only the declared SIL geometry and bounded error model; they do not prove physical swept-volume safety, arbitrary-obstacle detection, dynamic-obstacle safety, or actuator response.",
+      "Fixture parameter values are not robot calibration and fixture episodes are not eligible evidence for G4, G5, or policy promotion.",
+      "An active Explorer and validated opponent belief are absent, so two-role tactical fitness from the present autonomous loop would be misleading; no empirical evolutionary run is authorized by this preparation.",
+      "Held-out data must remain unused until a separately controlled, once-only final evaluation procedure is implemented."
+    ]
+  },
+  "implementation": {
+    "p63_contracts": {
+      "status": "IMPLEMENTED_NOT_EMPIRICALLY_EXECUTED",
+      "features": [
+        "Immutable versioned tactical genome over registered role-specific utility features, bounded signs and coefficient mass, hysteresis, and dwell.",
+        "Deterministic seeded projected Gaussian mutation within declared genome bounds.",
+        "Exact baseline/candidate episode pairing by scenario, seed, map, opponent, seed bank, and both roles.",
+        "Hard candidate exclusion for incomplete episodes, collision, safety violation, excess safety overrides, or increased overrides relative to baseline.",
+        "Paired Student-t confidence interval and per-role deltas; official score is explicitly unavailable.",
+        "Training-only fitness ranking, bounded deterministic next-generation creation, and validation-only selection with baseline retention absent supported non-regressing improvement.",
+        "Genome weights can be wired into role-specific SIL utility profiles without modifying safety predicates, action realizers, or physical authority."
+      ],
+      "not_implemented": [
+        "End-to-end evolutionary runner that executes actual SIL matches for a population.",
+        "Active Explorer escape/navigation policy and validated closed-loop opponent detection/tracking/belief.",
+        "Once-only held-out evaluation with an immutable use ledger.",
+        "Shadow logging, promotion review, or G5 acceptance."
+      ]
+    },
+    "maze_bank": {
+      "path": "sim/kinematic/scenarios/phase6_maze_bank.json",
+      "loader": "sim/kinematic/maze_bank.py",
+      "status": "SYNTHETIC_FIXTURES_ONLY",
+      "split_counts": {
+        "training": 2,
+        "validation": 1,
+        "held_out_reserved": 1
+      },
+      "constraints": [
+        "Map, opponent, and seed-bank assignments are split-disjoint.",
+        "Fixtures are finite connected orthogonal grids converted to versioned topology and wall geometry.",
+        "Synthetic goal is explicitly unauthorized as a competition objective.",
+        "Loader rejects truth/authority claims, leakage, malformed grids, disconnected routes, and invalid seeds."
+      ]
+    },
+    "motion_prerequisite": {
+      "path": "artifacts/reports/phase5/P5.6_autonomous_integration_report.json",
+      "status": "SUPERVISED_SIL_ALIGN_ONLY",
+      "description": "Stop-turn-go uses straight translation and a distinct fail-closed stationary ALIGN mode. The clearance calculation subtracts angular-gap, range-error, pose-error, and configured margin bounds. No physical safety or calibration claim is made."
+    }
+  },
+  "verification": {
+    "evolution_and_maze_command": "$env:PYTHONPATH = 'hsl_core;.'; python -m pytest hsl_core\\tests\\test_p63_evolution.py sim\\kinematic\\test_p63_sil_preparation.py -q",
+    "evolution_and_maze_result": "33 passed",
+    "safety_and_stop_turn_go_command": "$env:PYTHONPATH = 'hsl_core;.'; python -m pytest hsl_core\\tests\\test_safety.py sim\\kinematic\\test_p56_autonomous.py -q",
+    "safety_and_stop_turn_go_result": "45 passed",
+    "full_regression_command": "$env:PYTHONPATH = 'hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "full_regression_result": "612 passed in 5.88s",
+    "compileall": "PASS",
+    "json_validation": "PASS",
+    "git_diff_check": "PASS",
+    "new_dependencies": []
+  },
+  "blockers_before_empirical_p63": [
+    "P6 phase entry criterion requires an accepted deterministic G4 baseline; current evidence is BLOCKED_NOT_RUN.",
+    "P5.6 remains partial: Explorer has no autonomous movement and the system lacks validated rival perception/belief.",
+    "No eligible provenance-tagged baseline dataset, independently assigned opponent bank, or accepted policy/profile exists.",
+    "No end-to-end runner, held-out use-once control, or shadow/promotion process exists."
+  ],
+  "next_steps": [
+    "Complete and independently verify P5.6 role-complete baseline and required perception/belief, then satisfy G4 for the intended profile.",
+    "Freeze the P6.3 scenario, opponent, seed, and evaluation-plan manifests; exclude any training/validation cross-leakage.",
+    "Implement a deterministic SIL episode runner and collect baseline/candidate episodes under identical observations, seeds, opponents, and role assignments.",
+    "Set evaluation thresholds before examining validation results; select only on validation and retain the accepted baseline unless all safety and per-role criteria pass.",
+    "Implement a once-only held-out evaluator and shadow evidence workflow before any G5 decision; never use held-out data for tuning.",
+    "Keep G5 optional and separate from G4; keep G6 blocked until its target-platform evidence is available."
+  ]
+}

@@ -24,10 +24,10 @@
     "sensor_frame": "lidar_link",
     "localization_frame": "map",
     "sensor_coverage": "per-beam distinction between return, covered no-return, and uncovered blind beam",
-    "maximum_command_yaw_rate_rps": 0.0,
-    "supported_motion": "forward, zero-curvature command only",
+    "maximum_command_yaw_rate_rps": 0.5,
+    "supported_motion": "forward zero-curvature segments plus stationary ALIGN rotation under 360-degree SIL clearance checks",
     "goal_zone": null,
-    "note": "Scenario coordinates, pose initialization, odometry, limits, sensor sampling and timing are synthetic software fixtures; they are not physical calibration, perception fidelity or competition inputs."
+    "note": "Scenario coordinates, pose initialization, odometry, limits, sensor sampling and timing are synthetic software fixtures; ALIGN clearance checks do not establish physical swept-volume safety, dynamic-obstacle safety, calibration, perception fidelity or competition inputs."
   },
   "implementation": {
     "policy_input": "Optional role-scoped PoseEstimate and TopologyGraph; referee truth remains excluded.",
@@ -35,26 +35,27 @@
     "topology_binding": "TwoRobotMatch binds shared map/topology versions into MatchState and rejects inconsistent graph identities across role endpoints.",
     "guardian": "Selects fixture SEARCH_PORTAL proposals only for versioned, OPEN routes whose pose lies within declared corridor clearance; OptionAuthority admission, replanning generation, CandidateEnvelope/ExecutionLease, pursuit candidate, forward-scan safety and estimated option effect are connected.",
     "explorer": "Supports a no-motion OBSERVE_SAFE option with coverage evidence and OptionAuthority completion; no autonomous route selection or actuation is claimed.",
-    "safety": "Uses projected forward clearance, pose-position uncertainty, current estimated signed forward speed, matching timestamp/frame/epochs/versions/option/lease, and the existing zero-curvature SafetySupervisor. Nonzero proposed curvature is rejected by that supervisor.",
+    "safety": "Uses projected forward clearance, pose-position uncertainty, current estimated signed forward speed, matching timestamp/frame/epochs/versions/option/lease, and the SafetySupervisor. Translation remains zero-curvature; stationary ALIGN requires bounded linear/angular motion, 360-degree covered scan, conservative radial clearance after angular-gap/range/pose/margin deductions, wheel-rate limits, and bounded per-cycle yaw change.",
+    "alignment": "Stop-turn-go follows orthogonal path segments by stopping translation, requesting supervised stationary ALIGN rotation, then resuming straight translation. ALIGN parameters are SIL fixtures and are not hardware calibration.",
     "fault_response": "Missing/stale/incoherent pose, scan or topology; excessive pose bounds; insufficient coverage; unsupported routes; invalid execution identity; and safety STOP return zero. Invalid replanning identity revokes and terminates active option authority.",
     "truth_boundary": "PolicyInput contains no referee truth or opponent identity. Synthetic ray hits expose ranges only. Estimated portal effect is not official ARRIVAL and no score is produced.",
     "unsupported": [
       "validated opponent detection, tracking, or belief assessor",
       "rival-dependent tactical guards and explorer navigation",
-      "curved/swept-trajectory safety or nonzero-yaw actuation",
+      "curved translation, physical swept-volume safety, dynamic-obstacle safety, or calibrated nonzero-yaw actuation",
       "sensor/odometry fidelity or physical stop/calibration evidence",
       "ROS action server, DDS/process races, MVSim and hardware integration",
       "complete T21/T22/T28-T30 and I11-I14 acceptance matrix"
     ]
   },
   "verification": {
-    "dedicated_command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest sim\\kinematic\\test_p56_autonomous.py -q",
-    "dedicated_result": "15 passed",
-    "focused_command": "$env:PYTHONPATH = 'hsl_core'; python -m pytest sim\\kinematic\\test_p56_autonomous.py sim\\kinematic\\test_p34.py hsl_core\\tests\\test_p52_option_authority.py sim\\kinematic\\test_p54_referee.py sim\\kinematic\\test_p55_rehearsal.py -q",
-    "focused_result": "137 passed",
-    "full_regression_command": "$env:PYTHONPATH = 'hsl_core;ros_ws\\src\\hsl_safety'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
-    "full_regression_result": "545 passed in 2.54s",
-    "compileall": "PASS",
+    "dedicated_command": "$env:PYTHONPATH = 'hsl_core;.'; python -m pytest hsl_core\\tests\\test_safety.py sim\\kinematic\\test_p56_autonomous.py -q",
+    "dedicated_result": "45 passed",
+    "focused_command": "$env:PYTHONPATH = 'hsl_core;.'; python -m pytest hsl_core\\tests\\test_p63_evolution.py sim\\kinematic\\test_p63_sil_preparation.py -q",
+    "focused_result": "33 passed",
+    "full_regression_command": "$env:PYTHONPATH = 'hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "full_regression_result": "612 passed in 5.88s",
+    "compileall": "PASS (python -m compileall -q hsl_core\\hsl_core sim)",
     "git_diff_check": "PASS",
     "new_required_dependencies": [],
     "dedicated_cases": [
@@ -63,7 +64,9 @@
       "pose-estimate uncertainty, expired match-state lease, negative speed and nonzero yaw rate",
       "uncovered forward scan, unreachable OPEN-route requirement, and nonzero-curvature stop",
       "close-obstacle zero-speed limiting and active lease revocation on invalid replan input",
-      "oblique-ray projection for forward stopping clearance"
+      "oblique-ray projection for forward stopping clearance",
+      "ALIGN rejects missing/partial coverage, insufficient radial clearance, motion while translating, stale or invalid limits, wheel-rate excess, and excessive yaw change",
+      "stop-turn-go halts before supervised turn and resumes with straight motion only"
     ]
   },
   "acceptance": {
