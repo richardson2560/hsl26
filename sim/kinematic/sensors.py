@@ -33,6 +33,17 @@ class LidarSensor:
         self._rng = random.Random(seed)
         self._blind_sectors = tuple(blind_sectors)
         self._frame_id = frame_id
+        self._local_angles = tuple(
+            -math.pi + 2.0 * math.pi * index / self._beam_count
+            for index in range(self._beam_count)
+        )
+        self._blind_mask = tuple(
+            any(
+                self._raycaster.in_blind_sector(local_angle, center, width)
+                for center, width in self._blind_sectors
+            )
+            for local_angle in self._local_angles
+        )
 
     def observe(
         self,
@@ -42,23 +53,30 @@ class LidarSensor:
     ) -> SensorObservation:
         if not math.isfinite(float(stamp_s)):
             raise ValueError("stamp_s must be finite")
+        noises = tuple(
+            self._rng.gauss(0.0, self._noise_std)
+            for _ in range(self._beam_count)
+        )
+        active_indices = tuple(
+            index for index, blind in enumerate(self._blind_mask) if not blind
+        )
+        active_angles = tuple(
+            pose.theta_rad + self._local_angles[index]
+            for index in active_indices
+        )
+        active_ranges = self._raycaster.cast_many(
+            (pose.x_m, pose.y_m),
+            active_angles,
+            geometry.static_segments,
+            geometry.dynamic_targets,
+        )
         ranges = []
         valid = []
         coverage = []
-        for index in range(self._beam_count):
-            local_angle = -math.pi + 2.0 * math.pi * index / self._beam_count
-            world_angle = pose.theta_rad + local_angle
-            noise = self._rng.gauss(0.0, self._noise_std)
-            blind = any(
-                self._raycaster.in_blind_sector(local_angle, center, width)
-                for center, width in self._blind_sectors
-            )
-            distance = None if blind else self._raycaster.cast(
-                (pose.x_m, pose.y_m),
-                world_angle,
-                geometry.static_segments,
-                geometry.dynamic_targets,
-            )
+        ranges_by_index = dict(zip(active_indices, active_ranges))
+        for index, noise in enumerate(noises):
+            blind = self._blind_mask[index]
+            distance = None if blind else ranges_by_index[index]
             if distance is None:
                 ranges.append(self._max_range)
                 valid.append(False)

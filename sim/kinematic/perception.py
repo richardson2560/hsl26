@@ -83,16 +83,16 @@ def extract_synthetic_opponent(
     local_angles = tuple(
         -math.pi + 2.0 * math.pi * index / count for index in range(count)
     )
-    for index, (distance, valid) in enumerate(
-        zip(observation.ranges_m, observation.valid_mask)
+    expected_ranges = raycaster.cast_many(
+        (pose.x_m, pose.y_m),
+        tuple(pose.theta_rad + angle for angle in local_angles),
+        static_segments,
+    )
+    for index, (distance, valid, expected) in enumerate(
+        zip(observation.ranges_m, observation.valid_mask, expected_ranges)
     ):
         if not valid:
             continue
-        expected = raycaster.cast(
-            (pose.x_m, pose.y_m),
-            pose.theta_rad + local_angles[index],
-            static_segments,
-        )
         if expected is None or expected - distance >= config.static_residual_threshold_m:
             residual_indices.append(index)
     clusters = _cluster_indices(

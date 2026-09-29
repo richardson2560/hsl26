@@ -4,7 +4,8 @@
 from dataclasses import dataclass
 import heapq
 import math
-from typing import Callable
+from types import MappingProxyType
+from typing import Callable, Mapping
 
 from ..topology import EdgeState, TopologyEdge, TopologyGraph
 
@@ -110,6 +111,87 @@ def astar(graph: TopologyGraph, start_node_id: int, goal_node_id: int) -> Planne
 def dijkstra(graph: TopologyGraph, start_node_id: int, goal_node_id: int) -> PlannedPath:
     """Reference least-cost path used for A* validation."""
     return _search(graph, start_node_id, goal_node_id, False)
+
+
+def dijkstra_tree(
+    graph: TopologyGraph,
+    start_node_id: int,
+    *,
+    allowed_edge_states: frozenset[EdgeState] | None = None,
+) -> Mapping[int, PlannedPath]:
+    """Compute deterministic shortest paths to every reachable node once."""
+    if allowed_edge_states is not None and (
+        not isinstance(allowed_edge_states, frozenset)
+        or any(not isinstance(state, EdgeState) for state in allowed_edge_states)
+    ):
+        raise ValueError("allowed_edge_states must be a frozenset of EdgeState values")
+    node_ids = {node.node_id for node in graph.nodes}
+    if start_node_id not in node_ids:
+        raise ValueError("start must reference a graph node")
+    adjacency = graph.adjacency()
+    queue: list[tuple[float, int]] = [(0.0, start_node_id)]
+    best = {start_node_id: 0.0}
+    previous: dict[int, tuple[int, TopologyEdge]] = {}
+    while queue:
+        current_cost, current = heapq.heappop(queue)
+        if current_cost > best.get(current, math.inf) + 1e-12:
+            continue
+        for edge in sorted(
+            adjacency[current], key=lambda item: (item.edge_id, item.to_node)
+        ):
+            if (
+                edge.state == EdgeState.BLOCKED
+                or (
+                    allowed_edge_states is not None
+                    and edge.state not in allowed_edge_states
+                )
+            ):
+                continue
+            candidate = current_cost + _edge_cost(edge)
+            if candidate + 1e-12 < best.get(edge.to_node, math.inf):
+                best[edge.to_node] = candidate
+                previous[edge.to_node] = (current, edge)
+                heapq.heappush(queue, (candidate, edge.to_node))
+
+    paths: dict[int, PlannedPath] = {}
+    for goal_node_id, cost in best.items():
+        reversed_nodes = [goal_node_id]
+        reversed_edges: list[TopologyEdge] = []
+        current = goal_node_id
+        while current != start_node_id:
+            parent, edge = previous[current]
+            reversed_nodes.append(parent)
+            reversed_edges.append(edge)
+            current = parent
+        nodes = tuple(reversed(reversed_nodes))
+        edges = tuple(reversed(reversed_edges))
+        polyline: list[tuple[float, float]] = []
+        for index, edge in enumerate(edges):
+            points = edge.polyline_xy_m
+            if (
+                index
+                and polyline
+                and math.isclose(polyline[-1][0], points[0][0], abs_tol=1e-9)
+                and math.isclose(polyline[-1][1], points[0][1], abs_tol=1e-9)
+            ):
+                polyline.extend(points[1:])
+            else:
+                polyline.extend(points)
+        if not polyline:
+            node = next(item for item in graph.nodes if item.node_id == start_node_id)
+            polyline = [(node.x_m, node.y_m), (node.x_m, node.y_m)]
+        paths[goal_node_id] = PlannedPath(
+            graph.map_version,
+            graph.topology_version,
+            graph.localization_epoch,
+            start_node_id,
+            goal_node_id,
+            nodes,
+            tuple(edge.edge_id for edge in edges),
+            tuple(polyline),
+            cost,
+        )
+    return MappingProxyType(paths)
 
 
 def smooth_polyline(

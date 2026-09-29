@@ -4,6 +4,7 @@
 from dataclasses import asdict
 import math
 from pathlib import Path
+import random
 
 import pytest
 
@@ -50,6 +51,83 @@ def test_raycaster_does_not_report_parallel_or_behind_geometry():
     segment = Segment((1.0, 1.0), (2.0, 1.0))
     assert raycaster.cast((0.0, 0.0), 0.0, (segment,)) is None
     assert raycaster.cast((0.0, 0.0), math.pi, (segment,)) is None
+
+
+def test_vectorized_raycaster_matches_scalar_for_mixed_geometries():
+    angles = tuple(-math.pi + index * 2.0 * math.pi / 360 for index in range(360))
+    raycaster = FirstHitRaycaster(max_range_m=6.0)
+    for seed in (7731, 9182, 12037, 66103):
+        random_source = random.Random(seed)
+        segments = tuple(
+            Segment(
+                (random_source.uniform(-5.0, 5.0), random_source.uniform(-5.0, 5.0)),
+                (random_source.uniform(-5.0, 5.0), random_source.uniform(-5.0, 5.0)),
+            )
+            for _ in range(23)
+        )
+        targets = tuple(
+            CircleTarget(
+                (random_source.uniform(-4.0, 4.0), random_source.uniform(-4.0, 4.0)),
+                random_source.uniform(0.05, 0.5),
+                f"target-{index}",
+            )
+            for index in range(3)
+        )
+        origin = (
+            random_source.uniform(-1.0, 1.0),
+            random_source.uniform(-1.0, 1.0),
+        )
+        vectorized = raycaster.cast_many(origin, angles, segments, targets)
+        scalar = tuple(
+            raycaster.cast(origin, angle, segments, targets) for angle in angles
+        )
+
+        assert len(vectorized) == len(scalar)
+        for actual, expected in zip(vectorized, scalar):
+            if expected is None:
+                assert actual is None
+            else:
+                assert actual == pytest.approx(expected, abs=1e-12)
+
+
+def test_vectorized_raycaster_preserves_parallel_tangent_and_range_edges():
+    raycaster = FirstHitRaycaster(max_range_m=5.0)
+    segments = (
+        Segment((1.0, 1.0), (2.0, 1.0)),
+        Segment((2.0, -1.0), (2.0, 1.0)),
+    )
+    targets = (CircleTarget((4.0, 1.0), 1.0, "tangent"),)
+    angles = (0.0, math.pi / 2.0, math.pi, math.atan2(1.0, 4.0))
+    batched = raycaster.cast_many((0.0, 0.0), angles, segments, targets)
+    scalar = tuple(
+        raycaster.cast((0.0, 0.0), angle, segments, targets)
+        for angle in angles
+    )
+    for actual, expected in zip(batched, scalar):
+        if expected is None:
+            assert actual is None
+        else:
+            assert actual == pytest.approx(expected, abs=1e-12)
+    assert raycaster.cast_many((0.0, 0.0), (), segments) == ()
+    with pytest.raises(ValueError, match="angles"):
+        raycaster.cast_many((0.0, 0.0), (math.nan,), segments)
+
+
+def test_vectorized_raycaster_preserves_segment_endpoints_and_exact_range():
+    raycaster = FirstHitRaycaster(max_range_m=5.0)
+    endpoint_hit = (Segment((2.0, 1.0), (2.0, 2.0)),)
+    exact_range_hit = (Segment((5.0, -1.0), (5.0, 1.0)),)
+    just_inside_range_hit = (
+        Segment((math.nextafter(5.0, 0.0), -1.0), (math.nextafter(5.0, 0.0), 1.0)),
+    )
+
+    assert raycaster.cast_many((0.0, 0.0), (math.atan2(1.0, 2.0),), endpoint_hit) == (
+        pytest.approx(math.sqrt(5.0)),
+    )
+    assert raycaster.cast_many((0.0, 0.0), (0.0,), exact_range_hit) == (None,)
+    assert raycaster.cast_many(
+        (0.0, 0.0), (0.0,), just_inside_range_hit
+    ) == (math.nextafter(5.0, 0.0),)
 
 
 def test_sensor_blind_sector_is_invalid_not_a_max_range_hit():

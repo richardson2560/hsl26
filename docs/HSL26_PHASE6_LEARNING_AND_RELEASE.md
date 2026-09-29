@@ -95,8 +95,39 @@ Explorer, and balanced deltas, so it retained the baseline and did not run
 validation. The 30-second multiring self-play also timed out without capture
 (minimum separation 4.03 m, zero estimated wall contacts). This is evidence
 that the current fixture/policy/reward combination has not demonstrated
-successful learning or competitive pursuit; the external example's claimed
-capture and validation result is not verified for this repository.
+successful learning. The earlier 30-second multiring run timed out, while a
+later 600-second-cap fixture run did capture at 49.15 active seconds; that run
+used the retained baseline, so it demonstrates synthetic interaction but not
+learning or competitive pursuit.
+
+The 2026-09-30 random-seed development run (`p63_random_seed_569726666`)
+evaluated one mutation against the baseline. The mutation was excluded by the
+hard safety/episode-completion filter, no training finalist was produced, and
+validation did not run; the subsequent demo therefore used the baseline. Its
+direct-looking perimeter trajectory follows the existing multiring fixture's
+open lower row, open left column, and lower-perimeter Explorer goal. The
+trajectory was reproduced bit-for-bit after route-cache changes. Do not edit
+the established training fixture in place to force an encounter: that would
+change its scenario identity and invalidate prior pairing provenance. Any
+interception-oriented map should be a separately identified fixture with its
+own manifest hash and documented split.
+
+P6.3 route search now caches deterministic shortest-path trees by immutable
+topology snapshot and start node, and the autonomous SIL policy restricts
+those paths to explicitly `OPEN` edges. The start-node ordering is refreshed
+once per input pose; a changed topology snapshot clears cached paths. A
+two-source LRU bounds retained trees. Pose to corridor clearance is still checked before a path can be returned, and the
+20 Hz policy/supervisor call path has not been decimated. A differential test
+confirms that an unknown shortcut is excluded in favor of an available open
+route; another verifies tree reuse and invalidation on pose/snapshot changes.
+This removes per-goal A* fallback searches but does not eliminate the
+remaining costs of per-cycle proposal scoring, LiDAR, tracking, or curved
+swept-path certification. Current measurements remain around 2.3–3.8x for
+the tested workloads, not 100x; no full 600-second timeout performance claim
+has been measured. Tactics may be scheduled at 2–5 Hz per the architecture,
+but any future decimation must define immediate invalidation triggers and
+retain fresh authority, lease, observation, and safety checks at the control
+rate before it is enabled.
 
 Reproduce the guarded development run with
 `python tools/train_evolution.py --development-fixtures --generations 1 --population-size 2 --elite-count 1 --episode-duration-s 2 --output-dir artifacts/reports/phase6/p63_local_run`.

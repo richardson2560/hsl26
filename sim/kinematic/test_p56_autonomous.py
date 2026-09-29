@@ -2,6 +2,7 @@
 
 from dataclasses import fields, replace
 import math
+from types import SimpleNamespace
 
 import pytest
 
@@ -101,6 +102,147 @@ def _graph(*, diagonal=False, blocked=False, map_version=0):
             ),
         ),
     )
+
+
+def test_cached_route_tree_never_admits_unknown_edges():
+    graph = TopologyGraph(
+        0,
+        0,
+        "p56-localization",
+        (
+            TopologyNode(0, 0.0, 0.0, NodeKind.ANCHOR, 0.5),
+            TopologyNode(1, 1.0, 0.0, NodeKind.PORTAL, 0.5),
+        ),
+        (
+            TopologyEdge(
+                1,
+                0,
+                1,
+                ((0.0, 0.0), (1.0, 0.0)),
+                0.5,
+                state=EdgeState.UNKNOWN,
+            ),
+        ),
+    )
+    estimate = PoseEstimate(
+        100_000_000,
+        "map",
+        "p56-clock",
+        "p56-localization",
+        Pose2D(0.0, 0.0, 0.0),
+        0.0,
+        0.0,
+    )
+    policy = KinematicAutonomousPolicy(MatchRole.GUARDIAN)
+
+    route = policy._path_to_node(
+        SimpleNamespace(pose_estimate=estimate, stamp_ns=estimate.stamp_ns),
+        graph,
+        node_id=1,
+    )
+
+    assert 1 not in policy._route_trees[0]
+    assert route is None
+
+
+def test_route_tree_is_reused_per_graph_and_invalidated_by_pose_or_snapshot(
+    monkeypatch,
+):
+    import sim.kinematic.autonomous as autonomous
+
+    graph = _graph()
+    policy = KinematicAutonomousPolicy(MatchRole.GUARDIAN)
+    original_tree = autonomous.dijkstra_tree
+    starts = []
+
+    def counted_tree(graph_arg, start_node_id, **kwargs):
+        starts.append((graph_arg, start_node_id))
+        return original_tree(graph_arg, start_node_id, **kwargs)
+
+    monkeypatch.setattr(autonomous, "dijkstra_tree", counted_tree)
+    estimate = PoseEstimate(
+        100_000_000,
+        "map",
+        "p56-clock",
+        "p56-localization",
+        Pose2D(0.0, 0.0, 0.0),
+        0.0,
+        0.0,
+    )
+    frame = SimpleNamespace(pose_estimate=estimate, stamp_ns=estimate.stamp_ns)
+
+    assert policy._path_to_node(frame, graph, node_id=1) is not None
+    assert policy._path_to_node(frame, graph, node_id=1) is not None
+    assert len(starts) == 1
+
+    moved_estimate = replace(
+        estimate,
+        stamp_ns=150_000_000,
+        pose=Pose2D(1.0, 0.0, 0.0),
+    )
+    moved_frame = SimpleNamespace(
+        pose_estimate=moved_estimate, stamp_ns=moved_estimate.stamp_ns
+    )
+    assert policy._path_to_node(moved_frame, graph, node_id=0) is not None
+    assert len(starts) == 2
+    assert starts[-1][1] == 1
+
+    new_graph = _graph(map_version=1)
+    versioned_estimate = replace(
+        moved_estimate,
+        stamp_ns=200_000_000,
+    )
+    versioned_frame = SimpleNamespace(
+        pose_estimate=versioned_estimate,
+        stamp_ns=versioned_estimate.stamp_ns,
+    )
+    assert policy._path_to_node(versioned_frame, new_graph, node_id=0) is not None
+    assert len(starts) == 3
+    assert starts[-1][0] is new_graph
+
+
+def test_route_tree_cache_has_a_fixed_start_count_bound():
+    graph = TopologyGraph(
+        0,
+        0,
+        "p56-localization",
+        tuple(
+            TopologyNode(index, float(index), 0.0, NodeKind.PORTAL, 0.5)
+            for index in range(4)
+        ),
+        tuple(
+            TopologyEdge(
+                index,
+                index - 1,
+                index,
+                ((float(index - 1), 0.0), (float(index), 0.0)),
+                0.5,
+                state=EdgeState.OPEN,
+            )
+            for index in range(1, 4)
+        ),
+    )
+    policy = KinematicAutonomousPolicy(MatchRole.GUARDIAN)
+
+    for stamp_ns, x_m in (
+        (100_000_000, 0.0),
+        (150_000_000, 1.0),
+        (200_000_000, 2.0),
+        (250_000_000, 2.8),
+    ):
+        estimate = PoseEstimate(
+            stamp_ns,
+            "map",
+            "p56-clock",
+            "p56-localization",
+            Pose2D(x_m, 0.0, 0.0),
+            0.0,
+            0.0,
+        )
+        frame = SimpleNamespace(pose_estimate=estimate, stamp_ns=stamp_ns)
+        assert policy._path_to_node(frame, graph, node_id=3) is not None
+
+    assert len(policy._route_trees) == 2
 
 
 def _endpoint(role, pose, policy, graph, *, blind=()):

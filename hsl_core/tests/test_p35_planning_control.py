@@ -11,6 +11,7 @@ from hsl_core.planning import (
     PlannedPath,
     astar,
     dijkstra,
+    dijkstra_tree,
     smooth_polyline,
 )
 from hsl_core.topology import EdgeState, TopologyEdge, TopologyGraph, TopologyNode
@@ -43,6 +44,24 @@ def test_astar_matches_dijkstra_and_uses_metric_units():
     assert planned.edge_ids == (10, 11, 12)
     assert planned.map_version == 7
     assert planned.topology_version == 9
+    tree = dijkstra_tree(graph, 0)
+    assert set(tree) == {0, 1, 2, 3}
+    assert all(
+        tree[goal].cost == pytest.approx(dijkstra(graph, 0, goal).cost)
+        for goal in tree
+        if goal != 0
+    )
+    assert tree[3].edge_ids == (10, 11, 12)
+
+
+def test_graph_adjacency_is_immutable_and_reused_for_its_snapshot():
+    graph = _graph()
+    adjacency = graph.adjacency()
+    assert graph.adjacency() is adjacency
+    with pytest.raises(TypeError):
+        adjacency[0] = ()
+    with pytest.raises(AttributeError):
+        adjacency[0][0].cost = 99.0
 
 
 def test_blocked_overlay_excludes_edge_but_preserves_structural_identity():
@@ -50,6 +69,49 @@ def test_blocked_overlay_excludes_edge_but_preserves_structural_identity():
     planned = astar(graph, 0, 3)
     assert planned.edge_ids == (20,)
     assert 11 in {edge.edge_id for edge in graph.edges}
+    tree = dijkstra_tree(graph, 0)
+    assert tree[3].edge_ids == (20,)
+    assert tree[2].cost == pytest.approx(5.0)
+
+
+def test_dijkstra_tree_can_restrict_routes_to_confirmed_open_edges():
+    graph = TopologyGraph(
+        7,
+        9,
+        "epoch-a",
+        (
+            TopologyNode(0, 0.0, 0.0, 0, 0.5),
+            TopologyNode(1, 1.0, 0.0, 0, 0.5),
+            TopologyNode(2, 2.0, 0.0, 0, 0.5),
+        ),
+        (
+            TopologyEdge(
+                10, 0, 2, ((0.0, 0.0), (2.0, 0.0)), 0.5,
+                state=EdgeState.UNKNOWN,
+            ),
+            TopologyEdge(
+                11, 0, 1, ((0.0, 0.0), (1.0, 0.0)), 0.5,
+                state=EdgeState.OPEN,
+            ),
+            TopologyEdge(
+                12, 1, 2, ((1.0, 0.0), (2.0, 0.0)), 0.5,
+                state=EdgeState.OPEN,
+            ),
+        ),
+    )
+
+    unrestricted = dijkstra_tree(graph, 0)
+    open_only = dijkstra_tree(
+        graph, 0, allowed_edge_states=frozenset({EdgeState.OPEN})
+    )
+
+    assert unrestricted[2].edge_ids == (10,)
+    assert open_only[2].edge_ids == (11, 12)
+    assert all(
+        edge_id in {11, 12}
+        for path in open_only.values()
+        for edge_id in path.edge_ids
+    )
 
 
 def test_unreachable_goal_is_explicit_failure_not_fake_path():

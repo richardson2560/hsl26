@@ -17,7 +17,7 @@ from hsl_core.control.safety import (
 )
 from hsl_core.match import Role, StagePhase
 from hsl_core.perception.ekf_opponent import FilterConfig, OpponentFilter
-from hsl_core.planning import CandidateEnvelope, PlannedPath, astar
+from hsl_core.planning import CandidateEnvelope, PlannedPath, dijkstra_tree
 from hsl_core.tactics import (
     OptionAuthority,
     OptionContext,
@@ -32,12 +32,20 @@ from hsl_core.tactics import (
     TacticalSnapshot,
     UtilityProfile,
 )
-from hsl_core.topology import EdgeState, NodeKind, TopologyGraph
+from hsl_core.topology import (
+    EdgeState,
+    NodeKind,
+    TopologyEdge,
+    TopologyGraph,
+    TopologyNode,
+)
 from hsl_core.types import MotionCandidate, OpponentTrack, Pose2D, TrackState
 
 from .common import Actuation, PoseEstimate
 from .match import MatchRole, PolicyInput, SILPolicyInput
 from .perception import extract_synthetic_opponent, line_of_sight_clear
+
+_ROUTE_TREE_CACHE_LIMIT = 2
 
 
 def _core_role(role: MatchRole) -> Role:
@@ -267,6 +275,11 @@ class KinematicAutonomousPolicy:
         self._completed_nodes: set[int] = set()
         self._safety_latched = False
         self._last_route_rejection = ""
+        self._route_graph: TopologyGraph | None = None
+        self._route_edges: dict[int, TopologyEdge] = {}
+        self._route_trees: dict[int, dict[int, PlannedPath]] = {}
+        self._route_starts_stamp_ns: int | None = None
+        self._route_starts: tuple[TopologyNode, ...] = ()
         self._last_policy_stamp_ns: int | None = None
         self._opponent_filter = OpponentFilter(FilterConfig(confirmation_count=2))
         self._opponent_filter_identity: tuple[int, str] | None = None
@@ -753,26 +766,49 @@ class KinematicAutonomousPolicy:
         estimate = frame.pose_estimate
         if estimate is None:
             return None
-        graph_edges = {edge.edge_id: edge for edge in graph.edges}
-        starts = sorted(
-            graph.nodes,
-            key=lambda node: (
-                math.hypot(node.x_m - estimate.pose.x_m, node.y_m - estimate.pose.y_m),
-                node.node_id,
-            ),
-        )
-        for start in starts:
-            try:
-                candidate = astar(graph, start.node_id, node_id)
-            except ValueError:
+        if self._route_graph is not graph:
+            self._route_graph = graph
+            self._route_edges = {edge.edge_id: edge for edge in graph.edges}
+            self._route_trees.clear()
+            self._route_starts_stamp_ns = None
+            self._route_starts = ()
+        if self._route_starts_stamp_ns != frame.stamp_ns:
+            self._route_starts = tuple(
+                sorted(
+                    graph.nodes,
+                    key=lambda node: (
+                        math.hypot(
+                            node.x_m - estimate.pose.x_m,
+                            node.y_m - estimate.pose.y_m,
+                        ),
+                        node.node_id,
+                    ),
+                )
+            )
+            self._route_starts_stamp_ns = frame.stamp_ns
+        for start in self._route_starts:
+            paths = self._route_trees.pop(start.node_id, None)
+            if paths is None:
+                paths = dict(
+                    dijkstra_tree(
+                        graph,
+                        start.node_id,
+                        allowed_edge_states=frozenset({EdgeState.OPEN}),
+                    )
+                )
+            self._route_trees[start.node_id] = paths
+            while len(self._route_trees) > _ROUTE_TREE_CACHE_LIMIT:
+                self._route_trees.pop(next(iter(self._route_trees)))
+            candidate = paths.get(node_id)
+            if candidate is None or not candidate.edge_ids:
                 continue
-            if not candidate.edge_ids or any(
-                graph_edges[edge_id].state != EdgeState.OPEN
+            if any(
+                self._route_edges[edge_id].state != EdgeState.OPEN
                 for edge_id in candidate.edge_ids
             ):
                 continue
             clearance = min(
-                graph_edges[edge_id].min_clearance_radius_m
+                self._route_edges[edge_id].min_clearance_radius_m
                 for edge_id in candidate.edge_ids
             )
             try:
@@ -1665,7 +1701,7 @@ class KinematicAutonomousPolicy:
 
         curvature = candidate.angular_velocity_rps / candidate.linear_velocity_mps
         half_beam = math.pi / count
-        angles = tuple(-math.pi + 2.0 * math.pi * index / count for index in range(count))
+        beam_step = 2.0 * math.pi / count
         certified_distance = 0.0
         sample_count = math.ceil(horizon / step)
         for sample in range(1, sample_count + 1):
@@ -1689,12 +1725,23 @@ class KinematicAutonomousPolicy:
             angular_radius = math.asin(
                 min(1.0, inflated_radius / radial_distance)
             )
-            beams = [
-                (index, self._angle_difference(angle, center_bearing))
-                for index, angle in enumerate(angles)
-                if abs(self._angle_difference(angle, center_bearing))
-                <= angular_radius + 1e-12
-            ]
+            center_index = round((center_bearing + math.pi) / beam_step) % count
+            candidate_radius = math.ceil(angular_radius / beam_step) + 1
+            candidate_count = 2 * candidate_radius + 1
+            if candidate_count >= count:
+                candidate_indices = range(count)
+            else:
+                first_index = (center_index - candidate_radius) % count
+                candidate_indices = (
+                    (first_index + offset) % count
+                    for offset in range(candidate_count)
+                )
+            beams = []
+            for index in candidate_indices:
+                beam_angle = -math.pi + beam_step * index
+                delta = self._angle_difference(beam_angle, center_bearing)
+                if abs(delta) <= angular_radius + 1e-12:
+                    beams.append((index, delta))
             if not beams:
                 break
             point_clear = True

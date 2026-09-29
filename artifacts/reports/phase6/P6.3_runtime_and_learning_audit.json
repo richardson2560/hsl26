@@ -1,0 +1,234 @@
+{
+  "schema": "hsl26.phase6.p63-runtime-learning-audit.v1",
+  "phase": "P6.3",
+  "status": "FULL_HORIZON_FIXTURE_SMOKE_COMPLETE_NO_CANDIDATE_SUPPORTED_ELIGIBLE_P63_BLOCKED",
+  "authority": {
+    "physical_authority": false,
+    "competition_map_or_goal_authority": false,
+    "official_score_available": false,
+    "promotion_eligible": false,
+    "held_out_evaluated": false,
+    "g4_status": "BLOCKED_NOT_RUN",
+    "g5_status": "NOT_RUN",
+    "g6_status": "BLOCKED"
+  },
+  "audit_scope": {
+    "question": "Independently verify whether short SIL horizons and simulator throughput explain zero evolutionary deltas, and test a full configured 600-second cap without changing safety limits.",
+    "external_claims_not_assumed": [
+      "A 600-second match should execute in 3-5 seconds of wall-clock time.",
+      "maze_multiring_7x7_train_a has a 12-meter geodesic between the actual episode starts.",
+      "A longer episode alone guarantees a non-zero evolutionary gradient.",
+      "A 25-second maze_loop_o_train baseline should end in capture."
+    ]
+  },
+  "external_audit_review": {
+    "supported_by_repository_evidence": [
+      "A capture on a 600-second-cap run is an earlier fixture terminal, not a 600-second timeout test.",
+      "A zero paired delta on one deterministic scenario and seed is consistent with a piecewise-constant policy/reward landscape.",
+      "A larger mutation sigma can explore farther, but it does not guarantee a different action, trajectory, or fitness."
+    ],
+    "not_mathematically_established_by_the_external_audit": [
+      "The assertion that the sampled candidate and baseline trajectories were bit-identical is not established by equal terminal time and return alone; trace-by-trace equality would be needed.",
+      "A finite difference of zero for one candidate, one map, and one seed does not prove that the global fitness gradient is zero.",
+      "The selector orders applicable options lexicographically by priority, then urgency, then utility; utility weights influence choice only after the higher-order keys tie. The external audit's 'weights only act in SEARCH_PORTAL' statement is not supported as a general rule by the selector contract.",
+      "The mutation sigma is the standard deviation of independent Gaussian perturbations followed by projection/clamping, not a hard bound on the mutation norm. Sigma values 0.25-0.35 are unvalidated suggestions, not a derived threshold for crossing a decision boundary.",
+      "The maze_loop_o_train 25-second timeout is an observed result for one policy/configuration/seed. The proposed 48.3-second lower bound assumes reaching the Explorer's initial position and simplified corner timing; it does not prove that all possible captures before 25 seconds are physically impossible."
+    ],
+    "mathematical_contract": {
+      "utility_argmax_switch_condition": "For two options at the same priority and urgency, a switch requires (theta + delta_theta) dot (f_a - f_b) to change sign (subject to the configured hysteresis and dwell). The minimum L2 perturbation to the decision hyperplane is |theta dot (f_a-f_b)| / ||f_a-f_b||_2 when f_a != f_b; Gaussian sigma alone neither bounds the perturbation nor ensures this crossing.",
+      "paired_terminal_delta": "If baseline and candidate have identical terminal sign and active duration, their discounted terminal reward s*exp(-beta*t) is equal, so that role's sampled delta is exactly zero. This explains an observed sample; it does not establish equality on other seeds/maps or a global zero derivative.",
+      "zero_sum_self_play": "In one zero-sum match R_G + R_E = 0 for both candidate and baseline self-play, so the sum of the two self-play role deltas is identically zero. The role-swapped fixed-baseline comparison is therefore the appropriate implemented fitness comparison."
+    }
+  },
+  "implementation": {
+    "runtime_changes": [
+      "Cache immutable topology adjacency once per graph snapshot.",
+      "Add deterministic Dijkstra shortest-path trees and reuse graph-scoped route fallbacks.",
+      "Vectorize batched LiDAR ray casting while retaining the scalar cast implementation as the reference.",
+      "Vectorize static-map ray casting for synthetic opponent extraction and preserve per-beam noise draws, including blind beams.",
+      "Limit curved-path beam checks to a conservative angular superset, then retain the original angular inclusion predicate and clearance test."
+    ],
+    "post_audit_safety_correction": "A cached Dijkstra path could include UNKNOWN edges although the prior A* fallback accepted only OPEN routes. Cached paths are now admitted only if every edge is OPEN; a regression test confirms UNKNOWN-only routes fail closed.",
+    "route_search_strategy": {
+      "search_algorithm": "Deterministic Dijkstra trees restricted to EdgeState.OPEN in the SIL autonomous policy; each tree is reused for all goal nodes from that start.",
+      "cache_invalidation": "The per-policy route cache is cleared when the immutable TopologyGraph snapshot identity changes. The nearest start-node ordering is recomputed once per policy input stamp as the pose moves; a new start node receives its own shortest-path tree. Pose-to-route corridor validation still runs before a path is returned.",
+      "cache_bound": "At most two start-node trees are retained per graph snapshot using a small LRU; this bounds retained route-tree count while allowing a nearby alternate attachment node.",
+      "safety_frequency_reduced": false,
+      "astar_calls_from_sil_policy": 0,
+      "profiled_dijkstra_tree_calls_in_60_tick_episode": 39,
+      "scope": "This removes per-goal A* fallback searches and repeated graph/start preparation. It does not decimate tactical evaluation, LiDAR, curved-path certification, or the safety supervisor."
+    },
+    "safety_behavior": {
+      "supervisor_frequency_reduced": false,
+      "control_period_s": 0.05,
+      "p56_lease_limit_changed": false,
+      "robot_speed_limit_changed": false,
+      "robot_radius_changed": false,
+      "fixture_geometry_changed": false
+    }
+  },
+  "verification": {
+    "focused_tests": {
+      "command": "python -m pytest hsl_core/tests/test_p35_planning_control.py sim/kinematic/test_p34.py sim/kinematic/test_p56_perception.py sim/kinematic/test_p56_autonomous.py sim/kinematic/test_p63_benchmark.py -q",
+      "result": "70 passed",
+      "new_raycaster_coverage": [
+        "720 deterministic randomized rays over mixed segment and circle geometry compared with scalar cast.",
+        "Parallel, tangent, empty-batch, non-finite-angle, and optional-hit cases."
+      ]
+    },
+    "applicable_repository_tests": {
+      "command": "$env:PYTHONPATH = (Resolve-Path 'ros_ws/src/hsl_safety').Path + ';' + (Resolve-Path '.').Path; python -m pytest hsl_core/tests sim/kinematic ros_ws/src/hsl_interfaces/test ros_ws/src/hsl_safety/test tools/test_calibrate_braking.py -q",
+      "result": "673 passed in 38.84 seconds",
+      "note": "The repository-wide pytest discovery command also collects the vendored Kobuki ROS1 suite; collection is unsupported in this environment because ROS modules are absent and some legacy tests use Python 2 syntax."
+    }
+  },
+  "experiments": [
+    {
+      "id": "full-horizon-baseline",
+      "scenario_id": "maze_multiring_7x7_train_a",
+      "split": "training",
+      "seed": 20260931,
+      "duration_cap_s": 600.0,
+      "control_period_s": 0.05,
+      "lidar_beam_count": 360,
+      "lidar_max_range_m": 6.0,
+      "terminal_kind": "CAPTURE",
+      "active_duration_s": 49.15,
+      "step_count": 986,
+      "wall_clock_s": 17.34,
+      "measured_simulation_speedup": 2.835,
+      "guardian_wall_contacts": 0,
+      "explorer_wall_contacts": 0,
+      "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE"
+    },
+    {
+      "id": "compact-maze-25s-baseline",
+      "scenario_id": "maze_loop_o_train",
+      "split": "training",
+      "seed": 20260931,
+      "duration_cap_s": 25.0,
+      "control_period_s": 0.05,
+      "terminal_kind": "TIMEOUT",
+      "active_duration_s": 24.85,
+      "step_count": 500,
+      "wall_clock_s": 8.926,
+      "measured_simulation_speedup": 2.784,
+      "guardian_wall_contacts": 0,
+      "explorer_wall_contacts": 0,
+      "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE"
+    },
+    {
+      "id": "full-horizon-single-pair-smoke",
+      "scenario_id": "maze_multiring_7x7_train_a",
+      "split": "training",
+      "seed": 20260931,
+      "duration_cap_s": 600.0,
+      "control_period_s": 0.05,
+      "lidar_beam_count": 360,
+      "lidar_max_range_m": 5.0,
+      "baseline_terminal_kind": "CAPTURE",
+      "baseline_active_duration_s": 49.15,
+      "mutated_genome_seed": 20260932,
+      "mutation_sigma": 0.04,
+      "candidate_guardian_return": 0.6117081434533598,
+      "baseline_guardian_return": 0.6117081434533598,
+      "guardian_delta": 0.0,
+      "candidate_explorer_return": -0.6117081434533598,
+      "baseline_explorer_return": -0.6117081434533598,
+      "explorer_delta": 0.0,
+      "balanced_delta": 0.0,
+      "wall_clock_s": 112.255,
+      "safety_violations": 0,
+      "interpretation": "One full-cap role-swapped smoke pair completed, but all compared outcomes were the same capture at the same discounted time. It is not evidence of evolutionary improvement and the single map/seed is not statistically sufficient.",
+      "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE"
+    }
+  ],
+  "independent_findings": [
+    "The SIL accepts a 600-second episode cap and can terminate earlier on a captured fixture episode. A 600-second cap does not mean every episode runs for 600 seconds.",
+    "Measured local throughput is approximately 2.8x simulation time for these episodes, not the externally estimated 100x-200x. The asserted 3-5 second runtime for a full 600-second timeout is not supported.",
+    "The short horizons limited physical interaction in the earlier smoke runs, but extending the cap to 600 seconds did not produce a non-zero candidate delta in the role-swapped smoke test.",
+    "The 25-second compact-map capture prediction was not reproduced: the tested maze_loop_o_train baseline timed out.",
+    "A terminal-only discounted win/loss reward has a flat region whenever candidate and baseline share the same terminal kind and terminal time. More horizon alone cannot guarantee a useful gradient.",
+    "This P6.3 harness remains explicitly synthetic and non-promotable. The technical architecture specifies a 600-second total stage with a 240-second preparation interval, while this fixture runner uses a 0.15-second synthetic freeze; fixture results therefore do not validate official stage timing.",
+    "The fixture contract explicitly does not infer official ARRIVAL from synthetic goals. Only CAPTURE and TIMEOUT are supported episode terminals in this runner; this is not a competition referee."
+  ],
+  "external_audit_follow_up": {
+    "focused_regression_command": "python -m pytest sim/kinematic/test_p34.py sim/kinematic/test_p56_autonomous.py sim/kinematic/test_p63_benchmark.py hsl_core/tests/test_p35_planning_control.py -q",
+    "focused_regression_result": "64 passed",
+    "route_cache_final_regression_command": "python -m pytest sim/kinematic/test_p56_autonomous.py hsl_core/tests/test_p35_planning_control.py -q",
+    "route_cache_final_regression_result": "41 passed",
+    "safety_regression": "UNKNOWN-edge route found in the cached shortest-path tree was not returned as an executable route.",
+    "route_cache_regressions": [
+      "Repeated destination queries at one pose reuse a single shortest-path tree.",
+      "A changed nearest start node recomputes the tree for that source.",
+      "A new immutable topology snapshot invalidates previous route trees.",
+      "The route-tree LRU retains no more than two source trees."
+    ],
+    "raycaster_differential_coverage": "Compared batched casting against scalar casting over four deterministic randomized maps (1,440 rays, 23 segments and 3 circles per map), plus tangent/parallel behavior, segment endpoint inclusion, exact max-range exclusion, just-inside-range inclusion, empty input, and non-finite angle rejection."
+  },
+  "random_seed_run_review": {
+    "run_id": "p63_random_seed_569726666",
+    "training_invocation": {
+      "generations": 1,
+      "population_size": 2,
+      "mutation_sigma": 0.08,
+      "duration_cap_s": 600.0,
+      "seed": 569726666
+    },
+    "selection": "The candidate genome was excluded with hard_safety_or_episode_completion_exclusion. No supported finalist was produced; the baseline was selected and validation did not run. This is not evidence that a candidate was accepted with zero delta.",
+    "demo": {
+      "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+      "selected_policy": "baseline",
+      "scenario_id": "maze_multiring_7x7_train_a",
+      "terminal_kind": "CAPTURE",
+      "active_duration_s": 49.15,
+      "minimum_inter_robot_distance_m": 0.1834579447416836,
+      "wall_contacts": 0,
+      "collision_count": 1,
+      "promotion_eligible": false,
+      "explanation": "The training fixture has open perimeter corridors and the Explorer synthetic goal is on the lower perimeter. A direct-looking perimeter trajectory is a consequence of fixture geometry and route policy, not evidence that the SVG renderer fabricated a path. The captured self-play demo is still a synthetic result."
+    },
+    "determinism_check_after_route_cache_revision": {
+      "same_fixture_seed_and_baseline": true,
+      "telemetry_samples": 987,
+      "trajectory_bitwise_equal_to_recorded_demo": true,
+      "terminal_kind": "CAPTURE",
+      "active_duration_s": 49.15,
+      "step_count": 986,
+      "wall_clock_s_with_telemetry": 21.418,
+      "interpretation": "The route-search refactor preserved the recorded baseline commands, options, poses, timestamps, and terminal for this fixture/seed. This single case does not establish general equivalence for changed or unknown topology."
+    },
+    "timing_after_route_cache_revision": {
+      "full_cap_episode": {
+        "scenario_id": "maze_multiring_7x7_train_a",
+        "seed": 20260931,
+        "duration_cap_s": 600.0,
+        "terminal_kind": "CAPTURE",
+        "active_duration_s": 49.15,
+        "steps": 986,
+        "wall_clock_s_without_telemetry": 21.502,
+        "measured_speedup": 2.286
+      },
+      "five_short_timeout_runs": {
+        "duration_cap_s": 3.0,
+        "steps_per_run": 60,
+        "runs": 5,
+        "median_wall_clock_s": 0.76,
+        "median_active_simulation_speedup": 3.75,
+        "terminal_kind": "TIMEOUT"
+      },
+      "interpretation": "The measured throughput remains far below 100x. Wall time varies with telemetry, profiler overhead and host load; no 100x claim is supported, and a full 600-second timeout was not run."
+    },
+    "seed_semantics": "The demo uses zero LiDAR range noise and deterministic policies, so changing its seed does not by itself make trajectories random. Training seed controls candidate mutations and fixture pairing; it is not randomized action exploration."
+  },
+  "decision": {
+    "eligible_evolution_run_authorized_by_evidence": false,
+    "baseline_retained": true,
+    "next_steps": [
+      "Keep development searches explicitly labeled non-promotable and preserve held-out fixtures.",
+      "Measure repeated, scenario- and seed-stratified role-swapped evaluations under an explicit compute budget before running population-scale evolution.",
+      "If a shaped or intermediate objective is considered, obtain specification approval first; do not introduce unapproved rewards to manufacture a gradient.",
+      "Treat official timing, ARRIVAL authority, physical sensing, and G4/G5/G6 as blocked until their respective phase gates and authorities exist."
+    ]
+  }
+}

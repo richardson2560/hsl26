@@ -5,9 +5,10 @@ This module intentionally contains contracts and deterministic validation only.
 Grid extraction, persistence and ROS conversion remain Phase-3 work packages.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum
 import math
+from types import MappingProxyType
 from typing import Mapping, Optional, Tuple
 
 import numpy as np
@@ -137,6 +138,9 @@ class TopologyGraph:
     localization_epoch: str
     nodes: Tuple[TopologyNode, ...]
     edges: Tuple[TopologyEdge, ...]
+    _adjacency: Mapping[int, Tuple[TopologyEdge, ...]] = field(
+        init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         if self.map_version < 0 or self.topology_version < 0:
@@ -152,13 +156,23 @@ class TopologyGraph:
         node_set = set(node_ids)
         if any(edge.from_node not in node_set or edge.to_node not in node_set for edge in self.edges):
             raise ValueError("edges must reference existing nodes")
-
-    def adjacency(self) -> Mapping[int, Tuple[TopologyEdge, ...]]:
         result = {node.node_id: [] for node in self.nodes}
         for edge in self.edges:
             result[edge.from_node].append(edge)
             result[edge.to_node].append(_reversed_edge(edge))
-        return {node_id: tuple(edges) for node_id, edges in result.items()}
+        object.__setattr__(
+            self,
+            "_adjacency",
+            MappingProxyType(
+                {
+                    node_id: tuple(edges)
+                    for node_id, edges in result.items()
+                }
+            ),
+        )
+
+    def adjacency(self) -> Mapping[int, Tuple[TopologyEdge, ...]]:
+        return self._adjacency
 
 
 @dataclass(frozen=True)
