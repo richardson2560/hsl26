@@ -24,7 +24,7 @@ handoff review and detailed prerequisite roadmap are recorded in
 |---|---|---|---|
 | P6.1 Dataset and abstraction | **a** define role/feature/state/option/outcome schema IDs; **b** implement collection of durations, cancellations, safety interventions and censored episodes; **c** split independent map/opponent/seed banks without leakage. `learning/dirichlet.py`, transition log. | Versioned dataset manifest and valid transition counts. | §15.1/15.4; normalization and schema tests. Pure contract work may precede G4; empirical dataset acceptance requires an accepted baseline and provenance. |
 | P6.2 Offline values | **a** positive immutable Dirichlet prior and posterior; **b** continuous-time discounted option return; **c** terminal/no-bootstrap and failure samples; **d** reject unsupported state fusion. `learning/option_value.py`. | Bounded/convergent value-table fixtures and interpretation report. | T18/T27 and §15.2 fixtures. Pure implementation may precede G4; empirical conclusions require eligible data. |
-| P6.3 Bounded evolution and shadow | **a** bounded tactical genome; **b** paired training on both roles; **c** safety hard exclusion; **d** validation selection and once-only held-out report; **e** shadow logging before promotion. `learning/evolution.py`, `benchmark_policy.py`. | Baseline versus candidate paired outcomes, confidence intervals and safety metrics. | I15; G5 PASS only if preset criterion met. |
+| P6.3 Bounded evolution and shadow | **a** bounded tactical genome; **b** paired training on both roles; **c** safety hard exclusion; **d** validation selection and once-only held-out report; **e** shadow logging before promotion. `learning/evolution.py`, `sim/kinematic/benchmark.py`, later `benchmark_policy.py`. | Fixture-only paired episode runner exists; population orchestration and eligible baseline/candidate evidence remain blocked. | I15; G5 PASS only if preset criterion met. |
 | P6.4 Frozen release inputs | **a** verify official zone/timing/score/memory provenance; **b** pin source, image digest, IDL, config, calibration, model, baseline or accepted policy; **c** check config and topic/TF ownership; **d** exclude sim truth and hardware devices in sim/replay. `validate_config.py`, `preflight_check.py`, `release_freeze.py`. | Signed-off manifest and cold-start checklist, with every unresolved item explicit. | I01–I05/I14, static/runtime authority checks. |
 | P6.5 Final rehearsal and rollback | **a** offline cold boot in final image; **b** freeze/active/terminal over two role-swapped stages; **c** fault injection and recovery with permitted workflow; **d** record scores as official only on official evidence; **e** verify rollback. `runbook_competition.md`, `artifacts/releases/*`. | Complete two-stage run, logs, final gate matrix and last accepted release. | I16 plus G0–G4 prerequisites; optional I15. |
 
@@ -47,10 +47,13 @@ No empirical transition dataset was collected for this implementation. The
 machine-readable implementation/evidence boundary is
 [`P6.1_P6.2_learning_contracts.json`](../artifacts/reports/phase6/P6.1_P6.2_learning_contracts.json).
 P6.3 now has bounded genome, paired-assessment, validation-selection, mutation,
-generation, and synthetic maze-fixture contracts. These are preparation only:
-they do not constitute empirical evolution or alter the existing entry gates.
-Physical authority, G4/G5/G6 acceptance, and release acceptance remain outside
-this implementation.
+generation, synthetic maze fixtures, and a deterministic single/paired episode
+runner. The runner feeds existing `EpisodeResult` contracts but labels each
+run `SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE`, refuses the reserved
+held-out split, and emits no official score. This is executable fixture
+preparation, not an empirical population run; it does not alter the existing
+entry gates. Physical authority, G4/G5/G6 acceptance, and release acceptance
+remain outside this implementation.
 
 ## 2.2 P6.3 SIL preparation boundary
 
@@ -58,18 +61,27 @@ The current P6.3 work is recorded in
 [`P6.3_sil_preparation.json`](../artifacts/reports/phase6/P6.3_sil_preparation.json).
 It implements bounded tactical-genome operations, role-aware paired candidate
 assessment, hard safety/completion exclusions, Student-t uncertainty intervals,
-training-only generation ranking, and validation-only selection. A synthetic,
-connected orthogonal maze bank provides separate training, validation, and
-reserved held-out fixtures. The held-out fixture is not used by selection.
+training-only generation ranking, validation-only selection, and a bounded
+SIL episode runner. A synthetic, connected orthogonal maze bank provides four
+training maps and two validation maps, including 7-by-7 fixtures, plus a
+reserved held-out fixture. The held-out fixture is rejected by the runner.
 
 This does **not** authorize empirical evolution. The Phase-6 entry criterion
 requires an accepted deterministic G4 baseline, while the current P5.6 status
 is partial and G4 remains `BLOCKED_NOT_RUN`. The current SIL profile has fixture-only Explorer route/escape behavior and
 synthetic opponent tracks, not a validated competition policy or perception
-system. No end-to-end population episode runner, held-out use-once ledger,
-shadow logging, or promotion review has been implemented. Training on this
-slice would optimize a synthetic task and must not be described as a valid
-P6.3 result.
+system. No population/generation orchestrator, held-out use-once ledger,
+shadow logging, or promotion review has been implemented. Running these
+episodes optimizes/evaluates only a synthetic fixture task and must not be
+described as an eligible P6.3 result.
+
+The runner's outcome is a terminal-only zero-sum surrogate,
+`outcome * exp(-beta * active_duration)`: capture is a Guardian win and an
+uncaptured timeout is an Explorer win. This follows §15.3 without inventing
+an unapproved per-second reward rate or treating elapsed time as failure.
+Capture terminalization is accepted only on straight-command intervals,
+because the referee's trajectory interpolation is piecewise linear; curved
+intervals are not promoted to capture evidence by this runner.
 
 The SIL extension supports straight and bounded constant-curvature translation,
 with stationary `ALIGN` available as a fallback. Curved movement requires

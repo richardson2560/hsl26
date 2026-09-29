@@ -48,6 +48,7 @@ class LidarSensor:
         for index in range(self._beam_count):
             local_angle = -math.pi + 2.0 * math.pi * index / self._beam_count
             world_angle = pose.theta_rad + local_angle
+            noise = self._rng.gauss(0.0, self._noise_std)
             blind = any(
                 self._raycaster.in_blind_sector(local_angle, center, width)
                 for center, width in self._blind_sectors
@@ -63,7 +64,7 @@ class LidarSensor:
                 valid.append(False)
                 coverage.append(not blind)
             else:
-                measured = max(0.0, min(self._max_range, distance + self._rng.gauss(0.0, self._noise_std)))
+                measured = max(0.0, min(self._max_range, distance + noise))
                 ranges.append(measured)
                 valid.append(True)
                 coverage.append(True)

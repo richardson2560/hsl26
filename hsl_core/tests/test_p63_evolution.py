@@ -269,6 +269,14 @@ def test_pairing_requires_same_scenarios_seeds_banks_roles_and_split():
     assert result.reason == "baseline_candidate_pairing_mismatch"
 
     baseline, candidate = _paired_rows(((1.0, 1.0), (1.0, 1.0)))
+    candidate[0] = replace(candidate[0], evaluation_profile_id="changed-profile")
+    result = assess_paired_candidate(
+        baseline, candidate, plan=_PLAN, split=EvaluationSplit.VALIDATION
+    )
+    assert not result.eligible
+    assert result.reason == "baseline_candidate_pairing_mismatch"
+
+    baseline, candidate = _paired_rows(((1.0, 1.0), (1.0, 1.0)))
     candidate[0] = replace(candidate[0], split=EvaluationSplit.TRAINING)
     result = assess_paired_candidate(
         baseline, candidate, plan=_PLAN, split=EvaluationSplit.VALIDATION

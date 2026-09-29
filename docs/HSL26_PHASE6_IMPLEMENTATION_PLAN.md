@@ -55,7 +55,7 @@ In particular:
 | `docs/HSL26_PHASE6_IMPLEMENTATION_PLAN.md` | Ordered P6 work packages, gates, commands, and evidence requirements | Prepared |
 | `docs/HSL26_PHASE6_INDEPENDENT_AUDIT.md` | Independent review of the supplied audit and corrected P5.6 → P6 roadmap | Prepared |
 | `docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md` | Normative Phase 6 objectives and acceptance conditions | Governing specification |
-| `hsl_core/hsl_core/learning/*.py` | P6.1/P6.2 contracts and bounded P6.3 evolution operators | Implemented and tested as contracts; no empirical dataset, population runner, or promotion |
+| `hsl_core/hsl_core/learning/*.py`, `sim/kinematic/benchmark.py` | P6.1/P6.2 contracts, bounded P6.3 operators and fixture episode execution | Runner and contracts tested; no eligible empirical dataset, population orchestration, held-out evaluation, or promotion |
 
 ### 2.1 Profiles
 
@@ -144,13 +144,24 @@ P5 direct-command fixture traces do not.
 | G4 deterministic accepted baseline | `BLOCKED_NOT_RUN` in P5.5 evidence | Promotion-quality empirical P6 work and overall release progression |
 | G0 physical stop, calibrated bounds, G1/G2 physical evidence | Blocked by unavailable robot/hardware | Any physical or competition motion claim |
 | Organizer score, zone, stage, event-order and memory decisions | Unresolved/not supplied | Official scoring, authorized policy inputs, final release |
-| Independent map/opponent/seed banks and transition logs | Not available in this preparation | P6.1 dataset/model claims and P6.3 held-out evaluation |
+| Synthetic scenario fixtures | Four training maps (two 7x7), two validation maps (one 7x7), and one reserved held-out map; split IDs are disjoint | Software regression only; no fixture episode is an accepted dataset or promotion evidence |
+| Eligible opponent/seed episode provenance and transition logs | Not collected; the synthetic runner generates paired observations only on explicit invocation | P6.1 dataset/model claims and any P6.3 empirical selection |
 | Final target image/runtime and offline cold-start evidence | Not available | P6.4 release closure and P6.5/G6 |
+
+The fixture-only P6.3 episode runner now connects `TacticalGenome` profiles,
+two-role `TwoRobotMatch`, referee terminal events and `EpisodeResult` rows.
+It uses deterministic paired sensor seeds, hashes fixture/config provenance,
+rejects held-out fixtures, and labels its output ineligible for promotion. The
+surrogate is terminal-only, zero-sum capture/timeout outcome with exponential
+discounting; it does not invent a continuous reward-rate model. Capture
+terminalization is limited to straight-command intervals to respect the
+referee's piecewise-linear motion assumption.
 
 The next integration action is to complete and review P5.6 against the actual
 contracts, while pure P6.1/P6.2 implementation can proceed independently.
 Collect eligible data only after review accepts the baseline/profile and data
-provenance. Do not mark a P6 work package `PASS` because its schema, plan, or
+provenance. The runner does not bypass these gates or include a population
+search loop. Do not mark a P6 work package `PASS` because its schema, plan, or
 fixture exists. If G5 is not run or fails its preregistered criterion, use
 only an already accepted baseline; G5 failure does not waive any G6
 requirement.

@@ -22,8 +22,8 @@ def maze_bank():
 
 def test_maze_bank_has_independent_training_validation_and_reserved_heldout():
     bank = load_maze_bank(_BANK_PATH)
-    assert len(bank.training_fixtures()) == 2
-    assert len(bank.validation_fixtures()) == 1
+    assert len(bank.training_fixtures()) == 4
+    assert len(bank.validation_fixtures()) == 2
     assert len(bank.held_out_fixtures()) == 1
     assert all(item.split == "training" for item in bank.training_fixtures())
     assert all(item.split == "validation" for item in bank.validation_fixtures())
@@ -41,7 +41,39 @@ def test_maze_bank_has_independent_training_validation_and_reserved_heldout():
     assert len({fixture.map_bank_id for fixture in bank.fixtures}) == len(bank.fixtures)
 
 
-@pytest.mark.parametrize("fixture_index", range(4))
+def test_training_bank_includes_connected_seven_by_seven_geometries(maze_bank):
+    larger = tuple(
+        fixture
+        for fixture in maze_bank.training_fixtures()
+        if len(fixture.rows) >= 7 and len(fixture.rows[0]) >= 7
+    )
+    assert {fixture.scenario_id for fixture in larger} == {
+        "maze_multiring_7x7_train_a",
+        "maze_loops_deadends_7x7_train_b",
+    }
+    for fixture in larger:
+        open_cells = sum(row.count(".") for row in fixture.rows)
+        assert open_cells >= 35
+        assert len(fixture.topology.nodes) == open_cells
+        assert fixture.geometry.static_segments
+        degrees = tuple(len(edges) for edges in fixture.topology.adjacency().values())
+        cycle_rank = len(fixture.topology.edges) - len(fixture.topology.nodes) + 1
+        assert cycle_rank >= 1
+        if fixture.scenario_id == "maze_loops_deadends_7x7_train_b":
+            assert sum(degree == 1 for degree in degrees) >= 3
+        assert all(
+            edge.width_valid and edge.min_width_m == pytest.approx(1.0)
+            for edge in fixture.topology.edges
+        )
+    validation_scales = {
+        fixture.scenario_id
+        for fixture in maze_bank.validation_fixtures()
+        if len(fixture.rows) >= 7 and len(fixture.rows[0]) >= 7
+    }
+    assert validation_scales == {"maze_offset_crossings_7x7_validation"}
+
+
+@pytest.mark.parametrize("fixture_index", range(7))
 def test_maze_conversion_matches_open_cells_and_orthogonal_topology(maze_bank, fixture_index):
     fixture = maze_bank.fixtures[fixture_index]
     assert isinstance(fixture, MazeFixture)

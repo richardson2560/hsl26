@@ -31,13 +31,16 @@ def test_p6_manifest_is_preparation_only_and_keeps_gates_open():
     )
     assert packages["P6.0"] == "PREPARED"
     assert packages["P5.6"] == (
-        "PARTIAL_BOUNDED_SLICE_G4_AND_AUTONOMOUS_BASELINE_BLOCKED"
+        "PARTIAL_SIMULTANEOUS_SIL_FIXTURE_G4_AND_AUTONOMOUS_BASELINE_BLOCKED"
     )
     assert packages["P6.1"] == (
         "SCHEMA_WORK_ALLOWED_DATASET_BLOCKED_UNTIL_ACCEPTED_BASELINE"
     )
     assert packages["P6.2"] == (
         "PURE_IMPLEMENTATION_ALLOWED_EMPIRICAL_EVALUATION_BLOCKED"
+    )
+    assert packages["P6.3"] == (
+        "FIXTURE_EPISODE_RUNNER_IMPLEMENTED_EMPIRICAL_SEARCH_BLOCKED_UNTIL_G4_AND_ELIGIBLE_DATA"
     )
     assert packages["P6.5"] == "BLOCKED_UNTIL_ACCEPTED_RELEASE_AND_FINAL_TARGET"
 

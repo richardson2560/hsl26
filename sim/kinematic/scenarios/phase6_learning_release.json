@@ -23,7 +23,7 @@
   },
   "profiles": {
     "kinematic_sil_preparation": {
-      "status": "ENABLED_FOR_MANIFEST_AND_CONTRACT_CHECKS_ONLY",
+      "status": "ENABLED_FOR_FIXTURE_INTERACTION_AND_CONTRACT_CHECKS_ONLY",
       "truth_source": "referee_only_for_evaluation",
       "physical_authority": false
     },
@@ -60,6 +60,11 @@
       "path": "sim/kinematic/scenarios/match_tactics.json",
       "purpose": "P5 lifecycle and role contract fixture only",
       "eligible_as_training_episode": false
+    },
+    {
+      "path": "sim/kinematic/scenarios/phase6_maze_bank.json",
+      "purpose": "Synthetic P6 fixture bank; not an accepted competition or training dataset",
+      "eligible_as_training_episode": false
     }
   ],
   "dataset_splits": {
@@ -88,10 +93,10 @@
   },
   "work_packages": {
     "P6.0": "PREPARED",
-    "P5.6": "PARTIAL_BOUNDED_SLICE_G4_AND_AUTONOMOUS_BASELINE_BLOCKED",
+    "P5.6": "PARTIAL_SIMULTANEOUS_SIL_FIXTURE_G4_AND_AUTONOMOUS_BASELINE_BLOCKED",
     "P6.1": "SCHEMA_WORK_ALLOWED_DATASET_BLOCKED_UNTIL_ACCEPTED_BASELINE",
     "P6.2": "PURE_IMPLEMENTATION_ALLOWED_EMPIRICAL_EVALUATION_BLOCKED",
-    "P6.3": "OPTIONAL_BLOCKED_UNTIL_G4_AND_P6.1_P6.2",
+    "P6.3": "FIXTURE_EPISODE_RUNNER_IMPLEMENTED_EMPIRICAL_SEARCH_BLOCKED_UNTIL_G4_AND_ELIGIBLE_DATA",
     "P6.4": "BLOCKED_UNTIL_G4_AND_APPROVED_RELEASE_INPUTS",
     "P6.5": "BLOCKED_UNTIL_ACCEPTED_RELEASE_AND_FINAL_TARGET"
   },

@@ -256,6 +256,7 @@ class EpisodeResult:
     safety_violations: int
     collisions: int
     completed: bool
+    evaluation_profile_id: str = "unversioned-profile"
 
     def __post_init__(self) -> None:
         for value, name in (
@@ -264,6 +265,7 @@ class EpisodeResult:
             (self.map_bank_id, "map_bank_id"),
             (self.opponent_bank_id, "opponent_bank_id"),
             (self.seed_bank_id, "seed_bank_id"),
+            (self.evaluation_profile_id, "evaluation_profile_id"),
         ):
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"{name} must be non-empty")
@@ -288,13 +290,14 @@ class EpisodeResult:
             raise TypeError("completed must be boolean")
 
     @property
-    def pair_key(self) -> tuple[str, int, str, str, str]:
+    def pair_key(self) -> tuple[str, int, str, str, str, str]:
         return (
             self.scenario_id,
             self.seed,
             self.map_bank_id,
             self.opponent_bank_id,
             self.seed_bank_id,
+            self.evaluation_profile_id,
         )
 
 
@@ -540,7 +543,7 @@ def assess_paired_candidate(
 
     def index_rows(
         rows: tuple[EpisodeResult, ...]
-    ) -> dict[tuple[tuple[str, int, str, str, str], Role], EpisodeResult] | None:
+    ) -> dict[tuple[tuple[str, int, str, str, str, str], Role], EpisodeResult] | None:
         indexed = {}
         for row in rows:
             key = (row.pair_key, row.role)

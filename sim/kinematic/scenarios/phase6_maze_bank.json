@@ -44,6 +44,46 @@
       "synthetic_goal_rc": [2, 4]
     },
     {
+      "scenario_id": "maze_multiring_7x7_train_a",
+      "split": "training",
+      "map_bank_id": "map-training-multiring-a-v1",
+      "opponent_bank_id": "opponent-training-multiring-a-v1",
+      "seed_bank_id": "seed-training-multiring-a-v1",
+      "seed": 6103,
+      "grid": [
+        ".......",
+        ".###.#.",
+        "...#...",
+        ".#...#.",
+        "...#...",
+        ".#.###.",
+        "......."
+      ],
+      "guardian_start_rc": [0, 0],
+      "explorer_start_rc": [6, 6],
+      "synthetic_goal_rc": [6, 0]
+    },
+    {
+      "scenario_id": "maze_loops_deadends_7x7_train_b",
+      "split": "training",
+      "map_bank_id": "map-training-loops-deadends-b-v1",
+      "opponent_bank_id": "opponent-training-loops-deadends-b-v1",
+      "seed_bank_id": "seed-training-loops-deadends-b-v1",
+      "seed": 6104,
+      "grid": [
+        ".......",
+        ".#.#..#",
+        "...#..#",
+        ".#...##",
+        "...#...",
+        ".#.##.#",
+        "......."
+      ],
+      "guardian_start_rc": [0, 0],
+      "explorer_start_rc": [6, 6],
+      "synthetic_goal_rc": [6, 0]
+    },
+    {
       "scenario_id": "maze_offset_rooms_validation",
       "split": "validation",
       "map_bank_id": "map-validation-offset-v1",
@@ -60,6 +100,26 @@
       "guardian_start_rc": [1, 1],
       "explorer_start_rc": [3, 5],
       "synthetic_goal_rc": [1, 3]
+    },
+    {
+      "scenario_id": "maze_offset_crossings_7x7_validation",
+      "split": "validation",
+      "map_bank_id": "map-validation-crossings-7x7-v1",
+      "opponent_bank_id": "opponent-validation-crossings-7x7-v1",
+      "seed_bank_id": "seed-validation-crossings-7x7-v1",
+      "seed": 6202,
+      "grid": [
+        ".......",
+        ".#.#...",
+        "...###.",
+        ".#.....",
+        ".###.#.",
+        "...#...",
+        "......."
+      ],
+      "guardian_start_rc": [0, 0],
+      "explorer_start_rc": [6, 6],
+      "synthetic_goal_rc": [6, 0]
     },
     {
       "scenario_id": "maze_grid_4x4_held_out",

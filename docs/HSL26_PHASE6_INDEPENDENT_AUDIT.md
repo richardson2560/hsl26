@@ -224,3 +224,43 @@ T/I acceptance evidence. The report
 [`P5.6_autonomous_integration_report.json`](../artifacts/reports/phase5/P5.6_autonomous_integration_report.json)
 records the bounded evidence and unsupported claims. P5.6 remains PARTIAL,
 and G4 remains `BLOCKED_NOT_RUN`; the historical P5.5 report is unchanged.
+
+## 8. Review of the subsequent P6.3 runner/map proposal
+
+The new proposal correctly identifies a missing executable connection from
+`TacticalGenome`/`EpisodeResult` contracts to `TwoRobotMatch`. A deterministic
+single-episode and exact-seed paired runner is now implemented at
+`sim/kinematic/benchmark.py`. It creates role-scoped stage managers, runs the
+candidate and baseline separately on the same fixture and sensor seeds,
+collects safety overrides/violations and conservative swept-wall/robot
+collision metrics, and returns one result per role. Its typed output is
+explicitly fixture-only, has no official score, and rejects the reserved
+held-out split. No population search or training generation was run.
+
+The proposal's suggested continuous reward integral is not adopted. The
+technical specification §15.3 requires a labeled win/loss surrogate when
+official points are unavailable and warns against turning elapsed time into
+an implicit loss. The runner therefore uses a terminal-only zero-sum
+capture/timeout outcome discounted by `exp(-beta * active_duration)`. It
+accepts capture terminalization only on straight-command intervals, where the
+current referee's piecewise-linear interpolation is valid; it does not turn
+curved-arc approximations into capture evidence.
+
+Two larger 7-by-7 training mazes and a separate 7-by-7 validation maze were
+added, alongside the existing smaller topology fixtures. This improves
+synthetic topology/scale diversity; it does not establish that the generated
+mazes represent an unpublished competition course. The nominal 5 m LiDAR
+range relative to a 5 m fixture's outer dimensions is not itself a measure of
+occlusion or representativeness, so map adequacy must be measured from
+visibility, route, branching and opponent-bank coverage rather than inferred
+from range alone.
+
+Finally, the assertion that tactical weights transfer “100%” to ROS 2/MVSim
+is too strong: normalized utility parameters are middleware-independent only
+when feature semantics, schemas, units, option registry, timing and loader
+versions match. No deployment parameter adapter has yet established that
+compatibility. The suggested 0.5 s dwell floor is also not adopted as a
+universal bound without measured scheduling/latency evidence; SIL genomes
+remain fixture parameters, and transfer limits must be preregistered from the
+target runtime before release evaluation. G4 stays `BLOCKED_NOT_RUN`, so these
+runner outputs are not eligible for empirical P6.3 selection or promotion.
