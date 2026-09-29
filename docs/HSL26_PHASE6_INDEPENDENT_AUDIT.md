@@ -235,7 +235,8 @@ candidate and baseline separately on the same fixture and sensor seeds,
 collects safety overrides/violations and conservative swept-wall/robot
 collision metrics, and returns one result per role. Its typed output is
 explicitly fixture-only, has no official score, and rejects the reserved
-held-out split. No population search or training generation was run.
+held-out split. At the time of this runner/map review, no population search
+or training generation had been run.
 
 The proposal's suggested continuous reward integral is not adopted. The
 technical specification §15.3 requires a labeled win/loss surrogate when
@@ -264,3 +265,48 @@ universal bound without measured scheduling/latency evidence; SIL genomes
 remain fixture parameters, and transfer limits must be preregistered from the
 target runtime before release evaluation. G4 stays `BLOCKED_NOT_RUN`, so these
 runner outputs are not eligible for empirical P6.3 selection or promotion.
+
+## 9. Audit of the proposed evolution and ideal-match scripts
+
+The proposed `train_evolution.py`/`demo_competition_match.py` snippets were
+not adopted verbatim. Several discrepancies change whether they can establish
+learning:
+
+* The proposed trainer calls the paired self-play runner with the candidate
+  genome controlling both robots, then compares it with baseline self-play.
+  Because the terminal reward is zero-sum, Guardian and Explorer deltas sum to
+  zero in each pair; the balanced fitness therefore cannot express a team
+  improvement. The development trainer now evaluates candidate Guardian versus
+  baseline Explorer and baseline Guardian versus candidate Explorer, paired
+  role-wise against a baseline-vs-baseline reference.
+* Its 90% interval did not match the accompanying 95% claim. The fixture
+  runner uses 95% two-sided intervals, but the available four training and two
+  validation mazes remain too few synthetic samples for generalization claims.
+  Validation is used once, on a single training-selected finalist.
+* The sample advances the population after the last generation and then
+  validates that unevaluated offspring. The implementation validates the
+  final population member selected on training and does not mutate after the
+  final generation.
+* The proposed plant speed of 0.25 m/s exceeded the P5.6 fixture policy bound
+  of 0.20 m/s. The proposed 720-beam demo also overflowed the existing per-cycle
+  tactical proposal bound on the 7-by-7 topology. The benchmark retains the
+  0.20 m/s P5.6 bound; the policy uses the core's explicit 256-proposal ceiling,
+  and the demo uses the supported 360-beam full-circle fixture scan.
+* The sample demo instantiated default policies without loading its purported
+  trained parameters. The implemented policy codec verifies the genome digest
+  and fixture-only authority labels, and the demo consumes that serialized
+  genome while recording commands, options, poses, safety metrics, and
+  evaluation provenance.
+* The sample's claimed 9.20 s capture was not reproducible from the repository.
+  Our 30 s multiring run timed out with a minimum inter-robot distance of
+  4.034 m and zero estimated wall contacts; the 8 s evolutionary smoke search
+  produced zero role/balanced deltas and retained the baseline. These findings
+  show that the toolchain runs but that learning/pursuit success has not been
+  demonstrated.
+
+The guarded tools are `tools/train_evolution.py`,
+`tools/p63_policy.py`, and `tools/demo_competition_match.py`. Development
+artifacts are under `artifacts/reports/phase6/p63_development_run_seed20260931/`
+and `artifacts/reports/phase6/p63_demo_seed20260933/`; each is marked
+`SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE`. They do not accept G4, G5,
+or G6 and do not generate an accepted champion policy.

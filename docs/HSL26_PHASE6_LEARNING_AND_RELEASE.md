@@ -24,7 +24,7 @@ handoff review and detailed prerequisite roadmap are recorded in
 |---|---|---|---|
 | P6.1 Dataset and abstraction | **a** define role/feature/state/option/outcome schema IDs; **b** implement collection of durations, cancellations, safety interventions and censored episodes; **c** split independent map/opponent/seed banks without leakage. `learning/dirichlet.py`, transition log. | Versioned dataset manifest and valid transition counts. | §15.1/15.4; normalization and schema tests. Pure contract work may precede G4; empirical dataset acceptance requires an accepted baseline and provenance. |
 | P6.2 Offline values | **a** positive immutable Dirichlet prior and posterior; **b** continuous-time discounted option return; **c** terminal/no-bootstrap and failure samples; **d** reject unsupported state fusion. `learning/option_value.py`. | Bounded/convergent value-table fixtures and interpretation report. | T18/T27 and §15.2 fixtures. Pure implementation may precede G4; empirical conclusions require eligible data. |
-| P6.3 Bounded evolution and shadow | **a** bounded tactical genome; **b** paired training on both roles; **c** safety hard exclusion; **d** validation selection and once-only held-out report; **e** shadow logging before promotion. `learning/evolution.py`, `sim/kinematic/benchmark.py`, later `benchmark_policy.py`. | Fixture-only paired episode runner exists; population orchestration and eligible baseline/candidate evidence remain blocked. | I15; G5 PASS only if preset criterion met. |
+| P6.3 Bounded evolution and shadow | **a** bounded tactical genome; **b** paired training on both roles; **c** safety hard exclusion; **d** validation selection and once-only held-out report; **e** shadow logging before promotion. `learning/evolution.py`, `sim/kinematic/benchmark.py`, `tools/train_evolution.py`. | Fixture-only population search exists; eligible baseline/candidate evidence, once-only held-out evaluation, shadow process, and promotion remain blocked. | I15; G5 PASS only if preset criterion met. |
 | P6.4 Frozen release inputs | **a** verify official zone/timing/score/memory provenance; **b** pin source, image digest, IDL, config, calibration, model, baseline or accepted policy; **c** check config and topic/TF ownership; **d** exclude sim truth and hardware devices in sim/replay. `validate_config.py`, `preflight_check.py`, `release_freeze.py`. | Signed-off manifest and cold-start checklist, with every unresolved item explicit. | I01–I05/I14, static/runtime authority checks. |
 | P6.5 Final rehearsal and rollback | **a** offline cold boot in final image; **b** freeze/active/terminal over two role-swapped stages; **c** fault injection and recovery with permitted workflow; **d** record scores as official only on official evidence; **e** verify rollback. `runbook_competition.md`, `artifacts/releases/*`. | Complete two-stage run, logs, final gate matrix and last accepted release. | I16 plus G0–G4 prerequisites; optional I15. |
 
@@ -50,14 +50,14 @@ P6.3 now has bounded genome, paired-assessment, validation-selection, mutation,
 generation, synthetic maze fixtures, and a deterministic single/paired episode
 runner. The runner feeds existing `EpisodeResult` contracts but labels each
 run `SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE`, refuses the reserved
-held-out split, and emits no official score. This is executable fixture
-preparation, not an empirical population run; it does not alter the existing
+held-out split, and emits no official score. The separate exploratory
+population tool is explicitly fixture-only and has no effect on the existing
 entry gates. Physical authority, G4/G5/G6 acceptance, and release acceptance
 remain outside this implementation.
 
 ## 2.2 P6.3 SIL preparation boundary
 
-The current P6.3 work is recorded in
+The current P6.3 implementation and fixture-only run records are recorded in
 [`P6.3_sil_preparation.json`](../artifacts/reports/phase6/P6.3_sil_preparation.json).
 It implements bounded tactical-genome operations, role-aware paired candidate
 assessment, hard safety/completion exclusions, Student-t uncertainty intervals,
@@ -66,14 +66,45 @@ SIL episode runner. A synthetic, connected orthogonal maze bank provides four
 training maps and two validation maps, including 7-by-7 fixtures, plus a
 reserved held-out fixture. The held-out fixture is rejected by the runner.
 
-This does **not** authorize empirical evolution. The Phase-6 entry criterion
-requires an accepted deterministic G4 baseline, while the current P5.6 status
-is partial and G4 remains `BLOCKED_NOT_RUN`. The current SIL profile has fixture-only Explorer route/escape behavior and
-synthetic opponent tracks, not a validated competition policy or perception
-system. No population/generation orchestrator, held-out use-once ledger,
-shadow logging, or promotion review has been implemented. Running these
-episodes optimizes/evaluates only a synthetic fixture task and must not be
-described as an eligible P6.3 result.
+The development tools `tools/train_evolution.py` and
+`tools/demo_competition_match.py` now provide a bounded, explicit
+`--development-fixtures` search and a subsequent self-play visualization. Their
+artifacts are marked `SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE`; this
+does **not** authorize eligible empirical evolution or change any gate. The
+optimizer evaluates candidate Guardian and Explorer roles in separate matches
+against the fixed baseline, then pairs role-wise outcomes against
+baseline-vs-baseline runs. This avoids treating zero-sum candidate-vs-candidate
+self-play as fitness (whose two role deltas sum to zero by construction).
+Training fitness selects one finalist; only that finalist is assessed once on
+the validation split. No held-out episodes are executed or scored (the bank
+loader still parses its manifest along with the other fixture records).
+The phase entry criterion still requires an accepted deterministic G4 baseline,
+while P5.6 remains a fixture profile and G4 is `BLOCKED_NOT_RUN`. Synthetic
+Explorer routes/tracks and ideal raycast settings are not validated policies,
+perception, or physical sensor behavior. No held-out use-once ledger, shadow
+logging, or promotion review is implemented.
+
+The demo consumes the serialized policy genome and records policy options,
+commands, trajectories, and terminal outcome in JSON and SVG. It uses the
+existing 360-beam P5.6-compatible full-circle fixture scan with zero synthetic
+range noise and no configured blind sectors; increasing to 720 beams exceeded
+the policy's upstream proposal bound and was not a supported "more ideal"
+profile. The output is a diagnostic visualization, not competition evidence.
+The recorded 8-second one-generation smoke search produced zero Guardian,
+Explorer, and balanced deltas, so it retained the baseline and did not run
+validation. The 30-second multiring self-play also timed out without capture
+(minimum separation 4.03 m, zero estimated wall contacts). This is evidence
+that the current fixture/policy/reward combination has not demonstrated
+successful learning or competitive pursuit; the external example's claimed
+capture and validation result is not verified for this repository.
+
+Reproduce the guarded development run with
+`python tools/train_evolution.py --development-fixtures --generations 1 --population-size 2 --elite-count 1 --episode-duration-s 2 --output-dir artifacts/reports/phase6/p63_local_run`.
+Then render the selected genome with
+`python tools/demo_competition_match.py --policy artifacts/reports/phase6/p63_local_run/policy.json --scenario-id maze_multiring_7x7_train_a --duration-s 30 --output-dir artifacts/reports/phase6/p63_local_demo`.
+Output directories must be new. The 4 training and 2 validation maps are
+fixture samples; in particular, a two-map 95% Student-t interval is only a
+diagnostic and cannot establish generalization or acceptance.
 
 The runner's outcome is a terminal-only zero-sum surrogate,
 `outcome * exp(-beta * active_duration)`: capture is a Guardian win and an

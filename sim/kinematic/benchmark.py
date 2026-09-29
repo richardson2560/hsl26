@@ -43,6 +43,7 @@ _FREEZE_DURATION_NS = 150_000_000
 _LEASE_DURATION_NS = 500_000_000
 _SCORE_PROFILE_ID = "synthetic-zero-sum-win-loss-surrogate-v1"
 _EVIDENCE_CLASS = "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE"
+_ROLES = (Role.GUARDIAN, Role.EXPLORER)
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,6 +150,8 @@ class SILBenchmarkEpisode:
     guardian_wall_contacts: int
     explorer_wall_contacts: int
     episode_results: tuple[EpisodeResult, EpisodeResult]
+    role_policy_ids: tuple[tuple[Role, str], tuple[Role, str]]
+    telemetry: tuple["SILEpisodeSample", ...] = ()
     evidence_class: str = _EVIDENCE_CLASS
     official_score: None = None
 
@@ -207,19 +210,83 @@ class SILBenchmarkEpisode:
             != {Role.GUARDIAN, Role.EXPLORER}
         ):
             raise ValueError("episode results must contain exactly one row per role")
-        if any(
-            result.policy_id != self.policy_id
-            or result.scenario_id != self.scenario_id
-            or result.seed != self.seed
-            or result.split is not self.split
-            or result.evaluation_profile_id != self.evaluation_profile_id
-            for result in self.episode_results
+        if (
+            not isinstance(self.role_policy_ids, tuple)
+            or len(self.role_policy_ids) != 2
+            or any(
+                not isinstance(item, tuple)
+                or len(item) != 2
+                or not isinstance(item[0], Role)
+                or not isinstance(item[1], str)
+                for item in self.role_policy_ids
+            )
+        ):
+            raise ValueError("role_policy_ids must contain one role and digest per role")
+        expected_policy_ids = dict(self.role_policy_ids)
+        if (
+            set(expected_policy_ids) != {Role.GUARDIAN, Role.EXPLORER}
+            or any(
+                len(policy_id) != 64
+                or any(char not in "0123456789abcdef" for char in policy_id)
+                for policy_id in expected_policy_ids.values()
+            )
+            or any(
+                result.policy_id != expected_policy_ids[result.role]
+                or result.scenario_id != self.scenario_id
+                or result.seed != self.seed
+                or result.split is not self.split
+                or result.evaluation_profile_id != self.evaluation_profile_id
+                for result in self.episode_results
+            )
         ):
             raise ValueError("episode result provenance must match its SIL run")
         if self.official_score is not None:
             raise ValueError("synthetic SIL episodes cannot contain official scores")
         if self.evidence_class != _EVIDENCE_CLASS:
             raise ValueError("SIL fixture output cannot claim promotion-eligible evidence")
+        if not isinstance(self.telemetry, tuple) or any(
+            not isinstance(sample, SILEpisodeSample) for sample in self.telemetry
+        ):
+            raise ValueError("telemetry must be a tuple of validated SIL samples")
+
+
+@dataclass(frozen=True, slots=True)
+class SILEpisodeSample:
+    stamp_ns: int
+    guardian_xy_m: tuple[float, float]
+    explorer_xy_m: tuple[float, float]
+    guardian_command: tuple[float, float]
+    explorer_command: tuple[float, float]
+    guardian_option: str
+    explorer_option: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.stamp_ns, int) or isinstance(self.stamp_ns, bool) or self.stamp_ns < 0:
+            raise ValueError("telemetry timestamp must be a non-negative integer")
+        for values, name in (
+            (self.guardian_xy_m, "guardian_xy_m"),
+            (self.explorer_xy_m, "explorer_xy_m"),
+            (self.guardian_command, "guardian_command"),
+            (self.explorer_command, "explorer_command"),
+        ):
+            if (
+                not isinstance(values, tuple)
+                or len(values) != 2
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(value)
+                    for value in values
+                )
+            ):
+                raise ValueError(f"{name} must contain two finite numeric values")
+        if (
+            not isinstance(self.guardian_option, str)
+            or not self.guardian_option
+            or not isinstance(self.explorer_option, str)
+            or not self.explorer_option
+        ):
+            raise ValueError("telemetry option names must not be empty")
 
 
 @dataclass(frozen=True, slots=True)
@@ -253,6 +320,51 @@ class PairedSILBenchmarkEpisode:
             raise ValueError("paired SIL result provenance does not match")
 
 
+@dataclass(frozen=True, slots=True)
+class RoleSwappedSILEvaluation:
+    """Paired role-wise candidate-vs-baseline results from separate matches."""
+
+    candidate_results: tuple[EpisodeResult, EpisodeResult]
+    baseline_results: tuple[EpisodeResult, EpisodeResult]
+    scenario_sha256: str
+    evidence_class: str = _EVIDENCE_CLASS
+
+    def __post_init__(self) -> None:
+        if self.evidence_class != _EVIDENCE_CLASS:
+            raise ValueError("role-swapped fixture results cannot be promotion evidence")
+        for rows in (self.candidate_results, self.baseline_results):
+            if (
+                not isinstance(rows, tuple)
+                or len(rows) != 2
+                or {row.role for row in rows} != {Role.GUARDIAN, Role.EXPLORER}
+            ):
+                raise ValueError("role-swapped evaluation requires both policy roles")
+            if any(not isinstance(row, EpisodeResult) for row in rows):
+                raise ValueError("role-swapped results must be EpisodeResult records")
+        candidate_by_role = {row.role: row for row in self.candidate_results}
+        baseline_by_role = {row.role: row for row in self.baseline_results}
+        all_rows = (*self.candidate_results, *self.baseline_results)
+        if (
+            len({row.pair_key for row in all_rows}) != 1
+            or len({row.split for row in all_rows}) != 1
+            or len({row.policy_id for row in self.candidate_results}) != 1
+            or len({row.policy_id for row in self.baseline_results}) != 1
+            or len(self.scenario_sha256) != 64
+            or any(char not in "0123456789abcdef" for char in self.scenario_sha256)
+            or any(
+                not row.completed
+                or row.split is EvaluationSplit.HELD_OUT
+                for row in all_rows
+            )
+            or any(
+            candidate_by_role[role].pair_key != baseline_by_role[role].pair_key
+            or candidate_by_role[role].policy_id == baseline_by_role[role].policy_id
+            for role in _ROLES
+            )
+        ):
+            raise ValueError("role-wise baseline and candidate provenance must pair exactly")
+
+
 class SILBenchmarkRunner:
     """Runs one genome against the fixture-only Guardian/Explorer policies."""
 
@@ -267,13 +379,22 @@ class SILBenchmarkRunner:
         fixture: MazeFixture,
         *,
         seed: int,
+        explorer_genome: TacticalGenome | None = None,
+        collect_telemetry: bool = False,
     ) -> SILBenchmarkEpisode:
         if not isinstance(genome, TacticalGenome):
             raise ValueError("genome must be a TacticalGenome")
+        if explorer_genome is not None and not isinstance(
+            explorer_genome, TacticalGenome
+        ):
+            raise ValueError("explorer_genome must be a TacticalGenome")
+        if not isinstance(collect_telemetry, bool):
+            raise ValueError("collect_telemetry must be boolean")
+        explorer_genome = explorer_genome or genome
         split = _fixture_split(fixture)
         _validate_seed(seed)
         match, managers, policies, profile_id = self._build_match(
-            genome, fixture, seed
+            genome, explorer_genome, fixture, seed
         )
         collision = False
         wall_contacts = {Role.GUARDIAN: False, Role.EXPLORER: False}
@@ -282,6 +403,25 @@ class SILBenchmarkRunner:
         terminal_kind: TerminalKind | None = None
         terminal_stamp_ns = 0
         steps = 0
+        telemetry: list[SILEpisodeSample] = []
+        if collect_telemetry:
+            telemetry.append(
+                SILEpisodeSample(
+                    stamp_ns=match.stamp_ns,
+                    guardian_xy_m=(
+                        match.guardian.plant.state.pose.x_m,
+                        match.guardian.plant.state.pose.y_m,
+                    ),
+                    explorer_xy_m=(
+                        match.explorer.plant.state.pose.x_m,
+                        match.explorer.plant.state.pose.y_m,
+                    ),
+                    guardian_command=(0.0, 0.0),
+                    explorer_command=(0.0, 0.0),
+                    guardian_option="INITIAL",
+                    explorer_option="INITIAL",
+                )
+            )
 
         for _ in range(self.config.max_episode_steps):
             remaining_ns = self.config.episode_duration_ns - match.stamp_ns
@@ -295,6 +435,40 @@ class SILBenchmarkRunner:
             start_explorer = match.explorer.plant.state.pose
             tick = match.step(dt_ns / 1_000_000_000.0)
             steps += 1
+            if collect_telemetry:
+                guardian_trace = policies[Role.GUARDIAN].last_trace
+                explorer_trace = policies[Role.EXPLORER].last_trace
+                telemetry.append(
+                    SILEpisodeSample(
+                        stamp_ns=tick.stamp_ns,
+                        guardian_xy_m=(
+                            match.guardian.plant.state.pose.x_m,
+                            match.guardian.plant.state.pose.y_m,
+                        ),
+                        explorer_xy_m=(
+                            match.explorer.plant.state.pose.x_m,
+                            match.explorer.plant.state.pose.y_m,
+                        ),
+                        guardian_command=(
+                            tick.guardian_command.linear_mps,
+                            tick.guardian_command.angular_rps,
+                        ),
+                        explorer_command=(
+                            tick.explorer_command.linear_mps,
+                            tick.explorer_command.angular_rps,
+                        ),
+                        guardian_option=(
+                            guardian_trace.selected_kind.name
+                            if guardian_trace.selected_kind is not None
+                            else "NONE"
+                        ),
+                        explorer_option=(
+                            explorer_trace.selected_kind.name
+                            if explorer_trace.selected_kind is not None
+                            else "NONE"
+                        ),
+                    )
+                )
             collision = collision or tick.truth.robot_collision or _swept_robot_contact(
                 start_guardian,
                 match.guardian.plant.state.pose,
@@ -371,13 +545,14 @@ class SILBenchmarkRunner:
         )
         rows = []
         for role in (Role.GUARDIAN, Role.EXPLORER):
+            role_genome = genome if role is Role.GUARDIAN else explorer_genome
             role_return = (
                 guardian_outcome if role is Role.GUARDIAN else -guardian_outcome
             )
             role_collision = collision or wall_contacts[role]
             rows.append(
                 EpisodeResult(
-                    policy_id=genome.sha256,
+                    policy_id=role_genome.sha256,
                     scenario_id=fixture.scenario_id,
                     split=split,
                     role=role,
@@ -397,7 +572,7 @@ class SILBenchmarkRunner:
             scenario_id=fixture.scenario_id,
             seed=seed,
             split=split,
-            policy_id=genome.sha256,
+            policy_id=_match_policy_id(genome, explorer_genome),
             scenario_sha256=_fixture_sha256(fixture),
             evaluation_profile_id=profile_id,
             terminal_kind=terminal_kind,
@@ -406,6 +581,11 @@ class SILBenchmarkRunner:
             guardian_wall_contacts=int(wall_contacts[Role.GUARDIAN]),
             explorer_wall_contacts=int(wall_contacts[Role.EXPLORER]),
             episode_results=(rows[0], rows[1]),
+            role_policy_ids=(
+                (Role.GUARDIAN, genome.sha256),
+                (Role.EXPLORER, explorer_genome.sha256),
+            ),
+            telemetry=tuple(telemetry),
         )
 
     def run_paired_episode(
@@ -416,6 +596,7 @@ class SILBenchmarkRunner:
         *,
         seed: int,
     ) -> PairedSILBenchmarkEpisode:
+        """Pair genome self-play runs; use role-swapped evaluation for fitness."""
         if not isinstance(candidate_genome, TacticalGenome) or not isinstance(
             baseline_genome, TacticalGenome
         ):
@@ -426,12 +607,98 @@ class SILBenchmarkRunner:
         baseline = self.run_episode(baseline_genome, fixture, seed=seed)
         return PairedSILBenchmarkEpisode(candidate, baseline)
 
-    def _build_match(self, genome, fixture, seed):
+    def run_role_swapped_evaluation(
+        self,
+        candidate_genome: TacticalGenome,
+        baseline_genome: TacticalGenome,
+        fixture: MazeFixture,
+        *,
+        seed: int,
+        baseline_reference: SILBenchmarkEpisode | None = None,
+    ) -> RoleSwappedSILEvaluation:
+        """Compare each candidate role against the fixed baseline opponent.
+
+        The baseline-vs-baseline run supplies paired reference outcomes. Two
+        further matches put only the candidate's Guardian or Explorer policy
+        against the corresponding baseline policy, avoiding self-play
+        confounding and the identically-zero balanced reward of a single
+        zero-sum self-play comparison.
+        """
+        if not isinstance(candidate_genome, TacticalGenome) or not isinstance(
+            baseline_genome, TacticalGenome
+        ):
+            raise ValueError("candidate and baseline must be TacticalGenomes")
+        if candidate_genome.sha256 == baseline_genome.sha256:
+            raise ValueError("candidate and baseline genomes must differ")
+        if baseline_reference is not None and not isinstance(
+            baseline_reference, SILBenchmarkEpisode
+        ):
+            raise ValueError("baseline_reference must be a SILBenchmarkEpisode")
+        baseline_match = (
+            self.run_episode(baseline_genome, fixture, seed=seed)
+            if baseline_reference is None
+            else baseline_reference
+        )
+        if (
+            baseline_match.policy_id != baseline_genome.sha256
+            or baseline_match.scenario_id != fixture.scenario_id
+            or baseline_match.seed != seed
+            or baseline_match.split.value != fixture.split
+            or baseline_match.scenario_sha256 != _fixture_sha256(fixture)
+            or baseline_match.evaluation_profile_id
+            != _config_hash(self.config, fixture, seed)
+            or dict(baseline_match.role_policy_ids)
+            != {
+                Role.GUARDIAN: baseline_genome.sha256,
+                Role.EXPLORER: baseline_genome.sha256,
+            }
+        ):
+            raise ValueError("baseline reference does not match evaluation provenance")
+        candidate_guardian_match = self.run_episode(
+            candidate_genome,
+            fixture,
+            seed=seed,
+            explorer_genome=baseline_genome,
+        )
+        candidate_explorer_match = self.run_episode(
+            baseline_genome,
+            fixture,
+            seed=seed,
+            explorer_genome=candidate_genome,
+        )
+        candidate_by_role = {
+            Role.GUARDIAN: next(
+                row
+                for row in candidate_guardian_match.episode_results
+                if row.role is Role.GUARDIAN
+            ),
+            Role.EXPLORER: next(
+                row
+                for row in candidate_explorer_match.episode_results
+                if row.role is Role.EXPLORER
+            ),
+        }
+        baseline_by_role = {
+            row.role: row for row in baseline_match.episode_results
+        }
+        return RoleSwappedSILEvaluation(
+            candidate_results=(
+                candidate_by_role[Role.GUARDIAN],
+                candidate_by_role[Role.EXPLORER],
+            ),
+            baseline_results=(
+                baseline_by_role[Role.GUARDIAN],
+                baseline_by_role[Role.EXPLORER],
+            ),
+            scenario_sha256=_fixture_sha256(fixture),
+        )
+
+    def _build_match(self, guardian_genome, explorer_genome, fixture, seed):
         config_hash = _config_hash(self.config, fixture, seed)
         stage_id = f"p63-{fixture.scenario_id}-{seed}"
         localization_epoch = fixture.topology.localization_epoch
-        guardian_policy = _policy(genome, Role.GUARDIAN)
-        explorer_policy = _policy(genome, Role.EXPLORER)
+        guardian_policy = _policy(guardian_genome, Role.GUARDIAN)
+        explorer_policy = _policy(explorer_genome, Role.EXPLORER)
         goal_node = (
             fixture.synthetic_goal_rc[0] * len(fixture.rows[0])
             + fixture.synthetic_goal_rc[1]
@@ -661,6 +928,18 @@ def _config_hash(config: BenchmarkConfig, fixture: MazeFixture, seed: int) -> st
         payload, sort_keys=True, separators=(",", ":"), allow_nan=False
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _match_policy_id(
+    guardian_genome: TacticalGenome, explorer_genome: TacticalGenome
+) -> str:
+    if guardian_genome.sha256 == explorer_genome.sha256:
+        return guardian_genome.sha256
+    payload = json.dumps(
+        [guardian_genome.sha256, explorer_genome.sha256],
+        separators=(",", ":"),
+    ).encode("ascii")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _fixture_sha256(fixture: MazeFixture) -> str:

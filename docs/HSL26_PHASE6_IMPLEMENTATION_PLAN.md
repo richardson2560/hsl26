@@ -55,7 +55,7 @@ In particular:
 | `docs/HSL26_PHASE6_IMPLEMENTATION_PLAN.md` | Ordered P6 work packages, gates, commands, and evidence requirements | Prepared |
 | `docs/HSL26_PHASE6_INDEPENDENT_AUDIT.md` | Independent review of the supplied audit and corrected P5.6 → P6 roadmap | Prepared |
 | `docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md` | Normative Phase 6 objectives and acceptance conditions | Governing specification |
-| `hsl_core/hsl_core/learning/*.py`, `sim/kinematic/benchmark.py` | P6.1/P6.2 contracts, bounded P6.3 operators and fixture episode execution | Runner and contracts tested; no eligible empirical dataset, population orchestration, held-out evaluation, or promotion |
+| `hsl_core/hsl_core/learning/*.py`, `sim/kinematic/benchmark.py`, `tools/train_evolution.py` | P6.1/P6.2 contracts, bounded P6.3 operators and fixture-only population search | Fixture search is implemented; eligible empirical dataset/search, held-out evaluation, and promotion remain blocked |
 
 ### 2.1 Profiles
 
@@ -155,14 +155,21 @@ rejects held-out fixtures, and labels its output ineligible for promotion. The
 surrogate is terminal-only, zero-sum capture/timeout outcome with exponential
 discounting; it does not invent a continuous reward-rate model. Capture
 terminalization is limited to straight-command intervals to respect the
-referee's piecewise-linear motion assumption.
+referee's piecewise-linear motion assumption. A development-only
+role-swapped evaluator and bounded population search now exist in
+`tools/train_evolution.py`: candidate Guardian and Explorer roles are measured
+against the fixed baseline in separate matches, and only one train-selected
+finalist receives validation evaluation. Results remain fixture-only, explicitly
+ineligible for P6 empirical selection/promotion, with G4/G5/G6 unchanged.
+`tools/demo_competition_match.py` can replay the serialized development genome
+in fixture self-play and export diagnostic JSON/SVG telemetry.
 
 The next integration action is to complete and review P5.6 against the actual
 contracts, while pure P6.1/P6.2 implementation can proceed independently.
 Collect eligible data only after review accepts the baseline/profile and data
-provenance. The runner does not bypass these gates or include a population
-search loop. Do not mark a P6 work package `PASS` because its schema, plan, or
-fixture exists. If G5 is not run or fails its preregistered criterion, use
+provenance. The development search is not a bypass of these gates. Do not mark
+a P6 work package `PASS` because its schema, plan, or fixture exists. If G5 is
+not run or fails its preregistered criterion, use
 only an already accepted baseline; G5 failure does not waive any G6
 requirement.
 

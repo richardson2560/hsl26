@@ -1,7 +1,7 @@
 {
   "schema": "hsl26.phase6.p63-sil-preparation.v1",
   "phase": "P6.3",
-  "status": "FIXTURE_EPISODE_RUNNER_IMPLEMENTED_EMPIRICAL_EVALUATION_BLOCKED",
+  "status": "FIXTURE_EVOLUTION_SMOKE_RUN_COMPLETE_NO_CANDIDATE_SUPPORTED_ELIGIBLE_P63_BLOCKED",
   "authority": {
     "technical_specification": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
     "architecture": "docs/HSL26_FINAL_ARCHITECTURE.md",
@@ -9,7 +9,8 @@
     "physical_authority": false,
     "competition_map_or_goal_authority": false,
     "official_score_available": false,
-    "empirical_training_performed": false,
+    "eligible_empirical_training_performed": false,
+    "development_fixture_search_performed": true,
     "policy_promoted": false,
     "held_out_evaluated": false,
     "g4_status": "BLOCKED_NOT_RUN",
@@ -30,29 +31,104 @@
   },
   "implementation": {
     "p63_contracts": {
-      "status": "CONTRACTS_AND_FIXTURE_EPISODE_RUNNER_IMPLEMENTED_NOT_EMPIRICALLY_EVOLVED",
+      "status": "FIXTURE_ORCHESTRATOR_IMPLEMENTED_NO_ELIGIBLE_EVOLUTION",
       "features": [
         "Immutable versioned tactical genome over registered role-specific utility features, bounded signs and coefficient mass, hysteresis, and dwell.",
         "Deterministic seeded projected Gaussian mutation within declared genome bounds.",
-        "Exact baseline/candidate episode pairing by scenario, seed, map, opponent, seed bank, and both roles.",
+        "Role-swapped candidate-vs-fixed-baseline matches paired by scenario, seed, map, opponent, seed bank, and role; candidate Guardian and Explorer policies are assessed in separate matches against the corresponding baseline opponent.",
+        "Legacy candidate-self-play versus baseline-self-play runner remains available for fixture comparison but is not used for evolutionary fitness because zero-sum role deltas cancel by construction.",
         "Hard candidate exclusion for incomplete episodes, collision, safety violation, excess safety overrides, or increased overrides relative to baseline.",
-        "A separate simultaneous two-role SIL fixture with role-scoped stages, synthetic scan-residual tracks, fixture-only Guardian pursuit and Explorer navigation, and safety-certified curved motion; no evolutionary population runner is connected.",
+        "A separate simultaneous two-role SIL fixture with role-scoped stages, synthetic scan-residual tracks, fixture-only Guardian pursuit and Explorer navigation, and safety-certified curved motion.",
         "Deterministic single and paired episode runner instantiates the two role policies from TacticalGenome, runs paired worlds with identical scenario/seed/sensor seeds, and returns role-specific EpisodeResult records with configuration provenance.",
         "Terminal-only zero-sum capture/timeout surrogate discounted by exp(-beta * active_duration); capture terminalization is restricted to straight-command intervals to respect the piecewise-linear referee motion model.",
         "Episode outputs are explicitly labeled SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE, have no official score, and the runner rejects the reserved held-out split.",
         "Evaluation pair identity includes an evaluation-profile hash over runner configuration and fixture geometry to reject mismatched baseline/candidate runs.",
         "Paired Student-t confidence interval and per-role deltas; official score is explicitly unavailable.",
         "Training-only fitness ranking, bounded deterministic next-generation creation, and validation-only selection with baseline retention absent supported non-regressing improvement.",
+        "Explicit development-fixture population orchestrator evaluates candidate generations on training maps, selects one train finalist, validates it once at 95% two-sided Student-t confidence, and labels all outputs non-promotable.",
+        "Policy artifact loader verifies the tactical genome hash and rejects missing or altered fixture-only authority labels.",
+        "Post-search self-play demo consumes the serialized policy and exports trajectory/command/option telemetry as JSON and SVG without an added plotting dependency.",
+        "Larger maze topologies can produce more than 32 tactical proposals; the policy now uses the existing core maximum bound of 256, avoiding a fixture-scale proposal-count crash without changing the global selector limit.",
         "Genome weights can be wired into role-specific SIL utility profiles without modifying safety predicates, action realizers, or physical authority."
       ],
       "not_implemented": [
-        "Population/generation orchestration that executes a preregistered actual-match evaluation budget.",
+        "Accepted deterministic G4 baseline or eligible empirical P6.3 optimization and dataset.",
         "Accepted competition-grade Explorer policy or validated real-world opponent detection/tracking/belief.",
         "Once-only held-out evaluation with an immutable use ledger.",
         "ROS 2/MVSim utility-parameter adapter compatibility proof.",
         "Shadow logging, promotion review, or G5 acceptance."
       ]
     },
+    "development_tools": {
+      "trainer": "tools/train_evolution.py",
+      "policy_codec": "tools/p63_policy.py",
+      "match_demo": "tools/demo_competition_match.py",
+      "search_boundary": "Requires --development-fixtures in CLI; results cannot be promoted and no held-out episodes are executed or scored.",
+      "fitness_protocol": "Candidate Guardian vs baseline Explorer and baseline Guardian vs candidate Explorer, each paired role-wise against baseline-vs-baseline runs.",
+      "validation_protocol": "Select one training finalist and evaluate it once on validation with 95% two-sided Student-t interval; baseline retained otherwise.",
+      "visualization": "Standard-library SVG plus JSON trajectory, commands, chosen options, per-role safety metrics, and hashed scenario/evaluation provenance; no additional dependency.",
+      "statistical_limitations": "Four training maps and two validation maps are synthetic fixtures; the validation interval has only two paired map-level observations and is diagnostic, not generalizable evidence."
+    },
+    "development_runs": [
+      {
+        "run_report": "artifacts/reports/phase6/p63_development_run_seed20260932/run_report.json",
+        "policy": "artifacts/reports/phase6/p63_development_run_seed20260932/policy.json",
+        "command": "python tools/train_evolution.py --development-fixtures --generations 1 --population-size 2 --elite-count 1 --mutation-sigma 0.04 --seed 20260932 --episode-duration-s 2.0",
+        "seed": 20260932,
+        "generations": 1,
+        "population_size": 2,
+        "episode_duration_s": 2.0,
+        "training_finalist": null,
+        "selected_policy": "baseline_retained_no_training_supported_candidate",
+        "held_out_episodes_evaluated": 0,
+        "eligible_empirical_training": false
+      },
+      {
+        "run_report": "artifacts/reports/phase6/p63_development_run_seed20260931/run_report.json",
+        "policy": "artifacts/reports/phase6/p63_development_run_seed20260931/policy.json",
+        "command": "python tools/train_evolution.py --development-fixtures --generations 1 --population-size 2 --elite-count 1 --mutation-sigma 0.08 --seed 20260931 --episode-duration-s 8",
+        "seed": 20260931,
+        "generations": 1,
+        "population_size": 2,
+        "episode_duration_s": 8.0,
+        "candidate_training_deltas": {
+          "guardian_mean": 0.0,
+          "explorer_mean": 0.0,
+          "balanced_mean": 0.0,
+          "confidence_interval_95": [0.0, 0.0]
+        },
+        "training_finalist": null,
+        "selected_policy": "baseline_retained_no_training_supported_candidate",
+        "held_out_episodes_evaluated": 0,
+        "eligible_empirical_training": false
+      },
+      {
+        "run_report": "artifacts/reports/phase6/p63_development_run_seed20260929/run_report.json",
+        "policy": "artifacts/reports/phase6/p63_development_run_seed20260929/policy.json",
+        "seed": 20260929,
+        "generations": 1,
+        "population_size": 2,
+        "episode_duration_s": 2.0,
+        "training_finalist": null,
+        "selected_policy": "baseline_retained_no_training_supported_candidate",
+        "eligible_empirical_training": false,
+        "held_out_episodes_evaluated": 0
+      },
+      {
+        "match_report": "artifacts/reports/phase6/p63_demo_seed20260933/match_report.json",
+        "visualization": "artifacts/reports/phase6/p63_demo_seed20260933/match.svg",
+        "scenario_id": "maze_multiring_7x7_train_a",
+        "seed": 20260933,
+        "duration_s": 30.0,
+        "terminal_kind": "TIMEOUT",
+        "minimum_inter_robot_distance_m": 4.034031784287294,
+        "guardian_wall_contacts": 0,
+        "explorer_wall_contacts": 0,
+        "safety_violations": 0,
+        "policy_selected": "baseline_retained_no_training_supported_candidate",
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE"
+      }
+    ],
     "maze_bank": {
       "path": "sim/kinematic/scenarios/phase6_maze_bank.json",
       "loader": "sim/kinematic/maze_bank.py",
@@ -94,21 +170,22 @@
   },
   "verification": {
     "evolution_and_maze_command": "$env:PYTHONPATH = 'hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
-    "evolution_and_maze_result": "Included in full regression: 649 passed in 17.87s",
+    "evolution_and_maze_result": "Included in full regression: 656 passed in 89.08s",
     "safety_and_stop_turn_go_command": "$env:PYTHONPATH = 'hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
-    "safety_and_stop_turn_go_result": "Included in full regression: 649 passed in 17.87s",
+    "safety_and_stop_turn_go_result": "Included in full regression: 656 passed in 89.08s",
     "full_regression_command": "$env:PYTHONPATH = 'hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
-    "full_regression_result": "649 passed in 17.87s",
-    "compileall": "Passed: python -m compileall -q hsl_core\\hsl_core sim",
-    "json_validation": "Passed for phase6_maze_bank.json, phase6_learning_release.json, P5.6_autonomous_integration_report.json, and P6.3_sil_preparation.json.",
+    "full_regression_result": "656 passed in 89.08s",
+    "compileall": "Passed: python -m compileall -q tools hsl_core\\hsl_core sim",
+    "json_validation": "Passed for phase6_maze_bank.json, phase6_learning_release.json, P5.6_autonomous_integration_report.json, P6.3_sil_preparation.json, and generated development-run/demo reports.",
     "git_diff_check": "Passed: git diff --check",
-    "new_dependencies": []
+    "new_dependencies": [],
+    "targeted_p63_tests": "36 passed in 52.31s"
   },
   "blockers_before_empirical_p63": [
     "P6 phase entry criterion requires an accepted deterministic G4 baseline; current evidence is BLOCKED_NOT_RUN.",
     "P5.6 remains a synthetic fixture interaction profile, not a complete accepted autonomous baseline; its opponent tracks are not validated perception/belief.",
     "No eligible provenance-tagged baseline dataset, independently assigned opponent bank, or accepted policy/profile exists.",
-    "No preregistered population/generation orchestrator, held-out use-once control, shadow/promotion process, or accepted G5 procedure exists."
+    "No accepted eligible dataset, once-only held-out evaluation control, shadow/promotion process, or accepted G5 procedure exists."
   ],
   "next_steps": [
     "Independently review and expand the P5.6 fixture interaction into an accepted deterministic role baseline with validated assessors, then satisfy G4 for the intended profile.",

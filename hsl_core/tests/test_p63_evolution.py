@@ -405,3 +405,31 @@ def test_generation_uses_training_only_hard_exclusions_and_keeps_baseline():
             config=config,
             generation_index=0,
         )
+
+
+def test_generation_stops_boundedly_when_mutation_cannot_make_unique_genomes():
+    config = EvolutionConfig(
+        population_size=2,
+        elite_count=1,
+        mutation_sigma=5e-324,
+        seed=1,
+        maximum_generations=1,
+    )
+    baseline_assessment = CandidateAssessment(
+        _GENOME.sha256,
+        EvaluationSplit.TRAINING,
+        True,
+        "baseline_reference",
+        2,
+        0.0,
+        0.0,
+        0.0,
+        (0.0, 0.0),
+    )
+    with pytest.raises(RuntimeError, match="could not produce a unique"):
+        create_next_generation(
+            baseline_genome=_GENOME,
+            evaluated_genomes=((_GENOME, baseline_assessment),),
+            config=config,
+            generation_index=0,
+        )

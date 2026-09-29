@@ -25,6 +25,7 @@ from hsl_core.tactics import (
     OptionKind,
     OptionProposal,
     OptionRegistry,
+    MAX_TACTICAL_PROPOSALS,
     ROLE_FEATURES,
     TacticalGuard,
     TacticalSelector,
@@ -230,7 +231,7 @@ class KinematicAutonomousPolicy:
             registry=self.registry,
             hysteresis_delta_u=hysteresis_delta_u,
             minimum_dwell_ns=minimum_dwell_ns,
-            max_proposals=32,
+            max_proposals=MAX_TACTICAL_PROPOSALS,
         )
         self.supervisor = supervisor or SafetySupervisor(
             LimitsProfile(

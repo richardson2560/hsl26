@@ -452,7 +452,13 @@ def create_next_generation(
     unique: dict[str, TacticalGenome] = {}
     for genome in next_genomes:
         unique.setdefault(genome.sha256, genome)
+    duplicate_attempts = 0
+    maximum_duplicate_attempts = max(100, config.population_size * 100)
     while len(unique) < config.population_size:
+        if duplicate_attempts >= maximum_duplicate_attempts:
+            raise RuntimeError(
+                "bounded mutation could not produce a unique next-generation population"
+            )
         child_seed = (
             config.seed
             + generation_index * config.population_size
@@ -465,6 +471,7 @@ def create_next_generation(
         )
         unique.setdefault(child.sha256, child)
         child_index += 1
+        duplicate_attempts += 1
     return EvolutionGeneration(
         generation_index,
         tuple(unique.values()),

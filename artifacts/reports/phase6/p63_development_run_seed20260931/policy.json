@@ -1,0 +1,77 @@
+{
+  "baseline_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+  "genome": {
+    "hysteresis_delta_u": 0.08,
+    "minimum_dwell_ns": 250000000,
+    "schema_version": 1,
+    "weights": [
+      {
+        "feature": "capture_opportunity",
+        "role": "GUARDIAN",
+        "weight": 0.4
+      },
+      {
+        "feature": "duration_cost",
+        "role": "GUARDIAN",
+        "weight": -0.1
+      },
+      {
+        "feature": "observation_gain",
+        "role": "GUARDIAN",
+        "weight": 0.15
+      },
+      {
+        "feature": "portal_time_advantage",
+        "role": "GUARDIAN",
+        "weight": 0.25
+      },
+      {
+        "feature": "pursuit_value",
+        "role": "GUARDIAN",
+        "weight": 0.1
+      },
+      {
+        "feature": "alternative_exits",
+        "role": "EXPLORER",
+        "weight": 0.15
+      },
+      {
+        "feature": "base_progress",
+        "role": "EXPLORER",
+        "weight": 0.35
+      },
+      {
+        "feature": "capture_risk",
+        "role": "EXPLORER",
+        "weight": -0.05
+      },
+      {
+        "feature": "duration_cost",
+        "role": "EXPLORER",
+        "weight": -0.05
+      },
+      {
+        "feature": "escape_safety",
+        "role": "EXPLORER",
+        "weight": 0.15
+      },
+      {
+        "feature": "observation_gain",
+        "role": "EXPLORER",
+        "weight": 0.05
+      },
+      {
+        "feature": "visibility_loss",
+        "role": "EXPLORER",
+        "weight": 0.2
+      }
+    ]
+  },
+  "genome_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "official_score_available": false,
+  "promotion_eligible": false,
+  "run_id": "p63_development_run_seed20260931",
+  "schema": "hsl26.p63-development-policy.v1",
+  "selection_reason": "baseline_retained_no_training_supported_candidate"
+}
