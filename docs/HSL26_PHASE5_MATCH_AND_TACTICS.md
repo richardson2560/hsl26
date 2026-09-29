@@ -13,9 +13,9 @@ P5.5's bounded lifecycle/fault rehearsal and blocked gate matrix are recorded
 in [`P5.5_rehearsal_report.json`](../artifacts/reports/phase5/P5.5_rehearsal_report.json).
 P5.1-P5.3 pure-core slices and the bounded kinematic P5.4 referee/runner are
 implemented; P5.5 adds a StageManager-gated, fault-injected kinematic
-rehearsal. P5.6 now has a bounded integration slice, but does not implement
-the full two-role autonomous baseline or close G4. ROS integration, MVSim
-fidelity and physical evidence also remain open. See the phase-specific
+rehearsal. P5.6 now has an optional bounded two-role SIL interaction profile, but does
+not implement an accepted full autonomous baseline or close G4. ROS
+integration, MVSim fidelity and physical evidence also remain open. See the phase-specific
 evidence reports for exact scope and verification.
 
 An independent review of the handoff identified the missing executable
@@ -38,7 +38,43 @@ Requires G0 software and G2 route contracts plus a G3 track/belief profile or a 
 | P5.3 Role tactics | **Pure core implemented:** guardian/explorer option allowlists and required guard evidence; stage/health/safety gates; explicit per-role priority classes; discrete evidence-bearing explorer escape urgency; strict integer-nanosecond intercept-vs-base-defense interval test; normalized, versioned bounded utility; deterministic tie-break; utility-unit hysteresis and nanosecond dwell; mandatory `HOLD_SAFE`. `tactics/fsm.py`, `utility.py`. **Still required:** proposal assessors, `tactics_node.py`, authenticated evidence-source adapters and SIL/referee integration. | Each `SelectionResult` contains the chosen goal, priority, utility contributions, profile identity and ordered alternative evaluations with applicability, rejection reason and evidence IDs. | Pure-core tests pass; T28/T29 and I12/I13 end-to-end evidence remains open. |
 | P5.4 Referee and simulation integration | **Implemented bounded SIL slice:** continuous first contact for circular footprints on piecewise-linear trajectories; strict capture/bearing/LOS evaluation with conservative swept-LOS checks; role-scoped two-robot runner with injected callbacks and separate referee result. **Still open:** wiring P5.3 TacticalSelector/OptionAuthority, StageManager events, accepted-zone arrival, replay/MVSim, ROS namespaces/DDS, complete I12/I14 and G4. `hsl_core/hsl_core/rules.py`, `sim/kinematic/match.py`. | Truth/evidence contracts and role-isolated kinematic tick; not an official result or complete match rehearsal. | `sim/kinematic/test_p54_referee.py`; existing P5.1 overlap-order tests; I12/I14 remain partial. |
 | P5.5 Full-baseline rehearsal | **Implemented bounded SIL rehearsal:** cold start/freeze, exclusive guardian and explorer stage roles, timeout/terminal, reset acknowledgement barrier, deterministic replay and injected clock/planner/sensor/watchdog faults. Fixed-size outputs/traces are asserted without drawing official score from simulation truth. **Blocked:** P5.3/OptionAuthority end-to-end, ROS UI/topic graph, MVSim, accepted zone, physical stop and G4. `sim/kinematic/match.py`, `sim/kinematic/test_p55_rehearsal.py`. | Reproducible test-only lifecycle trace with explicit development timing assumptions; no competition result. | P5.5 matrix/report; integration I04/I08/I11–I14 and G4 remain BLOCKED/NOT_RUN where runtime/evidence is absent. |
-| P5.6 Kinematic decision-to-actuation integration | **Bounded slice implemented; complete baseline remains open.** `sim/kinematic/autonomous.py` wires Guardian `SEARCH_PORTAL` through `TacticalSelector`, `OptionAuthority`, open versioned A* routes, candidate/lease, forward coverage and the curvature-free `SafetySupervisor`. Explorer is limited to a no-motion `OBSERVE_SAFE` path; its current sensor-coverage assessor does not provide opponent belief, target-zone reasoning or autonomous navigation. `PolicyInput` now carries a timestamped bounded SIL pose estimate and versioned topology. Preserve `TwoRobotMatch` as the transactional plant/referee boundary. Do not use truth-derived policy inputs, guessed goal zones, unmeasured physical limits, or a path around safety. | Reproducible bounded trace and adversarial tests; exact support/unsupported cases are in `P5.6_autonomous_integration_report.json`. | `sim/kinematic/test_p56_autonomous.py` plus adjacent P3/P5 suites. P5.6 remains PARTIAL; this evidence does not pass G4, T/I acceptance, ROS/runtime, MVSim or physical gates. |
+| P5.6 Kinematic decision-to-actuation integration | **Bounded SIL interaction slice implemented; complete accepted baseline remains open.** `sim/kinematic/autonomous.py` wires role policies through `TacticalSelector`, `OptionAuthority`, versioned A* routes, leased candidates and the `SafetySupervisor`. A distinct optional simultaneous-duel mode in `sim/kinematic/match.py` gives Guardian and Explorer separate `StageManager` snapshots; both may move only when both role-scoped snapshots are valid ACTIVE states, while FREEZE, event hold, stale leases, TERMINAL and watchdog faults stop both. The standard exclusive-role runner remains unchanged. Synthetic LiDAR residuals against the supplied static map feed the existing constant-velocity EKF; Guardian pressure and Explorer fixture-goal/escape decisions consume only the resulting belief. Regulated pursuit can command continuous-curvature motion only when full-scan swept-tube checks, dynamic-speed inflation, lateral acceleration, yaw, wheel and stopping bounds pass; otherwise it limits/stops or uses stationary ALIGN. `ADVANCE_KNOWN_ROUTE` is distinct from accepted-base `ADVANCE_BASE` and makes no competition-goal claim. Preserve the referee/policy truth boundary; do not use plant pose, object identity, guessed official zones, physical limits, or a path around safety. | Reproducible synthetic duel traces and adversarial tests; exact support/unsupported cases are in `P5.6_autonomous_integration_report.json`. | `sim/kinematic/test_p56_autonomous.py`, `test_p56_perception.py`, core pursuit/safety/tactic tests. This remains a development SIL fixture, not G4 acceptance, an accepted baseline, physical safety evidence, ROS/runtime or MVSim proof. |
+
+### P5.6 optional simultaneous SIL duel mode
+
+The normal `TwoRobotMatch(stage_manager=...)` continues to model the
+exclusive-role match lifecycle. The optional
+`TwoRobotMatch(duel_stage_managers=(guardian_manager, explorer_manager))` is a
+separate, non-promotional evaluation profile, not a substitute for that match
+contract. Each policy receives its own correctly role-scoped `MatchState`;
+there is no synthesized state that grants both robots authority from one
+single-role snapshot. The duel advances both plants only when both snapshots
+are coherent, ACTIVE, motion-authorized, unheld, and leased through the whole
+step. Otherwise both commands are zero. Different lifecycle phase/timing or
+stage identity is rejected before plant integration.
+
+The duel's synthetic Explorer destination must be explicitly fixture-scoped.
+The option `ADVANCE_KNOWN_ROUTE` permits movement on a versioned open route
+when no usable opponent track is available; it does not assert that the rival
+is absent or that a competition goal is accepted. `ADVANCE_BASE` remains
+guarded by an accepted goal and threat evidence. The static-map residual
+extractor sees scans and map segments only, requires complete coverage, and
+leaves multiple initial clusters unassociated; the existing CV filter then
+produces a time-bounded estimate. A synthetic scan and a declared maximum
+opponent speed are SIL model inputs, not validated perception or physical
+bounds.
+
+Continuous-curvature supervision uses a constant-curvature unicycle arc.
+Its scan checker requires a complete 360-degree covered observation, expands
+the sampled swept disk for footprint, pose/range bounds, sampling spacing,
+beam angular gaps, and the declared opponent-speed bound during response and
+braking time, then supplies only verified arc length to the supervisor.
+The supervisor independently applies the braking envelope, lateral
+acceleration, yaw-rate and wheel-rate limits and preserves curvature when it
+limits speed. This bounded model is not an arbitrary-scene visibility proof:
+interference from unmodelled dynamics, calibration error outside the declared
+bounds, and physical actuation remain unverified. The profile is SIL-only and
+does not change G4/G5/G6 status.
 
 ## 3. Milestones
 
@@ -46,7 +82,7 @@ Requires G0 software and G2 route contracts plus a G3 track/belief profile or a 
 |---|---|
 | M5.1 Stage ownership | One stage identity and timer origin; repeated requests idempotent; old epochs/actions cannot command. |
 | M5.2 Both role policies | Feasible option selection with complete effect/termination/failure semantics and no direct driver writes. |
-| M5.3 P5.6 integrated kinematic slice | **Not yet met.** The current bounded slice exercises Guardian planning/safety and Explorer selection/authority for observation-only behavior. Complete both role policies, perception/evidence assessors, cancellation/fault matrices and profile-specific T/I evidence before this milestone can pass. |
+| M5.3 P5.6 integrated kinematic slice | **Bounded SIL interaction implemented; milestone not accepted.** The optional duel exercises both fixture role policies, synthetic scan-to-track flow, curved-motion safety and role-scoped lifecycle. Accepted baseline, validated assessors, cancellation/fault matrix, profile-specific T/I evidence, ROS/MVSim and G4 review remain open. |
 | M5.4 Profile-specific G4 review | Applicable T/I cases and upstream profile prerequisites have evidence; reviewer accepts the declared profile and limitations. Kinematic G4 does not imply ROS, MVSim, physical, or competition acceptance. |
 
 ## 4. Gate G4 acceptance record
@@ -147,20 +183,35 @@ The integrated Guardian fixture selects `SEARCH_PORTAL` only when an open
 versioned path is within the declared topology clearance and pose-error
 envelope. The option is admitted and replanned under a generation-rotating
 lease; candidate identity, path versions, fresh scan, forward coverage and
-the existing forward/zero-curvature supervisor are checked before returning
-actuation. Any unmodeled curvature is stopped by the supervisor. Effect
+the safety supervisor are checked before returning actuation. Effect
 completion is estimate-bound to the option instance and tolerance and is not
-promoted to referee/official ARRIVAL. The Explorer fixture performs only a
-no-motion `OBSERVE_SAFE` transition; OptionAuthority does not authorize a
-motion candidate for this option.
+promoted to referee/official ARRIVAL.
+
+An optional simultaneous-duel profile is separate from the standard
+exclusive-role runner. It supplies each role its own `StageManager` snapshot
+and permits integration only when both snapshots authorize the full tick.
+Synthetic LiDAR observations are compared with static fixture geometry; only
+the resulting scan-residual detections enter the existing constant-velocity
+filter and role policies. Guardian route pressure and Explorer fixture-route
+or escape choices use belief tracks, not simulator truth. A distinct
+`ADVANCE_KNOWN_ROUTE` option authorizes Explorer movement over a versioned
+fixture route without claiming an accepted competition base or arrival.
+
+Continuous-curvature translation is admitted only with explicit full-scan
+swept-arc coverage and clearance evidence, bounded pose/range/discretization
+errors, a declared dynamic-obstacle speed bound, sufficient arc stopping
+distance, lateral acceleration, yaw-rate and wheel-rate checks. The
+supervisor scales linear and angular speeds together when limiting a
+candidate, preserving curvature. Missing or invalid evidence fails closed;
+this is not a generic proof for arbitrary geometry or physical obstacles.
 
 All P5.6 numerical limits are synthetic development parameters and explicitly
-not hardware calibrations. The policy does not implement a validated opponent
-belief/track assessor, rival-dependent tactics, accepted target-zone behavior,
-turning/corridor swept-footprint safety, ROS/DDS execution or a complete
-diagnostic/evidence chain. Thus this slice is useful integration evidence,
-not the P5.6 exit milestone, autonomous baseline, promotion dataset, or G4
-evidence. The report is
+not hardware calibrations. The new extractor and rival tracks are synthetic
+SIL functionality, not a validated opponent-belief assessor. Accepted
+target-zone behavior, ROS/DDS execution, MVSim, physical safety and a
+complete diagnostic/evidence chain remain absent. Thus this slice is useful
+integration evidence, not the P5.6 exit milestone, autonomous baseline,
+promotion dataset, or G4 evidence. The report is
 [`P5.6_autonomous_integration_report.json`](../artifacts/reports/phase5/P5.6_autonomous_integration_report.json);
 the focused adversarial suite is
 [`test_p56_autonomous.py`](../sim/kinematic/test_p56_autonomous.py).

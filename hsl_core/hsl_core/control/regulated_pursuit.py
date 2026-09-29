@@ -23,14 +23,51 @@ class PursuitConfig:
             raise ValueError("pursuit acceleration/tolerance is invalid")
 
 
-def _lookahead(path: PlannedPath, pose: Pose2D, distance: float) -> tuple[float, float]:
+def lookahead_point(
+    path: PlannedPath, pose: Pose2D, distance: float
+) -> tuple[float, float]:
+    if not math.isfinite(distance) or distance <= 0.0:
+        raise ValueError("lookahead distance must be positive and finite")
     points = path.polyline_xy_m
-    nearest = min(
-        range(len(points)),
-        key=lambda index: math.hypot(points[index][0] - pose.x_m, points[index][1] - pose.y_m),
-    )
+    best_index = -1
+    best_fraction = 0.0
+    best_distance = math.inf
+    for index, (start, end) in enumerate(zip(points, points[1:])):
+        dx, dy = end[0] - start[0], end[1] - start[1]
+        length_squared = dx * dx + dy * dy
+        if length_squared <= 0.0:
+            continue
+        fraction = max(
+            0.0,
+            min(
+                1.0,
+                ((pose.x_m - start[0]) * dx + (pose.y_m - start[1]) * dy)
+                / length_squared,
+            ),
+        )
+        projection = (start[0] + fraction * dx, start[1] + fraction * dy)
+        distance_to_path = math.hypot(
+            pose.x_m - projection[0], pose.y_m - projection[1]
+        )
+        if distance_to_path < best_distance:
+            best_index = index
+            best_fraction = fraction
+            best_distance = distance_to_path
+    if best_index < 0:
+        return points[-1]
+
+    start, end = points[best_index], points[best_index + 1]
+    segment_length = math.dist(start, end)
     remaining = distance
-    for start, end in zip(points[nearest:], points[nearest + 1:]):
+    remaining_on_segment = segment_length * (1.0 - best_fraction)
+    if remaining <= remaining_on_segment and segment_length > 0.0:
+        fraction = best_fraction + remaining / segment_length
+        return (
+            start[0] + fraction * (end[0] - start[0]),
+            start[1] + fraction * (end[1] - start[1]),
+        )
+    remaining -= remaining_on_segment
+    for start, end in zip(points[best_index + 1 :], points[best_index + 2 :]):
         length = math.hypot(end[0] - start[0], end[1] - start[1])
         if length >= remaining:
             fraction = remaining / length if length else 0.0
@@ -54,7 +91,7 @@ def make_candidate(
 ) -> MotionCandidate:
     if lease_s <= 0.0 or not source_id or not math.isfinite(now_s):
         raise ValueError("time, lease and source_id must be valid")
-    target = _lookahead(path, pose, config.lookahead_m)
+    target = lookahead_point(path, pose, config.lookahead_m)
     dx, dy = target[0] - pose.x_m, target[1] - pose.y_m
     cosine, sine = math.cos(pose.theta_rad), math.sin(pose.theta_rad)
     x_local = cosine * dx + sine * dy

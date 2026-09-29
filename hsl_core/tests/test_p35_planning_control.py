@@ -4,6 +4,7 @@
 import pytest
 
 from hsl_core.control import OptionExecutor, PursuitConfig, make_candidate
+from hsl_core.control.regulated_pursuit import lookahead_point
 from hsl_core.planning import (
     CandidateEnvelope,
     ExecutionLease,
@@ -89,6 +90,33 @@ def test_regulated_pursuit_respects_speed_yaw_and_lateral_acceleration():
     assert abs(candidate.angular_velocity_rps) <= 1.0
     assert candidate.valid_until_s == pytest.approx(2.2)
     assert candidate.map_version == 7
+
+
+def test_lookahead_projects_onto_segment_before_rounding_a_polyline_corner():
+    path = PlannedPath(
+        7,
+        9,
+        "epoch-a",
+        0,
+        2,
+        (0, 1, 2),
+        (10, 11),
+        ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0)),
+        2.0,
+    )
+    target = lookahead_point(path, Pose2D(0.5, 0.0, 0.0), 0.75)
+    assert target == pytest.approx((1.0, 0.25))
+    candidate = make_candidate(
+        path,
+        Pose2D(0.5, 0.0, 0.0),
+        config=PursuitConfig(lookahead_m=0.75),
+        now_s=1.0,
+        lease_s=0.2,
+        source_id="corner-option",
+        lease_generation=1,
+    )
+    assert candidate.linear_velocity_mps > 0.0
+    assert candidate.angular_velocity_rps > 0.0
 
 
 def test_lease_cancellation_and_replacement_reject_old_candidates():

@@ -22,12 +22,15 @@ blocked.
 The current P5 evidence supports bounded kinematic lifecycle, fault, replay,
 and a limited decision-to-actuation integration slice. It does not establish
 the complete accepted policy baseline, ROS/runtime integration, MVSim
-fidelity, physical safety, or official scoring. The P5.6 slice supports
-Guardian straight/zero-curvature `SEARCH_PORTAL` and Explorer no-motion
-`OBSERVE_SAFE`; opponent belief, rival-dependent tactics and full Explorer
-navigation remain unimplemented. This is an implementation gap with a
-concrete P5.6 work package, not a reason to write an unsupported G4
-acceptance record. Pure-core P6.1 schema/collector
+fidelity, physical safety, or official scoring. P5.6 now includes a separate
+simultaneous SIL duel profile, synthetic scan-to-CV-track processing,
+Guardian pursuit, Explorer route/escape decisions, and certified
+constant-curvature motion under the declared fixture bounds. The existing
+exclusive-role runner remains unchanged. This interaction profile remains a
+software fixture: it is not accepted baseline evidence, complete perception
+validation, an official competition objective, or a G4 pass. It addresses the
+previous lack of a dynamic two-role SIL interaction without relaxing the
+Phase-6 entry gates. Pure-core P6.1 schema/collector
 work and P6.2 algorithm/tests may proceed in parallel; dataset collection,
 promotion conclusions, integrated gate closure and release acceptance remain
 blocked on the accepted baseline/profile and their other inputs.
@@ -52,22 +55,24 @@ In particular:
 | `docs/HSL26_PHASE6_IMPLEMENTATION_PLAN.md` | Ordered P6 work packages, gates, commands, and evidence requirements | Prepared |
 | `docs/HSL26_PHASE6_INDEPENDENT_AUDIT.md` | Independent review of the supplied audit and corrected P5.6 → P6 roadmap | Prepared |
 | `docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md` | Normative Phase 6 objectives and acceptance conditions | Governing specification |
-| `hsl_core/hsl_core/learning/*.py` | Intended learning implementation targets | `dirichlet.py`, `option_value.py`, and `evolution.py` contain only module comments; no behavior exists |
+| `hsl_core/hsl_core/learning/*.py` | P6.1/P6.2 contracts and bounded P6.3 evolution operators | Implemented and tested as contracts; no empirical dataset, population runner, or promotion |
 
 ### 2.1 Profiles
 
 | Profile | Status | Permitted claims |
 |---|---|---|
-| Kinematic SIL preparation | Enabled for manifest and contract checks only | Environment/contract preparation; no training or G5 result |
+| Kinematic SIL preparation | Enabled for bounded fixture interaction and contract checks | Software behavior under declared synthetic assumptions only; no G4, eligible training data, or G5 result |
 | Offline dataset/model | Blocked until G4 and independent, provenance-tagged banks are available | No learned-value or candidate-performance claim |
 | Replay | Prepared in principle; blocked on immutable observations and validated runtime | No replay or sensor-fidelity claim |
 | MVSim | Blocked pending native runtime and sensor-model inspection | No MVSim integration/fidelity claim |
 | Hardware/real | Disarmed; no robot available | No physical or competition release claim |
 
 The policy-facing boundary remains observation-only. Referee truth is available
-only to evaluation code and is never an admitted policy feature. Synthetic
-observations, if introduced later, must retain their synthetic label and
-scenario provenance.
+only to evaluation code and is never an admitted policy feature. The duel
+profile uses separate role-scoped `MatchState` snapshots, a static map fixture,
+and a fixture-scoped Explorer destination; none is an official base/zone
+decision. Synthetic observations, opponent-speed bounds, and scenario
+provenance remain explicit fixture inputs.
 
 ## 3. Dependencies and setup
 
@@ -108,7 +113,7 @@ a concrete implementation and measured need require them.
 | Package | Implementation sequence | Core outputs | Exit evidence |
 |---|---:|---|---|
 | P6.0 Environment and contract preparation | Prepared | This plan, environment report, truth-isolated profile, no-leakage manifest tests | JSON validation and regression; entry blockers stay explicit |
-| P5.6 G4 kinematic decision-loop prerequisite | Partial bounded slice; owned by Phase 5 | Current fixture connects Guardian search through authority/route/candidate/safety and Explorer observation-only authority; full perception/role policy and acceptance remain open | See P5.6 report; T21/T22/T28–T30 and I11–I14 review remains incomplete; no universal G4 or physical pass inferred |
+| P5.6 G4 kinematic decision-loop prerequisite | Bounded SIL interaction profile implemented; G4 baseline remains blocked | Standard exclusive-role runner is preserved. Optional dual-manager duel has simultaneous role authorization gated by both ACTIVE leases, scan-residual EKF tracks, Guardian pursuit, Explorer fixture-route/escape navigation, and continuous curvature only under swept-scan, braking, lateral, yaw and wheel limits. | See P5.6 report; integrated cases are test evidence only. T21/T22/T28–T30, I11–I14 and profile review remain incomplete; no G4, G5 or physical pass inferred |
 | P6.1 Dataset and abstraction | Schema/collector contract work may start in parallel; empirical dataset blocked until accepted baseline | Versioned role/feature/state/option/outcome schemas; immutable transition records including cancellation, safety interventions and censoring; independent map/opponent/seed bank IDs and split manifest | Schema/hash tests may pass before G4. Dataset validity, split integrity, and promotion-quality counts require accepted baseline episodes and provenance |
 | P6.2 Offline values | Pure implementation and normative fixtures may start in parallel; empirical interpretation waits for P6.1 data | Positive immutable Dirichlet prior/posterior; continuous-time discounted option return and value update; terminal/no-bootstrap and failures | T18/T27 and §15.2 fixtures; fixture tests do not establish data quality, learned improvement, or G5 |
 | P6.3 Bounded evolution and shadow | Optional; blocked until accepted baseline, eligible P6.1 data, and P6.2 | Bounded tactical parameters; paired training for both roles; safety hard exclusion; validation choice; once-only held-out report; shadow logging | I15/G5 with preregistered criterion, intervals, role balance and safety metrics; otherwise retain baseline |

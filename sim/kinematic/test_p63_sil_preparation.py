@@ -123,6 +123,13 @@ def test_maze_bank_loader_rejects_claims_leakage_and_invalid_inputs(
 
 def test_maze_loader_rejects_disconnected_scenario_and_nonrectangular_grid(tmp_path):
     raw = json.loads(_BANK_PATH.read_text(encoding="utf-8"))
+    raw["scenarios"][0]["grid"] = [".....", ".###.", ".#.#.", ".###.", "....."]
+    path = tmp_path / "isolated-open-cell.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValueError, match="all open maze cells"):
+        load_maze_bank(path)
+
+    raw = json.loads(_BANK_PATH.read_text(encoding="utf-8"))
     raw["scenarios"][0]["grid"] = [".....", ".###.", ".#.#.", ".###.", "##.##"]
     raw["scenarios"][0]["guardian_start_rc"] = [0, 0]
     raw["scenarios"][0]["explorer_start_rc"] = [4, 2]

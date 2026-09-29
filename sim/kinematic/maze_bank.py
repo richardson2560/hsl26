@@ -243,6 +243,8 @@ def _require_connected(
                 stack.append(edge.to_node)
     if not node_ids <= visited:
         raise ValueError("maze role starts and goal must share an open connected component")
+    if len(visited) != len(topology.nodes):
+        raise ValueError("all open maze cells must share one connected component")
 
 
 def _validate_independent_banks(fixtures: tuple[MazeFixture, ...]) -> None:

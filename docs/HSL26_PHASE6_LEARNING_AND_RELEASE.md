@@ -7,9 +7,11 @@
 
 Requires a G4 deterministic baseline, validated G0–G3 prerequisites in the intended execution profile, and recorded organizer decisions for all information required by the chosen policy. Official score fields remain unavailable until the organizer supplies them; surrogate rewards are explicitly labeled. Learning never changes rule predicates, option realizers, geometry inflation, speed/braking bounds, ROS authority or truth access.
 
-The current P5.5 evidence records G4 as `BLOCKED_NOT_RUN`. A bounded P5.6
-decision-to-actuation SIL slice exists, but the full role baseline and G4
-acceptance remain open. P6.1 schema/collector contracts and P6.2 algorithms may be implemented and tested
+The current P5.5 evidence records G4 as `BLOCKED_NOT_RUN`. P5.6 now includes
+an optional two-role interactive SIL fixture with synthetic scan-residual
+tracking, route/escape policies, and supervised continuous-curvature motion;
+this is not an accepted baseline or G4 evidence. The full role baseline and
+G4 acceptance remain open. P6.1 schema/collector contracts and P6.2 algorithms may be implemented and tested
 with normative fixtures while that work proceeds; they do not authorize
 empirical training, a valid dataset, G5 promotion or a release before an
 accepted baseline/profile and required provenance exist. The independent
@@ -62,21 +64,21 @@ reserved held-out fixtures. The held-out fixture is not used by selection.
 
 This does **not** authorize empirical evolution. The Phase-6 entry criterion
 requires an accepted deterministic G4 baseline, while the current P5.6 status
-is partial and G4 remains `BLOCKED_NOT_RUN`. The present policy also lacks
-active Explorer navigation and validated rival perception/belief. No
-end-to-end episode runner, held-out use-once ledger, shadow logging, or
-promotion review has been implemented. Training on the current two-role
-autonomy slice would therefore risk optimizing a non-representative task and
-must not be described as a valid P6.3 result.
+is partial and G4 remains `BLOCKED_NOT_RUN`. The current SIL profile has fixture-only Explorer route/escape behavior and
+synthetic opponent tracks, not a validated competition policy or perception
+system. No end-to-end population episode runner, held-out use-once ledger,
+shadow logging, or promotion review has been implemented. Training on this
+slice would optimize a synthetic task and must not be described as a valid
+P6.3 result.
 
-The stop-turn-go extension is restricted to straight translation and a
-separate, fail-closed stationary `ALIGN` supervisor mode. Its full-scan radial
-clearance estimate is only a bound under the declared SIL geometry and error
-fixtures; it is not evidence for arbitrary or moving obstacles, physical
-swept-volume safety, Kobuki limits, G4, or physical calibration. Continue to
-label the maze bank and all maneuver parameters as synthetic software
-fixtures. No dependency was added; the statistical interval uses the existing
-SciPy dependency.
+The SIL extension supports straight and bounded constant-curvature translation,
+with stationary `ALIGN` available as a fallback. Curved movement requires
+full-scan swept-arc clearance certification and explicit fixture error and
+dynamic-speed bounds; the certificate applies only to its declared model and
+does not prove arbitrary or physical swept-volume safety, Kobuki limits, G4,
+or physical calibration. Continue to label the maze bank and all maneuver
+parameters as synthetic software fixtures. No dependency was added; the
+statistical interval uses the existing SciPy dependency.
 
 ## 3. Milestones and branches
 

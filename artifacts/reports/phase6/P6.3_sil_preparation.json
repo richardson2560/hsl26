@@ -18,31 +18,32 @@
   },
   "independent_audit": {
     "accepted": [
-      "A dedicated stationary ALIGN safety mode is the appropriate extension for stop-turn-go; ordinary translation remains zero-curvature and under the existing forward safety authority.",
+      "Stationary ALIGN remains a fail-closed stop-turn-go fallback; continuous curvature is a distinct mode that requires explicit swept-arc evidence and independent braking, lateral, yaw and wheel limits.",
       "Synthetic orthogonal maze fixtures, deterministic seeds, role-paired evaluation, and hard safety exclusions are useful software preparation."
     ],
     "qualified_or_rejected": [
       "A dense 360-degree scan and radial clearance bound only the declared SIL geometry and bounded error model; they do not prove physical swept-volume safety, arbitrary-obstacle detection, dynamic-obstacle safety, or actuator response.",
       "Fixture parameter values are not robot calibration and fixture episodes are not eligible evidence for G4, G5, or policy promotion.",
-      "An active Explorer and validated opponent belief are absent, so two-role tactical fitness from the present autonomous loop would be misleading; no empirical evolutionary run is authorized by this preparation.",
+      "Explorer movement and scan-residual opponent tracks now exist only inside a synthetic SIL fixture; they are not validated competition behavior or perception, so empirical evolutionary claims remain unauthorized.",
       "Held-out data must remain unused until a separately controlled, once-only final evaluation procedure is implemented."
     ]
   },
   "implementation": {
     "p63_contracts": {
-      "status": "IMPLEMENTED_NOT_EMPIRICALLY_EXECUTED",
+      "status": "CONTRACTS_AND_FIXTURE_INTERACTION_IMPLEMENTED_NOT_EMPIRICALLY_EXECUTED",
       "features": [
         "Immutable versioned tactical genome over registered role-specific utility features, bounded signs and coefficient mass, hysteresis, and dwell.",
         "Deterministic seeded projected Gaussian mutation within declared genome bounds.",
         "Exact baseline/candidate episode pairing by scenario, seed, map, opponent, seed bank, and both roles.",
         "Hard candidate exclusion for incomplete episodes, collision, safety violation, excess safety overrides, or increased overrides relative to baseline.",
+        "A separate simultaneous two-role SIL fixture with role-scoped stages, synthetic scan-residual tracks, fixture-only Guardian pursuit and Explorer navigation, and safety-certified curved motion; no evolutionary population runner is connected.",
         "Paired Student-t confidence interval and per-role deltas; official score is explicitly unavailable.",
         "Training-only fitness ranking, bounded deterministic next-generation creation, and validation-only selection with baseline retention absent supported non-regressing improvement.",
         "Genome weights can be wired into role-specific SIL utility profiles without modifying safety predicates, action realizers, or physical authority."
       ],
       "not_implemented": [
         "End-to-end evolutionary runner that executes actual SIL matches for a population.",
-        "Active Explorer escape/navigation policy and validated closed-loop opponent detection/tracking/belief.",
+        "Accepted competition-grade Explorer policy or validated real-world opponent detection/tracking/belief.",
         "Once-only held-out evaluation with an immutable use ledger.",
         "Shadow logging, promotion review, or G5 acceptance."
       ]
@@ -65,30 +66,30 @@
     },
     "motion_prerequisite": {
       "path": "artifacts/reports/phase5/P5.6_autonomous_integration_report.json",
-      "status": "SUPERVISED_SIL_ALIGN_ONLY",
-      "description": "Stop-turn-go uses straight translation and a distinct fail-closed stationary ALIGN mode. The clearance calculation subtracts angular-gap, range-error, pose-error, and configured margin bounds. No physical safety or calibration claim is made."
+      "status": "SUPERVISED_SIL_ARC_AND_ALIGN_FIXTURE_ONLY",
+      "description": "The optional simultaneous-duel SIL profile supports straight translation, full-scan-certified constant-curvature translation under declared fixture bounds, and fail-closed stationary ALIGN. It includes scan-residual opponent tracks and fixture-scoped Guardian/Explorer behavior. Arc/ALIGN checks subtract declared geometric and state-error bounds but make no physical safety, real-perception, calibration, or accepted-policy claim."
     }
   },
   "verification": {
-    "evolution_and_maze_command": "$env:PYTHONPATH = 'hsl_core;.'; python -m pytest hsl_core\\tests\\test_p63_evolution.py sim\\kinematic\\test_p63_sil_preparation.py -q",
-    "evolution_and_maze_result": "33 passed",
-    "safety_and_stop_turn_go_command": "$env:PYTHONPATH = 'hsl_core;.'; python -m pytest hsl_core\\tests\\test_safety.py sim\\kinematic\\test_p56_autonomous.py -q",
-    "safety_and_stop_turn_go_result": "45 passed",
+    "evolution_and_maze_command": "$env:PYTHONPATH = 'hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "evolution_and_maze_result": "Included in full regression: 637 passed in 28.58s",
+    "safety_and_stop_turn_go_command": "$env:PYTHONPATH = 'hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "safety_and_stop_turn_go_result": "Included in full regression: 637 passed in 28.58s",
     "full_regression_command": "$env:PYTHONPATH = 'hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
-    "full_regression_result": "612 passed in 5.88s",
-    "compileall": "PASS",
+    "full_regression_result": "637 passed in 28.58s",
+    "compileall": "PASS (python -m compileall -q hsl_core\\hsl_core sim)",
     "json_validation": "PASS",
     "git_diff_check": "PASS",
     "new_dependencies": []
   },
   "blockers_before_empirical_p63": [
     "P6 phase entry criterion requires an accepted deterministic G4 baseline; current evidence is BLOCKED_NOT_RUN.",
-    "P5.6 remains partial: Explorer has no autonomous movement and the system lacks validated rival perception/belief.",
+    "P5.6 remains a synthetic fixture interaction profile, not a complete accepted autonomous baseline; its opponent tracks are not validated perception/belief.",
     "No eligible provenance-tagged baseline dataset, independently assigned opponent bank, or accepted policy/profile exists.",
     "No end-to-end runner, held-out use-once control, or shadow/promotion process exists."
   ],
   "next_steps": [
-    "Complete and independently verify P5.6 role-complete baseline and required perception/belief, then satisfy G4 for the intended profile.",
+    "Independently review and expand the P5.6 fixture interaction into an accepted deterministic role baseline with validated assessors, then satisfy G4 for the intended profile.",
     "Freeze the P6.3 scenario, opponent, seed, and evaluation-plan manifests; exclude any training/validation cross-leakage.",
     "Implement a deterministic SIL episode runner and collect baseline/candidate episodes under identical observations, seeds, opponents, and role assignments.",
     "Set evaluation thresholds before examining validation results; select only on validation and retain the accepted baseline unless all safety and per-role criteria pass.",

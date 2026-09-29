@@ -146,6 +146,10 @@ class OpponentFilter:
     def covariance(self) -> np.ndarray:
         return self._covariance.copy()
 
+    @property
+    def initialized(self) -> bool:
+        return self._initialized
+
     def reset(self) -> None:
         self.__init__(self.config)
 

@@ -324,3 +324,130 @@ def test_align_mode_checks_wheel_rate_and_measured_position_uncertainty():
     )
     assert insufficient_with_pose_error.decision is STOP
     assert insufficient_with_pose_error.primary_reason == "ROTATION_CLEARANCE_INSUFFICIENT"
+
+
+def _curved_supervisor(*, lateral_acceleration=0.5, max_wheel_rate=20.0):
+    return SafetySupervisor(
+        LimitsProfile(
+            limits_id="curved-limits",
+            calibration_id="sil-fixture-only",
+            wheel_separation_m=0.23,
+            wheel_radius_m=0.035,
+            max_wheel_rate_radps=max_wheel_rate,
+            speed_max_mps=0.6,
+            yaw_rate_max_rps=1.0,
+            b_forward_min_mps2=0.85,
+            response_bound_s=0.075,
+            clearance_margin_m=0.05,
+            lateral_acceleration_max_mps2=lateral_acceleration,
+        ),
+        TimingProfile(0.2, 0.2, 0.2, 0.02),
+    )
+
+
+def test_curved_path_requires_explicit_swept_tube_coverage():
+    result = _curved_supervisor().evaluate(
+        _snapshot(candidate_v_mps=0.3, candidate_omega_rps=0.2),
+        1_100_000_000,
+        50,
+    )
+    assert result.decision is STOP
+    assert result.primary_reason == "CURVED_PATH_UNCERTIFIED"
+    assert result.applied_v_mps == 0.0
+    assert result.applied_omega_rps == 0.0
+
+
+def test_curved_path_is_admitted_only_with_lateral_braking_and_wheel_bounds():
+    result = _curved_supervisor().evaluate(
+        _snapshot(
+            candidate_v_mps=0.3,
+            candidate_omega_rps=0.2,
+            curved_path_coverage_valid=True,
+            curved_path_clearance_m=0.8,
+        ),
+        1_100_000_000,
+        50,
+    )
+    assert result.decision is ADMIT
+    assert result.applied_v_mps == pytest.approx(0.3)
+    assert result.applied_omega_rps == pytest.approx(0.2)
+    assert result.checked_clearance_m == pytest.approx(0.8)
+    assert abs(result.applied_v_mps * result.applied_omega_rps) <= 0.5
+
+
+def test_curved_limit_scales_linear_and_angular_velocity_together():
+    supervisor = _curved_supervisor(lateral_acceleration=0.2)
+    result = supervisor.evaluate(
+        _snapshot(
+            candidate_v_mps=0.5,
+            candidate_omega_rps=0.5,
+            curved_path_coverage_valid=True,
+            curved_path_clearance_m=2.0,
+        ),
+        1_100_000_000,
+        50,
+    )
+    assert result.decision is LIMIT
+    assert 0.0 < result.applied_v_mps < result.proposed_v_mps
+    assert result.applied_omega_rps == pytest.approx(
+        result.proposed_omega_rps * result.applied_v_mps / result.proposed_v_mps
+    )
+    assert abs(result.applied_v_mps * result.applied_omega_rps) <= 0.2 + 1e-12
+
+
+@pytest.mark.parametrize(
+    "supervisor, speed, yaw_rate",
+    [
+        (_curved_supervisor(), 0.5, 1.2),
+        (_curved_supervisor(max_wheel_rate=8.0), 0.5, 0.5),
+    ],
+)
+def test_curved_yaw_and_wheel_bounds_limit_without_changing_curvature(
+    supervisor, speed, yaw_rate
+):
+    result = supervisor.evaluate(
+        _snapshot(
+            candidate_v_mps=speed,
+            candidate_omega_rps=yaw_rate,
+            curved_path_coverage_valid=True,
+            curved_path_clearance_m=2.0,
+        ),
+        1_100_000_000,
+        50,
+    )
+    assert result.decision is LIMIT
+    assert 0.0 < result.applied_v_mps < speed
+    assert result.applied_omega_rps == pytest.approx(
+        yaw_rate * result.applied_v_mps / speed
+    )
+
+
+@pytest.mark.parametrize(
+    "overrides, reason",
+    [
+        ({"candidate_v_mps": 0.0}, "LIMITS_INVALID"),
+        ({"curved_path_clearance_m": 0.0}, "COMMAND_LIMITED"),
+        ({"coverage_valid": False}, "OUTSIDE_COVERAGE"),
+    ],
+)
+def test_curved_path_still_fails_closed_for_invalid_speed_clearance_or_coverage(
+    overrides, reason
+):
+    values = {
+        "candidate_v_mps": 0.3,
+        "candidate_omega_rps": 0.2,
+        "curved_path_coverage_valid": True,
+        "curved_path_clearance_m": 0.8,
+    }
+    values.update(overrides)
+    result = _curved_supervisor().evaluate(
+        _snapshot(**values), 1_100_000_000, 50
+    )
+    assert result.decision in (STOP, LIMIT)
+    assert result.primary_reason == reason
+    if result.decision == LIMIT:
+        assert result.applied_v_mps == 0.0
+        assert result.applied_omega_rps == 0.0
+    if result.decision is STOP or result.applied_v_mps == 0.0:
+        assert result.applied_v_mps == 0.0
+        assert result.applied_omega_rps == 0.0

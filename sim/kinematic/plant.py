@@ -121,6 +121,14 @@ class KinematicPlant:
         self._max_angular = float(max_angular_rps)
 
     @property
+    def max_linear_mps(self) -> float:
+        return self._max_linear
+
+    @property
+    def max_angular_rps(self) -> float:
+        return self._max_angular
+
+    @property
     def state(self) -> PlantState:
         return PlantState(self._stamp_s, self._pose)
 

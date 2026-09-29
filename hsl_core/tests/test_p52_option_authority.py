@@ -89,7 +89,7 @@ def _submit(authority, *, action_id="action-1", goal=None, context=None):
 
 def test_registry_is_complete_and_matches_serialized_option_enum():
     registry = OptionRegistry()
-    assert [definition.kind.value for definition in registry.definitions] == list(range(12))
+    assert [definition.kind.value for definition in registry.definitions] == list(range(13))
     assert len({definition.kind for definition in registry.definitions}) == len(OptionKind)
 
 
@@ -110,6 +110,7 @@ def test_registry_role_target_and_semantic_zone_matrix_is_exact():
         OptionKind.TAKE_ALTERNATE_PORTAL: (explorer, True, False, False),
         OptionKind.KEEP_ESCAPE_ROUTE: (explorer, True, False, False),
         OptionKind.OBSERVE_SAFE: (explorer, False, False, False),
+        OptionKind.ADVANCE_KNOWN_ROUTE: (explorer, True, False, False),
     }
     actual = {
         definition.kind: (

@@ -477,6 +477,11 @@ class StageManager:
         return self._profile
 
     @property
+    def role(self) -> Role:
+        with self._lock:
+            return self._role
+
+    @property
     def phase(self) -> StagePhase:
         with self._lock:
             return self._phase

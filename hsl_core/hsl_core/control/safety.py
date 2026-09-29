@@ -63,6 +63,8 @@ class LimitsProfile:
     rotation_clearance_margin_m: float = 0.0
     linear_rest_tolerance_mps: float = 0.0
     angular_acceleration_max_rps2: float = 0.0
+    lateral_acceleration_max_mps2: float = 0.0
+    align_yaw_rate_max_rps: float = 0.0
 
     def __post_init__(self) -> None:
         if (
@@ -94,6 +96,8 @@ class LimitsProfile:
             (self.rotation_clearance_margin_m, "rotation_clearance_margin_m"),
             (self.linear_rest_tolerance_mps, "linear_rest_tolerance_mps"),
             (self.angular_acceleration_max_rps2, "angular_acceleration_max_rps2"),
+            (self.lateral_acceleration_max_mps2, "lateral_acceleration_max_mps2"),
+            (self.align_yaw_rate_max_rps, "align_yaw_rate_max_rps"),
         ):
             _nonnegative(value, name)
         if self.b_forward_min_mps2 <= 0.0:
@@ -161,6 +165,8 @@ class SafetySnapshot:
     position_error_bound_m: float = 0.0
     control_period_s: float = 0.0
     ego_angular_velocity_rps: float = 0.0
+    curved_path_clearance_m: float = 0.0
+    curved_path_coverage_valid: bool = False
 
     def __post_init__(self) -> None:
         if (
@@ -178,6 +184,7 @@ class SafetySnapshot:
             (self.position_error_bound_m, "position_error_bound_m"),
             (self.control_period_s, "control_period_s"),
             (self.ego_angular_velocity_rps, "ego_angular_velocity_rps"),
+            (self.curved_path_clearance_m, "curved_path_clearance_m"),
         ):
             _finite(value, name)
         for value, name in (
@@ -206,7 +213,11 @@ class SafetySnapshot:
             raise ValueError("candidate lease must be positive")
         if self.free_distance_m < 0.0:
             raise ValueError("free_distance_m must be non-negative")
-        if self.free_distance_360_m < 0.0 or self.position_error_bound_m < 0.0:
+        if (
+            self.free_distance_360_m < 0.0
+            or self.position_error_bound_m < 0.0
+            or self.curved_path_clearance_m < 0.0
+        ):
             raise ValueError("rotation clearance and position bound must be non-negative")
         if self.control_period_s < 0.0:
             raise ValueError("control_period_s must be non-negative")
@@ -219,6 +230,8 @@ class SafetySnapshot:
             raise ValueError("coverage_valid must be boolean")
         if not isinstance(self.coverage_360_valid, bool):
             raise ValueError("coverage_360_valid must be boolean")
+        if not isinstance(self.curved_path_coverage_valid, bool):
+            raise ValueError("curved_path_coverage_valid must be boolean")
         for value, name in (
             (self.frame_id, "frame_id"),
             (self.expected_frame_id, "expected_frame_id"),
@@ -273,7 +286,7 @@ class SafetyEvaluation:
 
 
 class SafetySupervisor:
-    """Evaluate only explicitly supported forward, curvature-free commands."""
+    """Evaluate forward commands and separately evidenced constant-curvature arcs."""
 
     def __init__(self, limits: LimitsProfile, timing: TimingProfile) -> None:
         self._limits = limits
@@ -332,16 +345,32 @@ class SafetySupervisor:
                 snapshot, STOP, "LIMITS_INVALID", ("LIMITS_INVALID",),
                 0.0, required, processing_ns
             )
-        if (
-            snapshot.candidate_omega_rps != 0.0
-            or snapshot.candidate_v_mps < 0.0
-            or snapshot.ego_speed_mps < 0.0
-        ):
+        if snapshot.candidate_v_mps < 0.0 or snapshot.ego_speed_mps < 0.0:
             reasons = ("LIMITS_INVALID",)
             return self._result(
                 snapshot, STOP, reasons[0], reasons, 0.0, required, processing_ns
             )
-        if not wheel_rates_within_limits(
+        curved = snapshot.candidate_omega_rps != 0.0
+        if curved and (
+            snapshot.candidate_v_mps <= 0.0
+            or self._limits.lateral_acceleration_max_mps2 <= 0.0
+        ):
+            return self._result(
+                snapshot, STOP, "LIMITS_INVALID", ("LIMITS_INVALID",),
+                0.0, required, processing_ns
+            )
+        if curved and not snapshot.curved_path_coverage_valid:
+            return self._result(
+                snapshot, STOP, "CURVED_PATH_UNCERTIFIED",
+                ("CURVED_PATH_UNCERTIFIED",), 0.0, required, processing_ns,
+                checked_clearance_m=snapshot.curved_path_clearance_m,
+            )
+        if not curved and abs(snapshot.candidate_omega_rps) > self._limits.yaw_rate_max_rps:
+            return self._result(
+                snapshot, STOP, "LIMITS_INVALID", ("LIMITS_INVALID",),
+                0.0, required, processing_ns
+            )
+        if not curved and not wheel_rates_within_limits(
             snapshot.candidate_v_mps,
             snapshot.candidate_omega_rps,
             self._limits.wheel_separation_m,
@@ -352,18 +381,53 @@ class SafetySupervisor:
             return self._result(
                 snapshot, STOP, reasons[0], reasons, 0.0, required, processing_ns
             )
+        checked_clearance = (
+            snapshot.curved_path_clearance_m
+            if curved
+            else snapshot.free_distance_m
+        )
         safe_speed = admissible_speed_accelerating(
-            snapshot.free_distance_m,
+            checked_clearance,
             self._limits.clearance_margin_m,
             self._limits.acceleration_delay_mps2,
             self._limits.b_forward_min_mps2,
             self._limits.response_bound_s,
             self._limits.speed_max_mps,
         )
-        if required > max(0.0, snapshot.free_distance_m - self._limits.clearance_margin_m):
+        if required > max(0.0, checked_clearance - self._limits.clearance_margin_m):
             reasons = ("BRAKING_INFEASIBLE",)
             return self._result(
-                snapshot, STOP, reasons[0], reasons, 0.0, required, processing_ns
+                snapshot, STOP, reasons[0], reasons, 0.0, required, processing_ns,
+                checked_clearance_m=checked_clearance,
+            )
+        if curved:
+            curvature = abs(
+                snapshot.candidate_omega_rps / snapshot.candidate_v_mps
+            )
+            lateral_speed_limit = math.sqrt(
+                self._limits.lateral_acceleration_max_mps2 / curvature
+            )
+            yaw_speed_limit = (
+                self._limits.yaw_rate_max_rps / curvature
+            )
+            wheel_rate_per_speed = max(
+                abs(
+                    1.0
+                    - curvature * self._limits.wheel_separation_m / 2.0
+                ),
+                abs(
+                    1.0
+                    + curvature * self._limits.wheel_separation_m / 2.0
+                ),
+            ) / self._limits.wheel_radius_m
+            wheel_speed_limit = (
+                self._limits.max_wheel_rate_radps / wheel_rate_per_speed
+            )
+            safe_speed = min(
+                safe_speed,
+                lateral_speed_limit,
+                yaw_speed_limit,
+                wheel_speed_limit,
             )
         if snapshot.candidate_v_mps <= safe_speed:
             required_candidate = stopping_distance_accelerating(
@@ -374,9 +438,16 @@ class SafetySupervisor:
             )
             return self._result(
                 snapshot, ADMIT, "NONE", ("NONE",),
-                snapshot.candidate_v_mps, required_candidate, processing_ns
+                snapshot.candidate_v_mps, required_candidate, processing_ns,
+                applied_omega=snapshot.candidate_omega_rps,
+                checked_clearance_m=checked_clearance,
             )
         limited = min(safe_speed, snapshot.candidate_v_mps)
+        limited_omega = (
+            snapshot.candidate_omega_rps * limited / snapshot.candidate_v_mps
+            if curved
+            else 0.0
+        )
         return self._result(
             snapshot, LIMIT, "COMMAND_LIMITED", ("COMMAND_LIMITED",),
             limited,
@@ -387,6 +458,8 @@ class SafetySupervisor:
                 self._limits.response_bound_s,
             ),
             processing_ns,
+            applied_omega=limited_omega,
+            checked_clearance_m=checked_clearance,
         )
 
     def _evaluate_align(
@@ -430,7 +503,14 @@ class SafetySupervisor:
                 ("ROTATION_CLEARANCE_INSUFFICIENT",), 0.0, 0.0,
                 processing_ns, checked_clearance_m=clearance
             )
-        if abs(snapshot.candidate_omega_rps) > self._limits.yaw_rate_max_rps:
+        align_yaw_limit = (
+            self._limits.align_yaw_rate_max_rps
+            if self._limits.align_yaw_rate_max_rps > 0.0
+            else self._limits.yaw_rate_max_rps
+        )
+        if abs(snapshot.candidate_omega_rps) > min(
+            self._limits.yaw_rate_max_rps, align_yaw_limit
+        ):
             return self._result(
                 snapshot, STOP, "LIMITS_INVALID", ("LIMITS_INVALID",),
                 0.0, 0.0, processing_ns, checked_clearance_m=clearance

@@ -26,6 +26,7 @@ class OptionKind(IntEnum):
     TAKE_ALTERNATE_PORTAL = 9
     KEEP_ESCAPE_ROUTE = 10
     OBSERVE_SAFE = 11
+    ADVANCE_KNOWN_ROUTE = 12
 
 
 class OptionPhase(IntEnum):
@@ -835,6 +836,7 @@ def _default_definitions() -> tuple[OptionDefinition, ...]:
         OptionDefinition(OptionKind.TAKE_ALTERNATE_PORTAL, explorer, True, False, False),
         OptionDefinition(OptionKind.KEEP_ESCAPE_ROUTE, explorer, True, False, False),
         OptionDefinition(OptionKind.OBSERVE_SAFE, explorer, False, False, False),
+        OptionDefinition(OptionKind.ADVANCE_KNOWN_ROUTE, explorer, True, False, False),
     )
 
 

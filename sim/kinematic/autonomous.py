@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 import math
 
 from hsl_core.control import PursuitConfig, make_candidate
+from hsl_core.control.regulated_pursuit import lookahead_point
 from hsl_core.control.safety import (
     ADMIT,
     ControlMode,
@@ -15,6 +16,7 @@ from hsl_core.control.safety import (
     TimingProfile,
 )
 from hsl_core.match import Role, StagePhase
+from hsl_core.perception.ekf_opponent import FilterConfig, OpponentFilter
 from hsl_core.planning import CandidateEnvelope, PlannedPath, astar
 from hsl_core.tactics import (
     OptionAuthority,
@@ -30,10 +32,11 @@ from hsl_core.tactics import (
     UtilityProfile,
 )
 from hsl_core.topology import EdgeState, NodeKind, TopologyGraph
-from hsl_core.types import MotionCandidate
+from hsl_core.types import MotionCandidate, OpponentTrack, Pose2D, TrackState
 
 from .common import Actuation, PoseEstimate
-from .match import MatchRole, PolicyInput
+from .match import MatchRole, PolicyInput, SILPolicyInput
+from .perception import extract_synthetic_opponent, line_of_sight_clear
 
 
 def _core_role(role: MatchRole) -> Role:
@@ -73,9 +76,14 @@ class P56Profile:
     rotation_minimum_scan_beams: int = 360
     rotation_range_error_bound_m: float = 0.0
     control_period_s: float = 0.05
-    lookahead_m: float = 0.25
+    lookahead_m: float = 0.75
     lateral_acceleration_max_mps2: float = 0.5
     goal_tolerance_m: float = 0.10
+    curvature_range_error_bound_m: float = 0.0
+    curvature_minimum_scan_beams: int = 360
+    curvature_sample_step_m: float = 0.02
+    smooth_turn_heading_limit_rad: float = 0.6
+    opponent_threat_distance_m: float = 1.5
 
     def __post_init__(self) -> None:
         if not self.profile_id.strip() or not self.parameters_id.strip():
@@ -108,6 +116,9 @@ class P56Profile:
             (self.lookahead_m, "lookahead_m"),
             (self.lateral_acceleration_max_mps2, "lateral_acceleration_max_mps2"),
             (self.goal_tolerance_m, "goal_tolerance_m"),
+            (self.curvature_sample_step_m, "curvature_sample_step_m"),
+            (self.smooth_turn_heading_limit_rad, "smooth_turn_heading_limit_rad"),
+            (self.opponent_threat_distance_m, "opponent_threat_distance_m"),
         ):
             if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be finite and positive")
@@ -124,6 +135,12 @@ class P56Profile:
         ):
             raise ValueError("rotation_minimum_scan_beams must be an integer >= 4")
         if (
+            not isinstance(self.curvature_minimum_scan_beams, int)
+            or isinstance(self.curvature_minimum_scan_beams, bool)
+            or self.curvature_minimum_scan_beams < 4
+        ):
+            raise ValueError("curvature_minimum_scan_beams must be an integer >= 4")
+        if (
             not math.isfinite(self.ego_yaw_rate_tolerance_rps)
             or self.ego_yaw_rate_tolerance_rps < 0.0
         ):
@@ -133,6 +150,11 @@ class P56Profile:
             or self.rotation_range_error_bound_m < 0.0
         ):
             raise ValueError("rotation_range_error_bound_m must be finite and non-negative")
+        if (
+            not math.isfinite(self.curvature_range_error_bound_m)
+            or self.curvature_range_error_bound_m < 0.0
+        ):
+            raise ValueError("curvature_range_error_bound_m must be finite and non-negative")
 
 
 @dataclass(frozen=True)
@@ -218,7 +240,10 @@ class KinematicAutonomousPolicy:
                 wheel_radius_m=profile.wheel_radius_m,
                 max_wheel_rate_radps=profile.max_wheel_rate_radps,
                 speed_max_mps=profile.speed_max_mps,
-                yaw_rate_max_rps=profile.align_yaw_rate_max_rps,
+                yaw_rate_max_rps=max(
+                    profile.align_yaw_rate_max_rps,
+                    profile.planner_yaw_rate_max_rps,
+                ),
                 b_forward_min_mps2=profile.minimum_braking_deceleration_mps2,
                 response_bound_s=profile.response_bound_s,
                 clearance_margin_m=profile.clearance_margin_m,
@@ -226,6 +251,8 @@ class KinematicAutonomousPolicy:
                 rotation_clearance_margin_m=profile.rotation_clearance_margin_m,
                 linear_rest_tolerance_mps=profile.linear_rest_tolerance_mps,
                 angular_acceleration_max_rps2=profile.angular_acceleration_max_rps2,
+                lateral_acceleration_max_mps2=profile.lateral_acceleration_max_mps2,
+                align_yaw_rate_max_rps=profile.align_yaw_rate_max_rps,
             ),
             TimingProfile(
                 candidate_lease_s=profile.candidate_lease_s,
@@ -240,6 +267,9 @@ class KinematicAutonomousPolicy:
         self._safety_latched = False
         self._last_route_rejection = ""
         self._last_policy_stamp_ns: int | None = None
+        self._opponent_filter = OpponentFilter(FilterConfig(confirmation_count=2))
+        self._opponent_filter_identity: tuple[int, str] | None = None
+        self._opponent_track: OpponentTrack | None = None
         self._control_period_s = profile.control_period_s
         self.last_trace = PolicyCycleTrace(
             "NOT_RUN", None, "", "", 0, 0.0, 0.0, None, "",
@@ -265,6 +295,7 @@ class KinematicAutonomousPolicy:
             return self._stop("missing_stage_pose_or_topology", frame)
         if not self._coherent(frame, estimate, graph):
             return self._stop("incoherent_observation_or_versions", frame)
+        self._update_opponent_track(frame, estimate, graph)
         now_ns = frame.stamp_ns
         coverage_fraction, free_distance, forward_coverage = self._forward_clearance(
             frame
@@ -451,6 +482,67 @@ class KinematicAutonomousPolicy:
             and match.meta.state_stamp_ns <= frame.stamp_ns
         )
 
+    @property
+    def opponent_track(self) -> OpponentTrack | None:
+        return self._opponent_track
+
+    def _update_opponent_track(
+        self,
+        frame: PolicyInput,
+        estimate: PoseEstimate,
+        graph: TopologyGraph,
+    ) -> None:
+        if not isinstance(frame, SILPolicyInput):
+            self._opponent_filter.reset()
+            self._opponent_filter_identity = None
+            self._opponent_track = None
+            return
+        identity = (graph.map_version, estimate.localization_epoch)
+        if self._opponent_filter_identity != identity:
+            self._opponent_filter.reset()
+            self._opponent_filter_identity = identity
+            self._opponent_track = None
+        detections = extract_synthetic_opponent(
+            frame.observation,
+            estimate.pose,
+            frame.static_segments,
+            stamp_s=frame.observation.stamp_s,
+            source_id=f"sil-lidar:{frame.role.value}",
+            map_version=graph.map_version,
+            localization_epoch=estimate.localization_epoch,
+            opponent_radius_m=frame.opponent_radius_m,
+        )
+        stamp_s = frame.stamp_ns / 1e9
+        if not self._opponent_filter.initialized:
+            if len(detections) != 1:
+                self._opponent_track = None
+                return
+            output = self._opponent_filter.initialize(detections[0])
+        else:
+            output = self._opponent_filter.update(detections, stamp_s)
+        if output.last_measurement_s < 0.0:
+            self._opponent_track = None
+            return
+        state_x, state_y, velocity_x, velocity_y = output.state_vector
+        self._opponent_track = OpponentTrack(
+            track_id=f"sil-opponent:{frame.role.value}",
+            pose=Pose2D(state_x, state_y, 0.0),
+            velocity_x_mps=velocity_x,
+            velocity_y_mps=velocity_y,
+            covariance=output.covariance,
+            yaw_valid=False,
+            last_measurement_s=output.last_measurement_s,
+            valid_until_s=(
+                output.last_measurement_s
+                + self._opponent_filter.config.lost_timeout_s
+            ),
+            localization_epoch=estimate.localization_epoch,
+            map_version=graph.map_version,
+            state=output.state,
+            source_id=f"sil-lidar:{frame.role.value}",
+            frame_id=estimate.frame_id,
+        )
+
     def _context(
         self,
         frame: PolicyInput,
@@ -470,6 +562,12 @@ class KinematicAutonomousPolicy:
             for zone_id in (state.own_start_zone_id, state.target_zone_id)
             if zone_id
         )
+        if (
+            isinstance(frame, SILPolicyInput)
+            and frame.simultaneous_sil
+            and frame.synthetic_goal_zone_id
+        ):
+            accepted_zones = (*accepted_zones, frame.synthetic_goal_zone_id)
         return OptionContext(
             now_ns=frame.stamp_ns,
             stage_id=state.meta.stage_id,
@@ -565,7 +663,11 @@ class KinematicAutonomousPolicy:
         estimate = frame.pose_estimate
         if estimate is None:
             return [], {}
-        if self.role == MatchRole.EXPLORER:
+        if self._safety_latched:
+            return [], {}
+        if self.role == MatchRole.EXPLORER and not (
+            isinstance(frame, SILPolicyInput) and frame.simultaneous_sil
+        ):
             if coverage_fraction < self.profile.minimum_observation_coverage:
                 return [], {}
             proposal = self._make_proposal(
@@ -582,59 +684,31 @@ class KinematicAutonomousPolicy:
                 },
             )
             return [proposal], {}
-
-        if not forward_coverage or self._safety_latched:
+        if not forward_coverage:
             return [], {}
+
+        if self.role == MatchRole.EXPLORER:
+            return self._explorer_proposals(
+                frame, graph, coverage_fraction, forward_coverage
+            )
+
+        if isinstance(frame, SILPolicyInput) and frame.simultaneous_sil:
+            rival = self._usable_opponent_track(frame)
+            if rival is not None:
+                return self._guardian_pursuit_proposal(
+                    frame, graph, rival, coverage_fraction
+                )
+
         proposals: list[OptionProposal] = []
         paths: dict[int, PlannedPath] = {}
-        graph_edges = {edge.edge_id: edge for edge in graph.edges}
         for node in graph.nodes:
             if node.kind not in (NodeKind.PORTAL, NodeKind.FRONTIER):
                 continue
             if node.node_id in self._completed_nodes:
                 continue
-            start_nodes = sorted(
-                graph.nodes,
-                key=lambda item: (
-                    math.hypot(
-                        item.x_m - estimate.pose.x_m,
-                        item.y_m - estimate.pose.y_m,
-                    ),
-                    item.node_id,
-                ),
-            )
-            path = None
-            route_error = "no_versioned_open_path"
-            for start in start_nodes:
-                try:
-                    candidate_path = astar(graph, start.node_id, node.node_id)
-                except ValueError as error:
-                    route_error = str(error)
-                    continue
-                if not candidate_path.edge_ids or any(
-                    graph_edges[edge_id].state != EdgeState.OPEN
-                    for edge_id in candidate_path.edge_ids
-                ):
-                    route_error = "route_contains_non_open_edge"
-                    continue
-                try:
-                    candidate_path = self._clip_path_to_pose(
-                        candidate_path,
-                        estimate,
-                        min(
-                            graph_edges[edge_id].min_clearance_radius_m
-                            for edge_id in candidate_path.edge_ids
-                        ),
-                    )
-                except ValueError as error:
-                    route_error = str(error)
-                    continue
-                path = candidate_path
-                break
+            path = self._path_to_node(frame, graph, node.node_id)
             if path is None:
-                self._last_route_rejection = (
-                    f"no_supported_open_route_to_node:{node.node_id}:{route_error}"
-                )
+                self._last_route_rejection = f"no_supported_open_route_to_node:{node.node_id}"
                 continue
             paths[node.node_id] = path
             distance = math.hypot(
@@ -671,6 +745,303 @@ class KinematicAutonomousPolicy:
             )
             proposals.append(proposal)
         return proposals, paths
+
+    def _path_to_node(
+        self, frame: PolicyInput, graph: TopologyGraph, node_id: int
+    ) -> PlannedPath | None:
+        estimate = frame.pose_estimate
+        if estimate is None:
+            return None
+        graph_edges = {edge.edge_id: edge for edge in graph.edges}
+        starts = sorted(
+            graph.nodes,
+            key=lambda node: (
+                math.hypot(node.x_m - estimate.pose.x_m, node.y_m - estimate.pose.y_m),
+                node.node_id,
+            ),
+        )
+        for start in starts:
+            try:
+                candidate = astar(graph, start.node_id, node_id)
+            except ValueError:
+                continue
+            if not candidate.edge_ids or any(
+                graph_edges[edge_id].state != EdgeState.OPEN
+                for edge_id in candidate.edge_ids
+            ):
+                continue
+            clearance = min(
+                graph_edges[edge_id].min_clearance_radius_m
+                for edge_id in candidate.edge_ids
+            )
+            try:
+                return self._clip_path_to_pose(candidate, estimate, clearance)
+            except ValueError:
+                continue
+        return None
+
+    def _usable_opponent_track(self, frame: PolicyInput) -> OpponentTrack | None:
+        track = self._opponent_track
+        estimate = frame.pose_estimate
+        graph = frame.topology_graph
+        now_s = frame.stamp_ns / 1e9
+        if (
+            track is None
+            or estimate is None
+            or graph is None
+            or track.state != TrackState.TRACKED
+            or track.valid_until_s <= now_s
+            or track.map_version != graph.map_version
+            or track.localization_epoch != estimate.localization_epoch
+        ):
+            return None
+        return track
+
+    def _guardian_pursuit_proposal(
+        self,
+        frame: PolicyInput,
+        graph: TopologyGraph,
+        rival: OpponentTrack,
+        coverage_fraction: float,
+    ) -> tuple[list[OptionProposal], dict[int, PlannedPath]]:
+        node = min(
+            graph.nodes,
+            key=lambda item: (
+                math.hypot(item.x_m - rival.pose.x_m, item.y_m - rival.pose.y_m),
+                item.node_id,
+            ),
+        )
+        path = self._path_to_node(frame, graph, node.node_id)
+        if path is None:
+            self._last_route_rejection = "no_supported_open_route_to_opponent_belief"
+            return [], {}
+        distance = math.hypot(
+            rival.pose.x_m - frame.pose_estimate.pose.x_m,
+            rival.pose.y_m - frame.pose_estimate.pose.y_m,
+        )
+        evidence = f"opponent-track:{rival.track_id}:{frame.stamp_ns}"
+        proposal = self._make_proposal(
+            frame,
+            OptionKind.PRESSURE_ROUTE,
+            target_node_id=node.node_id,
+            guards=(TacticalGuard.USEFUL_RIVAL,),
+            evidence=evidence,
+            features={
+                "capture_opportunity": 0.0,
+                "portal_time_advantage": 0.0,
+                "observation_gain": coverage_fraction,
+                "pursuit_value": 1.0 / (1.0 + path.cost),
+                "duration_cost": min(
+                    1.0,
+                    distance
+                    / max(
+                        self.profile.speed_max_mps
+                        * max(0.1, (frame.match_state.stage_ends_at_ns - frame.stamp_ns) / 1e9),
+                        1e-9,
+                    ),
+                ),
+            },
+        )
+        return [proposal], {node.node_id: path}
+
+    def _explorer_proposals(
+        self,
+        frame: PolicyInput,
+        graph: TopologyGraph,
+        coverage_fraction: float,
+        forward_coverage: bool,
+    ) -> tuple[list[OptionProposal], dict[int, PlannedPath]]:
+        if (
+            not isinstance(frame, SILPolicyInput)
+            or not frame.simultaneous_sil
+            or not forward_coverage
+            or frame.synthetic_goal_node_id is None
+            or not frame.synthetic_goal_zone_id.startswith("sil-fixture:")
+        ):
+            return [], {}
+        rival = self._usable_opponent_track(frame)
+        if rival is None:
+            path = self._path_to_node(
+                frame, graph, frame.synthetic_goal_node_id
+            )
+            if path is None:
+                self._last_route_rejection = "no_supported_open_unobserved_route"
+                return [], {}
+            proposal = self._make_proposal(
+                frame,
+                OptionKind.ADVANCE_KNOWN_ROUTE,
+                target_node_id=frame.synthetic_goal_node_id,
+                guards=(TacticalGuard.VERSIONED_OPEN_ROUTE,),
+                evidence=(
+                    f"sil-open-route:{graph.map_version}:"
+                    f"{graph.topology_version}:{path.goal_node_id}"
+                ),
+                features={
+                    "base_progress": min(1.0, 1.0 / (1.0 + path.cost)),
+                    "visibility_loss": 0.0,
+                    "alternative_exits": 0.0,
+                    "escape_safety": 0.0,
+                    "observation_gain": coverage_fraction,
+                    "capture_risk": 0.0,
+                    "duration_cost": min(1.0, path.cost),
+                },
+            )
+            return [proposal], {frame.synthetic_goal_node_id: path}
+
+        estimate = frame.pose_estimate
+        if estimate is None:
+            return [], {}
+        rival_distance = math.hypot(
+            rival.pose.x_m - estimate.pose.x_m,
+            rival.pose.y_m - estimate.pose.y_m,
+        )
+        target_node_id = frame.synthetic_goal_node_id
+        target_kind = OptionKind.ADVANCE_BASE
+        urgency_rank = None
+        urgency_evidence_id = ""
+        if rival_distance <= self.profile.opponent_threat_distance_m:
+            candidate_routes: list[tuple[bool, float, int, PlannedPath]] = []
+            for node in graph.nodes:
+                if node.node_id in self._completed_nodes:
+                    continue
+                path = self._path_to_node(frame, graph, node.node_id)
+                if path is None:
+                    continue
+                distance_from_rival = math.hypot(
+                    node.x_m - rival.pose.x_m, node.y_m - rival.pose.y_m
+                )
+                hidden = not line_of_sight_clear(
+                    (rival.pose.x_m, rival.pose.y_m),
+                    (node.x_m, node.y_m),
+                    frame.static_segments,
+                )
+                score = distance_from_rival - 0.25 * path.cost
+                candidate_routes.append((hidden, score, node.node_id, path))
+            if not candidate_routes:
+                return [], {}
+            hidden_routes = [route for route in candidate_routes if route[0]]
+            selected_route = max(
+                hidden_routes or candidate_routes,
+                key=lambda route: (route[1], -route[2]),
+            )
+            target_node_id = selected_route[2]
+            target_kind = (
+                OptionKind.BREAK_LOS
+                if selected_route[0]
+                else OptionKind.KEEP_ESCAPE_ROUTE
+            )
+            urgency_rank = max(
+                1,
+                min(
+                    255,
+                    round(
+                        255.0
+                        * (self.profile.opponent_threat_distance_m - rival_distance)
+                        / self.profile.opponent_threat_distance_m
+                    ),
+                ),
+            )
+            urgency_evidence_id = (
+                f"opponent-threat:{rival.track_id}:{frame.stamp_ns}:"
+                f"distance={rival_distance:.6f}"
+            )
+
+        path = self._path_to_node(frame, graph, target_node_id)
+        if path is None:
+            self._last_route_rejection = (
+                f"no_supported_open_explorer_route:{target_node_id}"
+            )
+            return [], {}
+        goal_node = next(node for node in graph.nodes if node.node_id == target_node_id)
+        distance_to_rival = math.hypot(
+            goal_node.x_m - rival.pose.x_m, goal_node.y_m - rival.pose.y_m
+        )
+        hidden = not line_of_sight_clear(
+            (rival.pose.x_m, rival.pose.y_m),
+            (goal_node.x_m, goal_node.y_m),
+            frame.static_segments,
+        )
+        if target_kind == OptionKind.ADVANCE_BASE:
+            guards = (
+                TacticalGuard.ACCEPTED_GOAL,
+                TacticalGuard.GOAL_THREAT_ACCEPTABLE,
+            )
+            goal_zone_id = frame.synthetic_goal_zone_id
+            evidence = (
+                f"sil-fixture-goal:{frame.synthetic_goal_zone_id}:"
+                f"track:{rival.track_id}:{frame.stamp_ns}"
+            )
+        elif target_kind == OptionKind.ADVANCE_KNOWN_ROUTE:
+            guards = (TacticalGuard.VERSIONED_OPEN_ROUTE,)
+            goal_zone_id = ""
+            evidence = (
+                f"sil-open-route:{graph.map_version}:"
+                f"{graph.topology_version}:{target_node_id}"
+            )
+        elif target_kind == OptionKind.BREAK_LOS:
+            guards = (
+                TacticalGuard.IMMEDIATE_TRAP_RISK,
+                TacticalGuard.BREAK_LOS_FEASIBLE,
+            )
+            goal_zone_id = ""
+            evidence = f"sil-break-los:{rival.track_id}:{frame.stamp_ns}"
+        else:
+            guards = (
+                TacticalGuard.IMMEDIATE_TRAP_RISK,
+                TacticalGuard.VERIFIED_ESCAPE_ROUTE,
+            )
+            goal_zone_id = ""
+            evidence = f"sil-escape-route:{rival.track_id}:{frame.stamp_ns}"
+        proposal = self._make_proposal(
+            frame,
+            target_kind,
+            target_node_id=target_node_id,
+            guards=guards,
+            evidence=evidence,
+            features={
+                "base_progress": min(1.0, 1.0 / (1.0 + path.cost)),
+                "visibility_loss": float(hidden),
+                "alternative_exits": min(
+                    1.0,
+                    sum(
+                        edge.state == EdgeState.OPEN
+                        and target_node_id in (edge.from_node, edge.to_node)
+                        for edge in graph.edges
+                    )
+                    / 4.0,
+                ),
+                "escape_safety": min(
+                    1.0,
+                    distance_to_rival / self.profile.opponent_threat_distance_m,
+                ),
+                "observation_gain": coverage_fraction,
+                "capture_risk": max(
+                    0.0,
+                    min(
+                        1.0,
+                        (self.profile.opponent_threat_distance_m - distance_to_rival)
+                        / self.profile.opponent_threat_distance_m,
+                    ),
+                ),
+                "duration_cost": min(
+                    1.0,
+                    path.cost
+                    / max(
+                        self.profile.speed_max_mps
+                        * max(
+                            0.1,
+                            (frame.match_state.stage_ends_at_ns - frame.stamp_ns)
+                            / 1e9,
+                        ),
+                        1e-9,
+                    ),
+                ),
+            },
+            goal_zone_id=goal_zone_id,
+            urgency_rank=urgency_rank,
+            urgency_evidence_id=urgency_evidence_id,
+        )
+        return [proposal], {target_node_id: path}
 
     def _clip_path_to_pose(
         self,
@@ -747,6 +1118,9 @@ class KinematicAutonomousPolicy:
         guards: tuple[TacticalGuard, ...],
         evidence: str,
         features: dict[str, float],
+        goal_zone_id: str = "",
+        urgency_rank: int | None = None,
+        urgency_evidence_id: str = "",
     ) -> OptionProposal:
         match = frame.match_state
         graph = frame.topology_graph
@@ -775,6 +1149,7 @@ class KinematicAutonomousPolicy:
             target_node_id=target_node_id if kind != OptionKind.OBSERVE_SAFE else 0,
             position_tolerance_m=self.profile.goal_tolerance_m,
             yaw_tolerance_rad=0.2,
+            goal_zone_id=goal_zone_id,
         )
         return OptionProposal(
             stable_key=stable_key,
@@ -784,6 +1159,8 @@ class KinematicAutonomousPolicy:
             guard_facts=guards,
             guard_evidence=tuple((guard, evidence) for guard in guards),
             features=tuple(features.items()),
+            urgency_rank=urgency_rank,
+            urgency_evidence_id=urgency_evidence_id,
         )
 
     def _hold_proposal(
@@ -889,7 +1266,14 @@ class KinematicAutonomousPolicy:
                 "missing_planning_inputs", goal.kind, selection_reason, "missing_inputs"
             )
         try:
-            candidate, control_mode, coverage_360_valid, free_distance_360 = (
+            (
+                candidate,
+                control_mode,
+                coverage_360_valid,
+                free_distance_360,
+                curved_path_coverage_valid,
+                curved_path_clearance,
+            ) = (
                 self._stop_turn_go_candidate(
                     frame, path, goal, generation
                 )
@@ -941,6 +1325,8 @@ class KinematicAutonomousPolicy:
                     ego_angular_velocity_rps=(
                         frame.pose_estimate.angular_velocity_rps
                     ),
+                    curved_path_clearance_m=curved_path_clearance,
+                    curved_path_coverage_valid=curved_path_coverage_valid,
                 ),
                 frame.stamp_ns,
                 1,
@@ -994,7 +1380,7 @@ class KinematicAutonomousPolicy:
         path: PlannedPath,
         goal: OptionGoal,
         generation: int,
-    ) -> tuple[MotionCandidate, ControlMode, bool, float]:
+    ) -> tuple[MotionCandidate, ControlMode, bool, float, bool, float]:
         estimate = frame.pose_estimate
         if estimate is None:
             raise ValueError("pose estimate is required for stop-turn-go control")
@@ -1009,21 +1395,53 @@ class KinematicAutonomousPolicy:
         )
         if waypoint is None:
             raise ValueError("planned path has no forward waypoint")
+        target = lookahead_point(
+            path,
+            estimate.pose,
+            self.profile.lookahead_m,
+        )
         desired_yaw = math.atan2(
-            waypoint[1] - current[1], waypoint[0] - current[0]
+            target[1] - current[1], target[0] - current[0]
         )
         yaw_error = math.atan2(
             math.sin(desired_yaw - estimate.pose.theta_rad),
             math.cos(desired_yaw - estimate.pose.theta_rad),
         )
         alignment_needed = (
-            abs(yaw_error) > self.profile.align_yaw_tolerance_rad
-            or abs(estimate.angular_velocity_rps) > 1e-9
+            abs(yaw_error) > self.profile.smooth_turn_heading_limit_rad
+            or (
+                abs(estimate.linear_velocity_mps)
+                <= self.profile.linear_rest_tolerance_mps
+                and abs(estimate.angular_velocity_rps) > 1e-3
+            )
         )
         now_s = frame.stamp_ns / 1e9
         if alignment_needed:
             if self._control_period_s <= 0.0:
                 raise ValueError("alignment control period must be positive")
+            if (
+                abs(estimate.linear_velocity_mps)
+                > self.profile.linear_rest_tolerance_mps
+            ):
+                return (
+                    MotionCandidate(
+                        0.0,
+                        0.0,
+                        now_s,
+                        now_s + self.profile.candidate_lease_s,
+                        self.profile.candidate_lease_s,
+                        goal.option_instance_id,
+                        path.map_version,
+                        path.localization_epoch,
+                        path.topology_version,
+                        generation,
+                    ),
+                    ControlMode.TRACK_PATH,
+                    False,
+                    0.0,
+                    False,
+                    0.0,
+                )
             coverage_360_valid, free_distance_360 = self._rotation_clearance(frame)
             if abs(yaw_error) <= self.profile.align_yaw_tolerance_rad:
                 requested_omega = 0.0
@@ -1067,15 +1485,12 @@ class KinematicAutonomousPolicy:
                 ControlMode.ALIGN,
                 coverage_360_valid,
                 free_distance_360,
+                False,
+                0.0,
             )
 
-        segment_path = replace(
-            path,
-            polyline_xy_m=(current, waypoint),
-            cost=math.dist(current, waypoint),
-        )
         candidate = make_candidate(
-            segment_path,
+            path,
             estimate.pose,
             config=PursuitConfig(
                 lookahead_m=self.profile.lookahead_m,
@@ -1089,7 +1504,7 @@ class KinematicAutonomousPolicy:
             source_id=goal.option_instance_id,
             lease_generation=generation,
         )
-        distance = math.dist(current, waypoint)
+        distance = math.dist(current, path.polyline_xy_m[-1])
         speed_bound = math.sqrt(
             2.0 * self.profile.minimum_braking_deceleration_mps2 * distance
         )
@@ -1100,10 +1515,214 @@ class KinematicAutonomousPolicy:
                 self.profile.speed_max_mps,
                 speed_bound,
             ),
-            angular_velocity_rps=0.0,
+            angular_velocity_rps=(
+                candidate.angular_velocity_rps
+                * min(
+                    candidate.linear_velocity_mps,
+                    self.profile.speed_max_mps,
+                    speed_bound,
+                )
+                / candidate.linear_velocity_mps
+                if candidate.linear_velocity_mps > 0.0
+                else 0.0
+            ),
         )
         coverage_360_valid, free_distance_360 = self._rotation_clearance(frame)
-        return candidate, ControlMode.TRACK_PATH, coverage_360_valid, free_distance_360
+        curved_valid, curved_clearance = (
+            self._curved_path_clearance(frame, candidate)
+            if candidate.angular_velocity_rps != 0.0
+            else (False, 0.0)
+        )
+        if candidate.angular_velocity_rps != 0.0 and curved_valid:
+            required_stop = (
+                candidate.linear_velocity_mps * self.profile.response_bound_s
+                + candidate.linear_velocity_mps ** 2
+                / (2.0 * self.profile.minimum_braking_deceleration_mps2)
+            )
+            if curved_clearance < required_stop + self.profile.clearance_margin_m:
+                if (
+                    abs(estimate.linear_velocity_mps)
+                    <= self.profile.linear_rest_tolerance_mps
+                ):
+                    waypoint_yaw_error = math.atan2(
+                        math.sin(
+                            math.atan2(
+                                waypoint[1] - current[1],
+                                waypoint[0] - current[0],
+                            )
+                            - estimate.pose.theta_rad
+                        ),
+                        math.cos(
+                            math.atan2(
+                                waypoint[1] - current[1],
+                                waypoint[0] - current[0],
+                            )
+                            - estimate.pose.theta_rad
+                        ),
+                    )
+                    rotation_coverage, rotation_clearance = self._rotation_clearance(
+                        frame
+                    )
+                    if abs(waypoint_yaw_error) > self.profile.align_yaw_tolerance_rad:
+                        requested_omega = math.copysign(
+                            min(
+                                self.profile.align_yaw_rate_max_rps,
+                                math.sqrt(
+                                    2.0
+                                    * self.profile.angular_acceleration_max_rps2
+                                    * abs(waypoint_yaw_error)
+                                ),
+                            ),
+                            waypoint_yaw_error,
+                        )
+                        max_omega_delta = (
+                            self.profile.angular_acceleration_max_rps2
+                            * self._control_period_s
+                        )
+                        angular = max(
+                            estimate.angular_velocity_rps - max_omega_delta,
+                            min(
+                                estimate.angular_velocity_rps + max_omega_delta,
+                                requested_omega,
+                            ),
+                        )
+                    else:
+                        angular = 0.0
+                    return (
+                        MotionCandidate(
+                            0.0,
+                            angular,
+                            now_s,
+                            now_s + self.profile.candidate_lease_s,
+                            self.profile.candidate_lease_s,
+                            goal.option_instance_id,
+                            path.map_version,
+                            path.localization_epoch,
+                            path.topology_version,
+                            generation,
+                        ),
+                        ControlMode.ALIGN,
+                        rotation_coverage,
+                        rotation_clearance,
+                        False,
+                        0.0,
+                    )
+                return (
+                    replace(candidate, linear_velocity_mps=0.0, angular_velocity_rps=0.0),
+                    ControlMode.TRACK_PATH,
+                    coverage_360_valid,
+                    free_distance_360,
+                    False,
+                    0.0,
+                )
+        return (
+            candidate,
+            ControlMode.TRACK_PATH,
+            coverage_360_valid,
+            free_distance_360,
+            curved_valid,
+            curved_clearance,
+        )
+
+    def _curved_path_clearance(
+        self, frame: PolicyInput, candidate: MotionCandidate
+    ) -> tuple[bool, float]:
+        if not isinstance(frame, SILPolicyInput):
+            return False, 0.0
+        observation = frame.observation
+        estimate = frame.pose_estimate
+        count = len(observation.ranges_m)
+        if (
+            estimate is None
+            or count < self.profile.curvature_minimum_scan_beams
+            or len(observation.coverage_mask) != count
+            or not all(observation.coverage_mask)
+            or candidate.linear_velocity_mps <= 0.0
+            or candidate.angular_velocity_rps == 0.0
+        ):
+            return False, 0.0
+
+        step = self.profile.curvature_sample_step_m
+        tube_radius = (
+            self.profile.robot_radius_m
+            + estimate.position_error_bound_m
+            + self.profile.curvature_range_error_bound_m
+            + frame.opponent_speed_bound_mps
+            * (
+                self.profile.response_bound_s
+                + candidate.linear_velocity_mps
+                / self.profile.minimum_braking_deceleration_mps2
+            )
+        )
+        max_range = max(observation.ranges_m)
+        horizon = min(
+            max(0.0, max_range - tube_radius),
+            max(0.5, 2.0 * self.profile.lookahead_m),
+        )
+        if horizon < step:
+            return True, 0.0
+
+        curvature = candidate.angular_velocity_rps / candidate.linear_velocity_mps
+        half_beam = math.pi / count
+        angles = tuple(-math.pi + 2.0 * math.pi * index / count for index in range(count))
+        certified_distance = 0.0
+        sample_count = math.ceil(horizon / step)
+        for sample in range(1, sample_count + 1):
+            arc_distance = min(sample * step, horizon)
+            angle = curvature * arc_distance
+            if abs(curvature) <= 1e-12:
+                x_local, y_local = arc_distance, 0.0
+            else:
+                x_local = math.sin(angle) / curvature
+                y_local = (1.0 - math.cos(angle)) / curvature
+            radial_distance = math.hypot(x_local, y_local)
+            if radial_distance <= tube_radius + step:
+                certified_distance = max(0.0, arc_distance - step / 2.0)
+                continue
+            center_bearing = math.atan2(y_local, x_local)
+            inflated_radius = (
+                tube_radius
+                + step / 2.0
+                + radial_distance * math.sin(half_beam)
+            )
+            angular_radius = math.asin(
+                min(1.0, inflated_radius / radial_distance)
+            )
+            beams = [
+                (index, self._angle_difference(angle, center_bearing))
+                for index, angle in enumerate(angles)
+                if abs(self._angle_difference(angle, center_bearing))
+                <= angular_radius + 1e-12
+            ]
+            if not beams:
+                break
+            point_clear = True
+            for index, delta in beams:
+                perpendicular_sq = (
+                    radial_distance * math.sin(delta)
+                ) ** 2
+                discriminant = inflated_radius * inflated_radius - perpendicular_sq
+                if discriminant < 0.0:
+                    continue
+                near_intersection = (
+                    radial_distance * math.cos(delta)
+                    - math.sqrt(max(0.0, discriminant))
+                )
+                range_lower_bound = (
+                    observation.ranges_m[index]
+                    - self.profile.curvature_range_error_bound_m
+                )
+                if range_lower_bound < max(0.0, near_intersection):
+                    point_clear = False
+                    break
+            if not point_clear:
+                break
+            certified_distance = max(0.0, arc_distance - step / 2.0)
+        return True, certified_distance
+
+    @staticmethod
+    def _angle_difference(first: float, second: float) -> float:
+        return (first - second + math.pi) % (2.0 * math.pi) - math.pi
 
     def _execute_observation_option(
         self,

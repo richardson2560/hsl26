@@ -70,6 +70,9 @@ _REQUIRED_GUARDS = {
     OptionKind.OBSERVE_SAFE: (
         TacticalGuard.INFORMATIVE_SAFE_OBSERVATION,
     ),
+    OptionKind.ADVANCE_KNOWN_ROUTE: (
+        TacticalGuard.VERSIONED_OPEN_ROUTE,
+    ),
 }
 _UNSET = object()
 
@@ -251,6 +254,7 @@ def _fallback(role):
         (Role.EXPLORER, OptionKind.BREAK_LOS, 0),
         (Role.EXPLORER, OptionKind.TAKE_ALTERNATE_PORTAL, 1),
         (Role.EXPLORER, OptionKind.ADVANCE_BASE, 2),
+        (Role.EXPLORER, OptionKind.ADVANCE_KNOWN_ROUTE, 2),
         (Role.EXPLORER, OptionKind.OBSERVE_SAFE, 3),
     ],
 )

@@ -36,6 +36,7 @@ class TacticalGuard(IntEnum):
     ACCEPTED_GOAL = 12
     GOAL_THREAT_ACCEPTABLE = 13
     INFORMATIVE_SAFE_OBSERVATION = 14
+    VERSIONED_OPEN_ROUTE = 15
 
 
 @dataclass(frozen=True)
@@ -618,6 +619,9 @@ def _required_guards(
                 TacticalGuard.ACCEPTED_GOAL,
                 TacticalGuard.GOAL_THREAT_ACCEPTABLE,
             },
+            OptionKind.ADVANCE_KNOWN_ROUTE: {
+                TacticalGuard.VERSIONED_OPEN_ROUTE,
+            },
             OptionKind.OBSERVE_SAFE: {
                 TacticalGuard.INFORMATIVE_SAFE_OBSERVATION
             },
@@ -693,6 +697,7 @@ def _priority(
     return {
         OptionKind.TAKE_ALTERNATE_PORTAL: 1,
         OptionKind.ADVANCE_BASE: 2,
+        OptionKind.ADVANCE_KNOWN_ROUTE: 2,
         OptionKind.OBSERVE_SAFE: 3,
     }.get(kind)
 

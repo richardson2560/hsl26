@@ -8,6 +8,13 @@ release-tool paths.
 sequence requires corrections. This report is an engineering review, not a
 gate acceptance.
 
+**Implementation follow-up:** the original gap analysis predates the optional
+P5.6 simultaneous-duel SIL profile. That profile now supplies role-scoped
+duel stages, scan-residual tracking, fixture-only movement for both roles,
+and a separately certified constant-curvature safety path. Its tests do not
+change this audit's G4/G5/G6 dispositions or the need for a complete accepted
+baseline; see the current P5.6 implementation/evidence report for scope.
+
 ## 1. Executive conclusion
 
 The Phase 6 preparation was correct to keep learning disabled and to leave the
