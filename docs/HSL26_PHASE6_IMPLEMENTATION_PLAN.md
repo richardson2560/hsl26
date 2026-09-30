@@ -2,8 +2,9 @@
 
 **Revision:** 1.0 · **Date:** 2026-09-28  
 **Authority:** `HSL26_TECHNICAL_SPECIFICATION.md` §§14-17; `HSL26_FINAL_ARCHITECTURE.md`; `HSL26_IMPLEMENTATION_ROADMAP.md`; `HSL26_PHASE6_LEARNING_AND_RELEASE.md`.  
-**Preparation decision:** `PREPARED_WITH_P5_G4_INTEGRATION_GAP`  
-**Current scope:** P6.0 environment and contract preparation only; no physical robot.
+**Preparation decision:** `SIL_P6.4_P6.5_IMPLEMENTED_FORMAL_G4_G6_BLOCKED`
+
+**Current scope:** Software-in-the-loop release preparation and rehearsal only; no physical robot.
 
 ## 1. Purpose, entry conditions and limits
 
@@ -117,8 +118,8 @@ a concrete implementation and measured need require them.
 | P6.1 Dataset and abstraction | Schema/collector contract work may start in parallel; empirical dataset blocked until accepted baseline | Versioned role/feature/state/option/outcome schemas; immutable transition records including cancellation, safety interventions and censoring; independent map/opponent/seed bank IDs and split manifest | Schema/hash tests may pass before G4. Dataset validity, split integrity, and promotion-quality counts require accepted baseline episodes and provenance |
 | P6.2 Offline values | Pure implementation and normative fixtures may start in parallel; empirical interpretation waits for P6.1 data | Positive immutable Dirichlet prior/posterior; continuous-time discounted option return and value update; terminal/no-bootstrap and failures | T18/T27 and §15.2 fixtures; fixture tests do not establish data quality, learned improvement, or G5 |
 | P6.3 Bounded evolution and shadow | Optional; blocked until accepted baseline, eligible P6.1 data, and P6.2 | Bounded tactical parameters; paired training for both roles; safety hard exclusion; validation choice; once-only held-out report; shadow logging | I15/G5 with preregistered criterion, intervals, role balance and safety metrics; otherwise retain baseline |
-| P6.4 Frozen release inputs | Static/preflight implementation may proceed in parallel; closure blocked on accepted gates and approved inputs | Provenance-validated config; source/image/IDL/config/calibration/model/policy hashes; ownership/preflight checks | Required gate matrix and complete immutable inputs; missing official or physical evidence remains BLOCKED |
-| P6.5 Final rehearsal and rollback | Blocked on accepted release candidate and access to intended final target | Offline cold start; two role-swapped stages; permitted reset/retention; fault recovery; logs and rollback artifact | I16/G6 only in the specified final target/operating conditions; no physical target means G6 remains BLOCKED |
+| P6.4 Frozen release inputs | **SIL profile validator, dossier and fail-closed preflight implemented**; approved release inputs remain blocked | `tools/validate_config.py`, `tools/release_freeze.py`, `tools/preflight_check.py`, hashes over profile/source/IDL/mux config/policy/fixture and per-gate blockers | `PASS_SIL_INTEGRITY_RELEASE_BLOCKED` verifies local hashes only; G4, organizer inputs, calibration, live graph, signed source and final image remain blocked |
+| P6.5 Final rehearsal and rollback | **Two-stage SIL fixture rehearsal implemented**; final-target G6 remains blocked | `tools/rehearse_phase6_sil.py`: subprocess policy load, two synthetic stages with virtual role swap, fail-closed corruption injections and baseline restore | Fixture report may pass only its declared checks; I16/G6 requires the final image, authorized timing/memory/identity inputs, and physical evidence |
 
 P6.1 and P6.2 must implement the normative §15 contracts, not a new or weaker
 learning model. In particular, equal mean option duration is insufficient
@@ -163,6 +164,20 @@ finalist receives validation evaluation. Results remain fixture-only, explicitly
 ineligible for P6 empirical selection/promotion, with G4/G5/G6 unchanged.
 `tools/demo_competition_match.py` can replay the serialized development genome
 in fixture self-play and export diagnostic JSON/SVG telemetry.
+
+The P6.4 SIL dossier hashes relevant core/kinematic sources, ROS IDL, safety
+interfaces, mux configuration, release profile, bank, policy and governing
+evidence; preflight detects changed files and refuses any implied release
+authority. The P6.5 SIL rehearsal executes two bounded training-fixture stages
+with virtual robot identities bound to role endpoints and swapped between
+stages, checks freeze-zero, telemetry, terminal and collision invariants,
+detects altered manifest/policy digests, and
+reloads the pinned development fallback. Neither tool can sign an artifact,
+validate a live ROS graph, boot the unavailable final image, or close G6.
+The full verification and hash-pinned SIL artifacts are recorded in the
+P6.4/P6.5 closeout report at
+`artifacts/reports/phase6/P6.4_P6.5_SIL_closeout_20260930.json`. Do not
+interpret a report status beginning `PASS_SIL` as a release gate PASS.
 
 The next integration action is to complete and review P5.6 against the actual
 contracts, while pure P6.1/P6.2 implementation can proceed independently.

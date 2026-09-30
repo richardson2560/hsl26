@@ -1,0 +1,217 @@
+{
+  "schema": "hsl26.phase6.p64-p65-sil-closeout.v1",
+  "prepared_at": "2026-09-30",
+  "status": "P6.4_P6.5_SIL_DELIVERABLES_PASS_FORMAL_RELEASE_AND_G6_BLOCKED",
+  "authority": {
+    "physical_authority": false,
+    "official_scoring_authority": false,
+    "official_score_available": false,
+    "simulator_truth_available_to_policy": false,
+    "held_out_evaluated": false,
+    "policy_promoted": false,
+    "g4": "BLOCKED_NOT_RUN",
+    "g5": "NOT_RUN",
+    "g6": "BLOCKED",
+    "release_decision": "BLOCKED_FOR_RELEASE"
+  },
+  "ownership_and_review": {
+    "implementation_owner": "Current software development session",
+    "independent_reviewer": "NOT_ASSIGNED",
+    "release_signer": "NOT_ASSIGNED",
+    "signature_status": "NOT_SIGNED"
+  },
+  "p64": {
+    "sil_status": "PASS_SIL_INTEGRITY_RELEASE_BLOCKED",
+    "profile": "config/schema/phase6_sil_release_profile.json",
+    "config_validation_tool": "tools/validate_config.py",
+    "freeze_tool": "tools/release_freeze.py",
+    "preflight_tool": "tools/preflight_check.py",
+    "manifest": "artifacts/releases/p64_sil_20260930_final/manifest.json",
+    "preflight_report": "artifacts/releases/p64_sil_20260930_final/preflight.json",
+    "manifest_sha256": "bcc46908738bff9f852b970f481106603f684ced978606fc165e8ac413472cf6",
+    "manifest_signature": "NOT_SIGNED",
+    "source_revision": {
+      "head": "3dd9a1466e575420ad4f05acaf9b9cb079d06073",
+      "working_tree": "DIRTY",
+      "dirty_path_count_at_freeze": 25
+    },
+    "inventory": {
+      "frozen_input_count": 9,
+      "hashed_source_file_count": 185,
+      "all_preflight_checks_passed": true,
+      "tamper_and_inventory_coverage_checked": true,
+      "runtime_fingerprint_checked": true,
+      "config_profile_valid": true,
+      "docker_image_digest": null,
+      "live_ros_graph": "NOT_RUN",
+      "live_tf_ownership": "NOT_RUN"
+    },
+    "unresolved_inputs": [
+      "Accepted G4 deterministic baseline",
+      "Official zone/goal and scoring provenance",
+      "Approved stage timing, trigger, and memory-retention policy",
+      "Physical robot identity, calibration, braking, and stop response",
+      "Final target image digest and offline image boot"
+    ]
+  },
+  "p65": {
+    "sil_status": "PASS_SIL_FIXTURE_REHEARSAL",
+    "formal_g6_status": "BLOCKED",
+    "tool": "tools/rehearse_phase6_sil.py",
+    "report": "artifacts/reports/phase6/p65_sil_rehearsal_20260930_final/rehearsal_report.json",
+    "created_from_manifest_sha256": "bcc46908738bff9f852b970f481106603f684ced978606fc165e8ac413472cf6",
+    "run_configuration": {
+      "duration_s_per_stage": 30.0,
+      "control_period_s": 0.05,
+      "synthetic_freeze_duration_s": 0.15,
+      "seed_start": 20260930,
+      "policy_genome_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+      "fixture_split": "training",
+      "held_out_episodes_evaluated": 0,
+      "fresh_process_policy_load": "PASS_FRESH_SIL_PROCESS",
+      "final_image_cold_start": "NOT_VERIFIED",
+      "network_isolation": "NOT_VERIFIED"
+    },
+    "stages": [
+      {
+        "stage_number": 1,
+        "scenario_id": "maze_interior_loops_train_c",
+        "scenario_sha256": "1f95f7b7aebf869a587b4b2c2de2e76f163b3cf98425826328d1489b1de0a734",
+        "seed": 20260930,
+        "role_assignment": {
+          "GUARDIAN": "sil-robot-A",
+          "EXPLORER": "sil-robot-B"
+        },
+        "terminal": "TIMEOUT",
+        "active_duration_s": 29.85,
+        "steps": 600,
+        "telemetry_samples": 601,
+        "freeze_zero_command_samples": 3,
+        "freeze_commands_zero": true,
+        "roles_completed": true,
+        "safety_violations": 0,
+        "robot_collisions": 0,
+        "wall_contacts": {
+          "guardian": 0,
+          "explorer": 0
+        },
+        "official_score": null
+      },
+      {
+        "stage_number": 2,
+        "scenario_id": "maze_interior_loops_train_d",
+        "scenario_sha256": "619b7210e14a9faeb3ca37564b454701b8fecb67b8d4497c49346674596d038f",
+        "seed": 20260931,
+        "role_assignment": {
+          "GUARDIAN": "sil-robot-B",
+          "EXPLORER": "sil-robot-A"
+        },
+        "terminal": "TIMEOUT",
+        "active_duration_s": 29.85,
+        "steps": 600,
+        "telemetry_samples": 601,
+        "freeze_zero_command_samples": 3,
+        "freeze_commands_zero": true,
+        "roles_completed": true,
+        "safety_violations": 0,
+        "robot_collisions": 0,
+        "wall_contacts": {
+          "guardian": 0,
+          "explorer": 0
+        },
+        "official_score": null
+      }
+    ],
+    "fault_injection": {
+      "modified_frozen_input_even_with_recomputed_manifest_digest": "DETECTED_FAIL_CLOSED",
+      "corrupted_policy_genome_digest": "REJECTED_BEFORE_EXECUTION",
+      "rollback_policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+      "rollback_target": "Pinned development fallback only; not an accepted G4 release.",
+      "rollback_verified": true
+    },
+    "identity_and_truth_boundary": {
+      "virtual_robot_identity_bound_to_role_endpoints": true,
+      "identity_included_in_evaluation_profile_hash": true,
+      "robot_identity_exposed_to_policy_observation": false,
+      "referee_truth_exposed_to_policy": false,
+      "physical_identity_or_role_swap_verified": false
+    },
+    "inter_stage_memory": {
+      "sil_behavior": "RESET_BETWEEN_STAGES",
+      "official_retention_rule": "UNKNOWN",
+      "official_behavior_verified": false
+    }
+  },
+  "gate_matrix": [
+    {
+      "gate": "G0",
+      "status": "BLOCKED",
+      "reason": "Native ROS build/live graph/process-fault evidence and physical stop evidence are unavailable."
+    },
+    {
+      "gate": "G1",
+      "status": "BLOCKED",
+      "reason": "Physical sensing, calibration, braking, and operating envelope are unavailable."
+    },
+    {
+      "gate": "G2",
+      "status": "BLOCKED",
+      "reason": "Physical navigation and recovery acceptance is unavailable."
+    },
+    {
+      "gate": "G3",
+      "status": "BLOCKED",
+      "reason": "Real sensing, tracking, and calibration evidence is unavailable."
+    },
+    {
+      "gate": "G4",
+      "status": "BLOCKED_NOT_RUN",
+      "reason": "No accepted deterministic baseline; the two fixture timeout runs do not close G4."
+    },
+    {
+      "gate": "G5",
+      "status": "NOT_RUN",
+      "reason": "No eligible held-out learned-policy evaluation."
+    },
+    {
+      "gate": "G6",
+      "status": "BLOCKED",
+      "reason": "No final target image, approved competition inputs, physical two-stage run, or accepted rollback release."
+    }
+  ],
+  "verification": {
+    "full_regression_command": "$env:PYTHONPATH = 'hsl_core;.;ros_ws\\src\\hsl_safety;ros_ws\\src\\hsl_interfaces'; python -m pytest hsl_core\\tests sim\\kinematic ros_ws\\src\\hsl_interfaces\\test ros_ws\\src\\hsl_safety\\test -q",
+    "full_regression_result": "681 passed",
+    "focused_p64_p65_result": "Included in the full regression; targeted P6.4/P6.5 and P6.3 slice previously passed.",
+    "compileall_command": "python -m compileall -q tools sim/kinematic hsl_core/hsl_core ros_ws/src/hsl_safety/hsl_safety",
+    "compileall_result": "PASS",
+    "git_diff_check": "PASS",
+    "sil_config_validation": "PASS",
+    "additional_dependencies": [],
+    "pytest_failure_injection_coverage": [
+      "tampered manifest input digest with recomputed manifest digest",
+      "physical authority, official score authority, and simulator-truth boundary regression",
+      "claimed live ROS graph pass without runtime evidence",
+      "runtime fingerprint drift",
+      "output overwrite attempt",
+      "preflight refusal before stage execution",
+      "policy digest corruption and fallback restore",
+      "unsupported stage duration and invalid virtual robot identity mapping"
+    ]
+  },
+  "limitations": [
+    "This closeout completes only the declared P6.4/P6.5 SIL deliverables; it does not finish formal Phase 6.",
+    "The local worktree was dirty and no trusted signature was created; manifest hashes provide integrity checking, not authenticity.",
+    "Two TIMEOUT outcomes establish completed synthetic stages, not task success or a learned-policy improvement.",
+    "No final container image was built or cold-booted; the fresh-process import test is local only.",
+    "No live ROS/DDS/TF, MVSim, hardware, network-isolation, braking, or physical rollback test was performed.",
+    "The virtual robot identity swap and reset policy are simulation semantics only."
+  ],
+  "next_required_actions_for_formal_phase_exit": [
+    "Complete and review P5.6/G4 and record an accepted deterministic baseline.",
+    "Obtain organizer-approved zone, objective, score, event, timing, trigger, and memory-retention inputs.",
+    "Provide a final immutable image/runtime digest, ROS graph/TF evidence, and offline target cold-boot evidence.",
+    "Complete authorized physical calibration, stopping-response, and two-role/two-stage rehearsal.",
+    "Establish a valid accepted release rollback target, independent review, and authorized signature."
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "schema": "hsl26.phase6.p63-interior-fixture-development-closeout.v1",
+  "phase": "P6.3",
+  "status": "SIL_FIXTURE_DEVELOPMENT_DELIVERABLE_COMPLETE_FORMAL_ACCEPTANCE_BLOCKED",
+  "authority": {
+    "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+    "physical_authority": false,
+    "competition_map_or_goal_authority": false,
+    "official_score_available": false,
+    "eligible_empirical_training": false,
+    "policy_promoted": false,
+    "held_out_evaluated": false,
+    "g4_status": "BLOCKED_NOT_RUN",
+    "g5_status": "NOT_RUN",
+    "g6_status": "BLOCKED"
+  },
+  "fixture_bank": {
+    "path": "sim/kinematic/scenarios/phase6_interior_tactics_bank.json",
+    "training_fixtures": [
+      "maze_interior_loops_train_c",
+      "maze_interior_loops_train_d"
+    ],
+    "validation_fixtures": [
+      "maze_validation_rooms_e",
+      "maze_validation_crossings_f"
+    ],
+    "held_out_fixture_reserved_and_unused": "maze_interior_holdout_g",
+    "invariants_tested": [
+      "Training and validation mazes are connected orthogonal grids.",
+      "No perimeter cell is traversable in the interior tactical training maps.",
+      "Both starts have shortest paths to the synthetic goal of at least 6 m.",
+      "Each shortest path from either start to the synthetic goal has at least three turns.",
+      "Existing phase6_maze_bank.json fixtures remain unchanged."
+    ]
+  },
+  "development_search": {
+    "report": "artifacts/reports/phase6/p63_interior_dev_seed20260930/run_report.json",
+    "policy": "artifacts/reports/phase6/p63_interior_dev_seed20260930/policy.json",
+    "command": "python tools/train_evolution.py --development-fixtures --bank sim/kinematic/scenarios/phase6_interior_tactics_bank.json --generations 2 --population-size 3 --elite-count 1 --mutation-sigma 0.08 --seed 20260930 --episode-duration-s 30 --workers 2 --output-dir artifacts/reports/phase6/p63_interior_dev_seed20260930",
+    "seed": 20260930,
+    "generations": 2,
+    "population_size": 3,
+    "workers": 2,
+    "episode_duration_s": 30.0,
+    "candidate_supported_improvement": false,
+    "selection_reason": "baseline_retained_no_training_supported_candidate",
+    "selected_policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+    "training_finalist_produced": false,
+    "validation_of_finalist_performed": false,
+    "held_out_episodes_evaluated": 0,
+    "reported_generation_candidates": [
+      {
+        "generation": 0,
+        "candidate_count_including_baseline": 3,
+        "mutants_with_balanced_mean_delta": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "generation": 1,
+        "candidate_count_including_baseline": 3,
+        "mutants_with_balanced_mean_delta": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "paired_benchmark": {
+    "report": "artifacts/reports/phase6/p63_interior_dev_seed20260930/paired_benchmark.json",
+    "fixture_count": 4,
+    "held_out_fixtures_evaluated": 0,
+    "outcomes": [
+      {
+        "scenario_id": "maze_interior_loops_train_c",
+        "split": "training",
+        "terminal": "TIMEOUT",
+        "active_duration_s": 29.85,
+        "wall_contacts": 0,
+        "safety_overrides": 0
+      },
+      {
+        "scenario_id": "maze_interior_loops_train_d",
+        "split": "training",
+        "terminal": "TIMEOUT",
+        "active_duration_s": 29.85,
+        "wall_contacts": 0,
+        "safety_overrides": 0
+      },
+      {
+        "scenario_id": "maze_validation_rooms_e",
+        "split": "validation",
+        "terminal": "CAPTURE",
+        "active_duration_s": 19.9,
+        "wall_contacts": 0,
+        "safety_overrides": 2
+      },
+      {
+        "scenario_id": "maze_validation_crossings_f",
+        "split": "validation",
+        "terminal": "TIMEOUT",
+        "active_duration_s": 29.85,
+        "wall_contacts": 0,
+        "safety_overrides": 0
+      }
+    ],
+    "interpretation": "The serialized selected policy is the unchanged baseline. The benchmark is synthetic diagnostic evidence, not evidence of a learned candidate or generalization."
+  },
+  "visualization": {
+    "tool": "tools/demo_p63_match.py",
+    "report": "artifacts/reports/phase6/p63_interior_dev_seed20260930/demo_verified/match_report.json",
+    "viewer": "artifacts/reports/phase6/p63_interior_dev_seed20260930/demo_verified/match_viewer.html",
+    "svg": "artifacts/reports/phase6/p63_interior_dev_seed20260930/demo_verified/match.svg",
+    "scenario_id": "maze_interior_loops_train_c",
+    "seed": 20260930,
+    "terminal": "TIMEOUT",
+    "active_duration_s": 29.85,
+    "rendered_frames": 151,
+    "views": [
+      "top-down maze, both trajectories, robot poses and headings",
+      "2.5D Doom-style projection from synthetic 360-beam LiDAR"
+    ],
+    "physical_or_3d_sensor_rendering": false
+  },
+  "verification": {
+    "focused_tests": "pytest -q sim/kinematic/test_p63_sil_preparation.py sim/kinematic/test_p63_tools.py",
+    "focused_test_result": "26 passed",
+    "compileall": "python -m compileall -q tools sim/kinematic",
+    "git_diff_check": "passed",
+    "interactive_viewer_opened_and_rendered": true,
+    "additional_python_dependency": false
+  },
+  "formal_exit_gaps": [
+    "Accepted deterministic G4 baseline is unavailable.",
+    "No candidate demonstrated a supported improvement over baseline.",
+    "Eligible empirical training, once-only held-out evaluation, shadow logging, promotion review, and G5 acceptance remain unimplemented or not run.",
+    "Physical authority and competition map/goal authority are unavailable."
+  ]
+}

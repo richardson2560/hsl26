@@ -135,6 +135,8 @@ def run_ideal_competition_match(
                 "stamp_ns": sample.stamp_ns,
                 "guardian_xy_m": sample.guardian_xy_m,
                 "explorer_xy_m": sample.explorer_xy_m,
+                "guardian_heading_rad": sample.guardian_heading_rad,
+                "explorer_heading_rad": sample.explorer_heading_rad,
                 "guardian_command": sample.guardian_command,
                 "explorer_command": sample.explorer_command,
                 "guardian_option": sample.guardian_option,

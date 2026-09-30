@@ -1,6 +1,7 @@
 """End-to-end contracts for fixture-only P6.3 training and match tools."""
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -10,9 +11,12 @@ from hsl_core.learning.evolution import (
     assess_paired_candidate,
 )
 from hsl_core.match import Role
+from hsl_core.learning.evolution import mutate_genome
 from sim.kinematic.benchmark import BenchmarkConfig, SILBenchmarkRunner
 from sim.kinematic.maze_bank import load_maze_bank
+from tools.benchmark_p63 import run_p63_benchmark
 from tools.demo_competition_match import run_ideal_competition_match
+from tools.demo_p63_match import run_p63_match_viewer
 from tools.p63_policy import (
     EVIDENCE_CLASS,
     build_default_baseline,
@@ -20,10 +24,10 @@ from tools.p63_policy import (
     policy_payload,
 )
 from tools.train_evolution import train_p63_evolution
-from hsl_core.learning.evolution import mutate_genome
 
 
 _BANK = "sim/kinematic/scenarios/phase6_maze_bank.json"
+_INTERIOR_BANK = "sim/kinematic/scenarios/phase6_interior_tactics_bank.json"
 
 
 def test_role_swapped_assessment_pairs_candidate_roles_against_fixed_baseline():
@@ -154,6 +158,7 @@ def test_one_generation_smoke_search_writes_nonpromotable_report_and_policy(tmp_
         elite_count=1,
         mutation_sigma=0.04,
         seed=20260929,
+        workers=2,
         episode_duration_s=0.5,
         bank_path=_BANK,
         output_dir=output_dir,
@@ -170,6 +175,7 @@ def test_one_generation_smoke_search_writes_nonpromotable_report_and_policy(tmp_
         "G6": "BLOCKED",
     }
     assert report["held_out_episodes_evaluated"] == 0
+    assert report["evolution"]["workers"] == 2
     assert len(report["generation_records"]) == 2
     assert all(
         len(generation["candidate_assessments"]) == 3
@@ -190,6 +196,116 @@ def test_one_generation_smoke_search_writes_nonpromotable_report_and_policy(tmp_
             output_dir=output_dir,
             development_fixtures=True,
         )
+
+
+def test_serial_and_parallel_p63_searches_have_identical_selection_and_scores(
+    tmp_path,
+):
+    common = {
+        "generations": 1,
+        "population_size": 2,
+        "elite_count": 1,
+        "mutation_sigma": 0.08,
+        "seed": 44551,
+        "episode_duration_s": 0.5,
+        "bank_path": _INTERIOR_BANK,
+        "development_fixtures": True,
+    }
+    serial = train_p63_evolution(
+        **common,
+        workers=1,
+        output_dir=tmp_path / "serial",
+    )
+    parallel = train_p63_evolution(
+        **common,
+        workers=2,
+        output_dir=tmp_path / "parallel",
+    )
+
+    assert serial["selected_policy_sha256"] == parallel["selected_policy_sha256"]
+    assert serial["selection_reason"] == parallel["selection_reason"]
+    assert serial["generation_records"] == parallel["generation_records"]
+    assert serial["pairing_provenance"] == parallel["pairing_provenance"]
+    assert serial["held_out_episodes_evaluated"] == 0
+    assert parallel["held_out_episodes_evaluated"] == 0
+
+
+def test_parallel_paired_benchmark_excludes_heldout_and_emits_metrics(tmp_path):
+    genome = build_default_baseline()
+    policy_file = tmp_path / "policy.json"
+    policy_file.write_text(
+        json.dumps(
+            policy_payload(
+                genome,
+                selection_reason="fixture-benchmark",
+                baseline_sha256=genome.sha256,
+                run_id="benchmark-test",
+            )
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "benchmark.json"
+    report = run_p63_benchmark(
+        policy_path=policy_file,
+        output_path=output,
+        bank_path=_INTERIOR_BANK,
+        seed=763,
+        replicates=1,
+        episode_duration_s=0.5,
+        workers=2,
+    )
+
+    assert len(report["episodes"]) == 4
+    assert report["held_out_fixtures_evaluated"] == 0
+    assert report["promotion_eligible"] is False
+    assert report["assessments"]["selection"]["reason"] == (
+        "selected_policy_is_baseline_no_candidate_comparison"
+    )
+    assert all(
+        "terminal_kind" in episode["baseline"]
+        and "safety_violations" in episode["baseline"]["roles"]["GUARDIAN"]
+        for episode in report["episodes"]
+    )
+    assert json.loads(output.read_text(encoding="utf-8"))["episodes"]
+
+
+def test_interactive_match_viewer_uses_selected_policy_and_labels_synthetic_run(
+    tmp_path,
+):
+    genome = build_default_baseline()
+    policy_file = tmp_path / "policy.json"
+    policy_file.write_text(
+        json.dumps(
+            policy_payload(
+                genome,
+                selection_reason="fixture-viewer",
+                baseline_sha256=genome.sha256,
+                run_id="viewer-test",
+            )
+        ),
+        encoding="utf-8",
+    )
+    result = run_p63_match_viewer(
+        policy_path=policy_file,
+        output_dir=tmp_path / "viewer",
+        bank_path=_INTERIOR_BANK,
+        scenario_id="maze_interior_loops_train_c",
+        seed=187,
+        duration_s=1.0,
+        frame_stride=2,
+    )
+    html = Path(result["viewer_path"]).read_text(encoding="utf-8")
+
+    assert result["policy_sha256"] == genome.sha256
+    assert result["promotion_eligible"] is False
+    assert result["rendered_frame_stride"] == 2
+    assert 'id="top"' in html and 'id="doom"' in html
+    assert "SYNTHETIC SIL VISUALIZATION" in html
+    assert "maze_interior_loops_train_c" in html
+    assert "const top=" not in html and "const frames=" not in html
+    assert "const topCanvas=" in html and "const frameList=scene.frames" in html
+    assert 'document.getElementById("scenario").textContent=scene.scenario_id' in html
+    assert "show();" in html
 
 
 def test_demo_runs_learned_policy_and_exports_truth_scoped_telemetry(tmp_path):

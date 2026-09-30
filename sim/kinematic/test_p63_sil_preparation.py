@@ -13,6 +13,9 @@ from sim.kinematic.maze_bank import MazeFixture, load_maze_bank
 _BANK_PATH = (
     Path(__file__).parent / "scenarios" / "phase6_maze_bank.json"
 )
+_INTERIOR_BANK_PATH = (
+    Path(__file__).parent / "scenarios" / "phase6_interior_tactics_bank.json"
+)
 
 
 @pytest.fixture
@@ -39,6 +42,43 @@ def test_maze_bank_has_independent_training_validation_and_reserved_heldout():
             prior = split_by_bank.setdefault(getattr(fixture, field), fixture.split)
             assert prior == fixture.split
     assert len({fixture.map_bank_id for fixture in bank.fixtures}) == len(bank.fixtures)
+
+
+def test_interior_tactics_bank_routes_are_connected_turning_and_not_perimeter_shortcuts():
+    bank = load_maze_bank(_INTERIOR_BANK_PATH)
+    assert len(bank.training_fixtures()) == 2
+    assert len(bank.validation_fixtures()) == 2
+    assert len(bank.held_out_fixtures()) == 1
+    for fixture in bank.training_fixtures():
+        height = len(fixture.rows)
+        width = len(fixture.rows[0])
+        assert all(
+            fixture.rows[0][col] == "#"
+            and fixture.rows[height - 1][col] == "#"
+            for col in range(width)
+        )
+        assert all(
+            fixture.rows[row][0] == "#"
+            and fixture.rows[row][width - 1] == "#"
+            for row in range(height)
+        )
+        goal = fixture.synthetic_goal_rc[0] * width + fixture.synthetic_goal_rc[1]
+        node_by_id = {node.node_id: node for node in fixture.topology.nodes}
+        for start_rc in (fixture.guardian_start_rc, fixture.explorer_start_rc):
+            start = start_rc[0] * width + start_rc[1]
+            path = astar(fixture.topology, start, goal)
+            assert path.cost == pytest.approx(6.0)
+            deltas = tuple(
+                (
+                    node_by_id[next_id].x_m - node_by_id[current_id].x_m,
+                    node_by_id[next_id].y_m - node_by_id[current_id].y_m,
+                )
+                for current_id, next_id in zip(path.node_ids, path.node_ids[1:])
+            )
+            turns = sum(left != right for left, right in zip(deltas, deltas[1:]))
+            assert turns >= 3
+        assert fixture.synthetic_goal_rc == (4, 4)
+        assert fixture.policy_goal_authorized is False
 
 
 def test_training_bank_includes_connected_seven_by_seven_geometries(maze_bank):

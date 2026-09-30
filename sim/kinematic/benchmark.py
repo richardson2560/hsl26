@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 import math
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from hsl_core.learning.evolution import (
     EpisodeResult,
@@ -151,6 +151,7 @@ class SILBenchmarkEpisode:
     explorer_wall_contacts: int
     episode_results: tuple[EpisodeResult, EpisodeResult]
     role_policy_ids: tuple[tuple[Role, str], tuple[Role, str]]
+    robot_identity_by_role: tuple[tuple[Role, str], tuple[Role, str]]
     telemetry: tuple["SILEpisodeSample", ...] = ()
     evidence_class: str = _EVIDENCE_CLASS
     official_score: None = None
@@ -240,6 +241,24 @@ class SILBenchmarkEpisode:
             )
         ):
             raise ValueError("episode result provenance must match its SIL run")
+        if (
+            not isinstance(self.robot_identity_by_role, tuple)
+            or len(self.robot_identity_by_role) != 2
+            or any(
+                not isinstance(item, tuple)
+                or len(item) != 2
+                or not isinstance(item[0], Role)
+                or not isinstance(item[1], str)
+                or not item[1].strip()
+                for item in self.robot_identity_by_role
+            )
+            or {item[0] for item in self.robot_identity_by_role}
+            != {Role.GUARDIAN, Role.EXPLORER}
+            or len({item[1] for item in self.robot_identity_by_role}) != 2
+        ):
+            raise ValueError(
+                "robot_identity_by_role must uniquely assign two virtual robot IDs"
+            )
         if self.official_score is not None:
             raise ValueError("synthetic SIL episodes cannot contain official scores")
         if self.evidence_class != _EVIDENCE_CLASS:
@@ -255,6 +274,8 @@ class SILEpisodeSample:
     stamp_ns: int
     guardian_xy_m: tuple[float, float]
     explorer_xy_m: tuple[float, float]
+    guardian_heading_rad: float
+    explorer_heading_rad: float
     guardian_command: tuple[float, float]
     explorer_command: tuple[float, float]
     guardian_option: str
@@ -280,6 +301,12 @@ class SILEpisodeSample:
                 )
             ):
                 raise ValueError(f"{name} must contain two finite numeric values")
+        for value, name in (
+            (self.guardian_heading_rad, "guardian_heading_rad"),
+            (self.explorer_heading_rad, "explorer_heading_rad"),
+        ):
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ValueError(f"{name} must be finite")
         if (
             not isinstance(self.guardian_option, str)
             or not self.guardian_option
@@ -380,6 +407,7 @@ class SILBenchmarkRunner:
         *,
         seed: int,
         explorer_genome: TacticalGenome | None = None,
+        robot_identity_by_role: Mapping[Role, str] | None = None,
         collect_telemetry: bool = False,
     ) -> SILBenchmarkEpisode:
         if not isinstance(genome, TacticalGenome):
@@ -390,11 +418,36 @@ class SILBenchmarkRunner:
             raise ValueError("explorer_genome must be a TacticalGenome")
         if not isinstance(collect_telemetry, bool):
             raise ValueError("collect_telemetry must be boolean")
+        if robot_identity_by_role is None:
+            robot_identity_by_role = {
+                Role.GUARDIAN: "sil-robot-guardian",
+                Role.EXPLORER: "sil-robot-explorer",
+            }
+        if (
+            not isinstance(robot_identity_by_role, Mapping)
+            or set(robot_identity_by_role) != {Role.GUARDIAN, Role.EXPLORER}
+            or any(
+                not isinstance(identity, str) or not identity.strip()
+                for identity in robot_identity_by_role.values()
+            )
+            or len(set(robot_identity_by_role.values())) != 2
+        ):
+            raise ValueError(
+                "robot_identity_by_role must uniquely assign both SIL robot identities"
+            )
+        identity_rows = (
+            (Role.GUARDIAN, robot_identity_by_role[Role.GUARDIAN]),
+            (Role.EXPLORER, robot_identity_by_role[Role.EXPLORER]),
+        )
         explorer_genome = explorer_genome or genome
         split = _fixture_split(fixture)
         _validate_seed(seed)
         match, managers, policies, profile_id = self._build_match(
-            genome, explorer_genome, fixture, seed
+            genome,
+            explorer_genome,
+            fixture,
+            seed,
+            robot_identity_by_role,
         )
         collision = False
         wall_contacts = {Role.GUARDIAN: False, Role.EXPLORER: False}
@@ -416,6 +469,8 @@ class SILBenchmarkRunner:
                         match.explorer.plant.state.pose.x_m,
                         match.explorer.plant.state.pose.y_m,
                     ),
+                    guardian_heading_rad=match.guardian.plant.state.pose.theta_rad,
+                    explorer_heading_rad=match.explorer.plant.state.pose.theta_rad,
                     guardian_command=(0.0, 0.0),
                     explorer_command=(0.0, 0.0),
                     guardian_option="INITIAL",
@@ -449,6 +504,8 @@ class SILBenchmarkRunner:
                             match.explorer.plant.state.pose.x_m,
                             match.explorer.plant.state.pose.y_m,
                         ),
+                        guardian_heading_rad=match.guardian.plant.state.pose.theta_rad,
+                        explorer_heading_rad=match.explorer.plant.state.pose.theta_rad,
                         guardian_command=(
                             tick.guardian_command.linear_mps,
                             tick.guardian_command.angular_rps,
@@ -585,6 +642,7 @@ class SILBenchmarkRunner:
                 (Role.GUARDIAN, genome.sha256),
                 (Role.EXPLORER, explorer_genome.sha256),
             ),
+            robot_identity_by_role=identity_rows,
             telemetry=tuple(telemetry),
         )
 
@@ -693,8 +751,20 @@ class SILBenchmarkRunner:
             scenario_sha256=_fixture_sha256(fixture),
         )
 
-    def _build_match(self, guardian_genome, explorer_genome, fixture, seed):
-        config_hash = _config_hash(self.config, fixture, seed)
+    def _build_match(
+        self,
+        guardian_genome,
+        explorer_genome,
+        fixture,
+        seed,
+        robot_identity_by_role,
+    ):
+        config_hash = _config_hash(
+            self.config,
+            fixture,
+            seed,
+            robot_identity_by_role,
+        )
         stage_id = f"p63-{fixture.scenario_id}-{seed}"
         localization_epoch = fixture.topology.localization_epoch
         guardian_policy = _policy(guardian_genome, Role.GUARDIAN)
@@ -705,6 +775,9 @@ class SILBenchmarkRunner:
         )
 
         def endpoint(role, cell, yaw, policy, goal):
+            core_role = (
+                Role.GUARDIAN if role is MatchRole.GUARDIAN else Role.EXPLORER
+            )
             pose = Pose2D(*fixture.cell_pose(cell), yaw)
             return RoleEndpoint(
                 role=role,
@@ -740,6 +813,7 @@ class SILBenchmarkRunner:
                 synthetic_goal_zone_id=(
                     "sil-fixture:p63-goal" if role is MatchRole.EXPLORER else ""
                 ),
+                robot_identity=robot_identity_by_role[core_role],
             )
 
         guardian = endpoint(
@@ -906,7 +980,12 @@ def _shared_terminal_kind(states, *, allow_active=False):
     return states[0].terminal_kind
 
 
-def _config_hash(config: BenchmarkConfig, fixture: MazeFixture, seed: int) -> str:
+def _config_hash(
+    config: BenchmarkConfig,
+    fixture: MazeFixture,
+    seed: int,
+    robot_identity_by_role: Mapping[Role, str] | None = None,
+) -> str:
     payload = {
         "config": {
             "episode_duration_s": config.episode_duration_s,
@@ -921,6 +1000,19 @@ def _config_hash(config: BenchmarkConfig, fixture: MazeFixture, seed: int) -> st
         "scenario_id": fixture.scenario_id,
         "scenario_sha256": _fixture_sha256(fixture),
         "seed": seed,
+        "robot_identity_by_role": {
+            role.name: identity
+            for role, identity in sorted(
+                (
+                    robot_identity_by_role
+                    or {
+                        Role.GUARDIAN: "sil-robot-guardian",
+                        Role.EXPLORER: "sil-robot-explorer",
+                    }
+                ).items(),
+                key=lambda item: item[0].name,
+            )
+        },
         "topology_version": fixture.topology.topology_version,
         "map_version": fixture.topology.map_version,
     }

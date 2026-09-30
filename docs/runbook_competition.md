@@ -128,3 +128,28 @@ For every run, preserve:
 - accepted motion envelope.
 
 Mock or kinematic evidence must never be labeled as hardware evidence.
+
+## 8. Phase-6 SIL release preparation and rehearsal (non-arming)
+
+The following procedure only validates a software fixture dossier. It does
+not invoke ROS, inspect a live topic/TF graph, access hardware, certify
+network isolation, or approve a release. Run commands from the repository
+root, with an output directory that does not already exist:
+
+```powershell
+python tools/validate_config.py config/schema/phase6_sil_release_profile.json
+python tools/release_freeze.py --release-id p64-sil-local --output-dir artifacts/releases/p64_sil_local
+python tools/preflight_check.py --manifest artifacts/releases/p64_sil_local/manifest.json --output artifacts/releases/p64_sil_local/preflight.json
+python tools/rehearse_phase6_sil.py --manifest artifacts/releases/p64_sil_local/manifest.json --duration-s 30 --seed 20260930 --output-dir artifacts/reports/phase6/p65_sil_local
+```
+
+`PASS_SIL_INTEGRITY_RELEASE_BLOCKED` means the locally hashed inputs still
+match and the authority boundary/gates remain blocked. The two-stage rehearsal
+records freeze-zero commands, monotonic telemetry, role terminalization,
+virtual identity swap, safety/contact metrics, hash-tamper rejection, and
+reload of a fixture baseline. `PASS_SIL_FIXTURE_REHEARSAL` is not a G6 pass.
+Never use this runbook subsection to arm a robot or to report official scores.
+The rollback artifact is a pinned development fallback, not a last accepted
+release. Final-image offline boot, network-free deployment, live ROS graph,
+approved role-retention behavior and physical stopping evidence must be
+completed separately under authorized conditions.

@@ -1,0 +1,361 @@
+{
+  "baseline_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "benchmark_config": {
+    "control_period_s": 0.05,
+    "discount_rate_per_s": 0.01,
+    "episode_duration_s": 30.0,
+    "lidar_beam_count": 360,
+    "lidar_max_range_m": 5.0,
+    "lidar_noise_std_m": 0.0,
+    "max_episode_steps": 100000,
+    "robot_max_speed_mps": 0.2,
+    "robot_radius_m": 0.15
+  },
+  "eligible_empirical_training": false,
+  "evaluation_plans": {
+    "training": {
+      "confidence_level": 0.95,
+      "maximum_safety_overrides_per_episode": 150,
+      "minimum_pairs": 2,
+      "plan_id": "p63-development-train-v1"
+    },
+    "validation": {
+      "confidence_level": 0.95,
+      "maximum_safety_overrides_per_episode": 150,
+      "minimum_pairs": 2,
+      "plan_id": "p63-development-validation-v1"
+    }
+  },
+  "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+  "evolution": {
+    "elite_count": 1,
+    "generations": 2,
+    "mutation_sigma": 0.08,
+    "population_size": 3,
+    "workers": 2
+  },
+  "fixture_search_performed": true,
+  "gates": {
+    "G4": "BLOCKED_NOT_RUN",
+    "G5": "NOT_RUN",
+    "G6": "BLOCKED"
+  },
+  "generation_records": [
+    {
+      "candidate_assessments": [
+        {
+          "balanced_mean_delta": 0.0,
+          "confidence_interval": [
+            0.0,
+            0.0
+          ],
+          "eligible": true,
+          "explorer_mean_delta": 0.0,
+          "genome_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+          "guardian_mean_delta": 0.0,
+          "official_score_available": false,
+          "pair_count": 2,
+          "reason": "baseline_reference",
+          "split": "training"
+        },
+        {
+          "balanced_mean_delta": 0.0,
+          "confidence_interval": [
+            0.0,
+            0.0
+          ],
+          "eligible": true,
+          "explorer_mean_delta": 0.0,
+          "genome_sha256": "52e5618f7a10d749f1f6d799c9b360564860dd24424c4db137f55535b92f32f9",
+          "guardian_mean_delta": 0.0,
+          "official_score_available": false,
+          "pair_count": 2,
+          "reason": "paired_both_roles_safety_constraints_pass",
+          "split": "training"
+        },
+        {
+          "balanced_mean_delta": 0.0,
+          "confidence_interval": [
+            0.0,
+            0.0
+          ],
+          "eligible": true,
+          "explorer_mean_delta": 0.0,
+          "genome_sha256": "1c8f847a1f6261081e4f3af61cdccca1d69ebe74ff0368976758208768f9aa6f",
+          "guardian_mean_delta": 0.0,
+          "official_score_available": false,
+          "pair_count": 2,
+          "reason": "paired_both_roles_safety_constraints_pass",
+          "split": "training"
+        }
+      ],
+      "elite_sha256": [
+        "1c8f847a1f6261081e4f3af61cdccca1d69ebe74ff0368976758208768f9aa6f"
+      ],
+      "excluded_candidate_reasons": [],
+      "generation_index": 0
+    },
+    {
+      "candidate_assessments": [
+        {
+          "balanced_mean_delta": 0.0,
+          "confidence_interval": [
+            0.0,
+            0.0
+          ],
+          "eligible": true,
+          "explorer_mean_delta": 0.0,
+          "genome_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+          "guardian_mean_delta": 0.0,
+          "official_score_available": false,
+          "pair_count": 2,
+          "reason": "baseline_reference",
+          "split": "training"
+        },
+        {
+          "balanced_mean_delta": 0.0,
+          "confidence_interval": [
+            0.0,
+            0.0
+          ],
+          "eligible": true,
+          "explorer_mean_delta": 0.0,
+          "genome_sha256": "f614733fc8f01b73fa0530a805100e6fbc49f2811c1532a72fe103200bc8e4ad",
+          "guardian_mean_delta": 0.0,
+          "official_score_available": false,
+          "pair_count": 2,
+          "reason": "paired_both_roles_safety_constraints_pass",
+          "split": "training"
+        },
+        {
+          "balanced_mean_delta": 0.0,
+          "confidence_interval": [
+            0.0,
+            0.0
+          ],
+          "eligible": true,
+          "explorer_mean_delta": 0.0,
+          "genome_sha256": "4de2a3e71975d3e659014a5d5621def8ea63da61462f6ddae091e5498f7095f6",
+          "guardian_mean_delta": 0.0,
+          "official_score_available": false,
+          "pair_count": 2,
+          "reason": "paired_both_roles_safety_constraints_pass",
+          "split": "training"
+        }
+      ],
+      "generation_index": 1
+    }
+  ],
+  "held_out_episodes_evaluated": 0,
+  "invocation": [
+    "tools/train_evolution.py",
+    "--development-fixtures",
+    "--bank",
+    "sim/kinematic/scenarios/phase6_interior_tactics_bank.json",
+    "--generations",
+    "2",
+    "--population-size",
+    "3",
+    "--elite-count",
+    "1",
+    "--mutation-sigma",
+    "0.08",
+    "--episode-duration-s",
+    "30",
+    "--seed",
+    "20260930",
+    "--workers",
+    "2",
+    "--output-dir",
+    "artifacts/reports/phase6/p63_interior_dev_seed20260930"
+  ],
+  "maze_bank_sha256": "edf64086198f77231a2944c2d0a5632bf76701f3bf19d65f29965c192d7e53de",
+  "official_score_available": false,
+  "pairing_provenance": [
+    {
+      "evaluation_profile_id": "0977ed91697b4d395238aaab9c97ff4e41264650e2026009ef666e499fbb79e2",
+      "map_bank_id": "map-training-interior-loops-c-v1",
+      "opponent_bank_id": "opponent-training-interior-c-v1",
+      "scenario_id": "maze_interior_loops_train_c",
+      "scenario_sha256": "053da57e3f85a831813263560ba340b25b32540280a71ac832b79fdca6da9a5b",
+      "seed": 6401,
+      "seed_bank_id": "seed-training-interior-c-v1",
+      "split": "training"
+    },
+    {
+      "evaluation_profile_id": "f329ca2127a140660835b6fbd59f2ae8f885d93812f7c9b98383cc65067c622d",
+      "map_bank_id": "map-training-interior-loops-c-v1",
+      "opponent_bank_id": "opponent-training-interior-c-v1",
+      "scenario_id": "maze_interior_loops_train_c",
+      "scenario_sha256": "053da57e3f85a831813263560ba340b25b32540280a71ac832b79fdca6da9a5b",
+      "seed": 1006404,
+      "seed_bank_id": "seed-training-interior-c-v1",
+      "split": "training"
+    },
+    {
+      "evaluation_profile_id": "65626c9b17ac23c5668e0722088607e0f06ab0cd4f71cab73b05ec8e0f173689",
+      "map_bank_id": "map-training-interior-loops-d-v1",
+      "opponent_bank_id": "opponent-training-interior-d-v1",
+      "scenario_id": "maze_interior_loops_train_d",
+      "scenario_sha256": "5c0a5e3b2b1414e39349cb70c0b20b5cf7b5e7078a3954d9a46d86753ea8c6bd",
+      "seed": 6402,
+      "seed_bank_id": "seed-training-interior-d-v1",
+      "split": "training"
+    },
+    {
+      "evaluation_profile_id": "cb35a0dd5a87eb0db9d1df8b10e255d6a311be98cdd7405909f43185148cb07a",
+      "map_bank_id": "map-training-interior-loops-d-v1",
+      "opponent_bank_id": "opponent-training-interior-d-v1",
+      "scenario_id": "maze_interior_loops_train_d",
+      "scenario_sha256": "5c0a5e3b2b1414e39349cb70c0b20b5cf7b5e7078a3954d9a46d86753ea8c6bd",
+      "seed": 1006405,
+      "seed_bank_id": "seed-training-interior-d-v1",
+      "split": "training"
+    }
+  ],
+  "promotion_eligible": false,
+  "python_version": "3.14.7",
+  "run_id": "p63_interior_dev_seed20260930",
+  "schema": "hsl26.p63-development-run.v1",
+  "seed": 20260930,
+  "selected_policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "selection_reason": "baseline_retained_no_training_supported_candidate",
+  "source_file_sha256": {
+    "hsl_core\\hsl_core\\learning\\evolution.py": "53d389e7dc90c3afb92ef4647593e116fcb41e2552d1f41e3856238196f2d1ae",
+    "sim\\kinematic\\autonomous.py": "251efefdeaf12f215be01ef0d85018a7e35af93c5f7921f819d3626511fad0b7",
+    "sim\\kinematic\\benchmark.py": "e985374407e49e99823cfd0a5ddfc32dc535591822598d0b000ee6a7063e6a22",
+    "sim\\kinematic\\scenarios\\phase6_maze_bank.json": "69722b7d555628dc99843ec4f8ee5c91e40b3f683a05eb6f46d75c1aea8e9250",
+    "tools\\p63_policy.py": "b932fe28c8f1b974edb74ee1e20fe2125b4af6f0417984dbef164778a2fa2e98",
+    "tools\\train_evolution.py": "7b0c137e51e373f5b05af74951f66154b33e49d71cc6c24092ef61068e7c29be"
+  },
+  "training_finalist_mean_delta": null,
+  "training_finalist_sha256": null,
+  "training_scenarios": [
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        7,
+        7
+      ],
+      "guardian_start_rc": [
+        1,
+        1
+      ],
+      "map_bank_id": "map-training-interior-loops-c-v1",
+      "opponent_bank_id": "opponent-training-interior-c-v1",
+      "rows": [
+        "#########",
+        "#.......#",
+        "#.###.#.#",
+        "#...#...#",
+        "###...###",
+        "#...#...#",
+        "#.#.###.#",
+        "#.......#",
+        "#########"
+      ],
+      "scenario_id": "maze_interior_loops_train_c",
+      "scenario_sha256": "053da57e3f85a831813263560ba340b25b32540280a71ac832b79fdca6da9a5b",
+      "seed_bank_id": "seed-training-interior-c-v1",
+      "split": "training",
+      "synthetic_goal_rc": [
+        4,
+        4
+      ]
+    },
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        7,
+        1
+      ],
+      "guardian_start_rc": [
+        1,
+        7
+      ],
+      "map_bank_id": "map-training-interior-loops-d-v1",
+      "opponent_bank_id": "opponent-training-interior-d-v1",
+      "rows": [
+        "#########",
+        "#.......#",
+        "#.#.###.#",
+        "#...#...#",
+        "###...###",
+        "#...#...#",
+        "#.###.#.#",
+        "#.......#",
+        "#########"
+      ],
+      "scenario_id": "maze_interior_loops_train_d",
+      "scenario_sha256": "5c0a5e3b2b1414e39349cb70c0b20b5cf7b5e7078a3954d9a46d86753ea8c6bd",
+      "seed_bank_id": "seed-training-interior-d-v1",
+      "split": "training",
+      "synthetic_goal_rc": [
+        4,
+        4
+      ]
+    }
+  ],
+  "validation_assessment": null,
+  "validation_scenarios": [
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        3,
+        5
+      ],
+      "guardian_start_rc": [
+        1,
+        1
+      ],
+      "map_bank_id": "map-validation-rooms-e-v1",
+      "opponent_bank_id": "opponent-validation-rooms-e-v1",
+      "rows": [
+        "#######",
+        "#...###",
+        "#.....#",
+        "###...#",
+        "#######"
+      ],
+      "scenario_id": "maze_validation_rooms_e",
+      "scenario_sha256": "c2c79265da6f1084be71471567a2d66946af8810c16c2d7b07d9f2a85e978c6b",
+      "seed_bank_id": "seed-validation-rooms-e-v1",
+      "split": "validation",
+      "synthetic_goal_rc": [
+        1,
+        3
+      ]
+    },
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        6,
+        6
+      ],
+      "guardian_start_rc": [
+        0,
+        0
+      ],
+      "map_bank_id": "map-validation-crossings-f-v1",
+      "opponent_bank_id": "opponent-validation-crossings-f-v1",
+      "rows": [
+        ".......",
+        ".#.#...",
+        "...###.",
+        ".#.....",
+        ".###.#.",
+        "...#...",
+        "......."
+      ],
+      "scenario_id": "maze_validation_crossings_f",
+      "scenario_sha256": "0e25389323760347a1a0c94ad281b99a67480528b011c33a054d036aefe5f1da",
+      "seed_bank_id": "seed-validation-crossings-f-v1",
+      "split": "validation",
+      "synthetic_goal_rc": [
+        6,
+        0
+      ]
+    }
+  ],
+  "wall_clock_s": 504.5609400999965
+}

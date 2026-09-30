@@ -100,6 +100,98 @@ later 600-second-cap fixture run did capture at 49.15 active seconds; that run
 used the retained baseline, so it demonstrates synthetic interaction but not
 learning or competitive pursuit.
 
+The subsequent interior-maze development run is recorded in
+[`P6.3_interior_fixture_development_closeout.json`](../artifacts/reports/phase6/P6.3_interior_fixture_development_closeout.json)
+and `artifacts/reports/phase6/p63_interior_dev_seed20260930/`. Its separate
+9-by-9 training fixtures have a fully walled perimeter, a connected interior,
+and shortest routes from both starts to the synthetic goal of at least 6 m
+with at least three turns; the established maze bank was not edited. A
+two-generation, three-genome, two-worker, 30-second-per-episode search was
+reproducible but found no supported improvement: candidate balanced deltas
+were zero, no finalist was produced, and the baseline was retained. The
+four-fixture paired benchmark recorded timeouts on both training maps, one
+synthetic capture and one timeout on validation, with no wall contacts; its
+validation outcomes do not constitute promotion evidence. The verified
+top-view/Doom-style viewer has 151 frames and loads the selected baseline in
+the new interior map, but the match times out at 29.85 s. Its Doom-style panel
+is a 2.5D projection of synthetic 360-beam LiDAR, not a 3D or physical sensor
+view. These results close the P6.3 fixture-only development deliverable, not
+formal P6.3 acceptance: G4 remains `BLOCKED_NOT_RUN`, G5 `NOT_RUN`, G6
+`BLOCKED`, and there is no eligible empirical training, held-out evaluation,
+policy promotion, shadow process, or official score.
+
+## 2.3 P6.4 SIL frozen-input dossier boundary
+
+`tools/validate_config.py` checks a strict versioned JSON SIL profile,
+requires physical/network/mount authority off, and requires every unavailable
+organizer or calibration input to remain explicitly null. It does not infer
+deployment defaults. `tools/release_freeze.py` creates a versioned SIL dossier rather than an
+approved release. It hashes the explicit software profile, fixture bank,
+development policy, authority/evidence references, relevant source trees,
+ROS interface definitions, mux configuration, Docker recipe, and dependency
+metadata. The manifest records the host/runtime, dirty-tree state, expected
+command writer, unresolved official/physical inputs, and each gate separately.
+The tool refuses unsafe profile authority, malformed fixtures, promotable
+policies, missing inputs, and output overwrite. SHA-256 protects against
+accidental drift; it is not a signature or proof of source authenticity.
+
+`tools/preflight_check.py` recomputes the manifest digest and checks every
+listed file's size and hash, serialized policy identity, SIL-only boundary,
+source inventory completeness, runtime fingerprint and unresolved G4/G5/G6
+matrix. A clean preflight means only
+`PASS_SIL_INTEGRITY_RELEASE_BLOCKED`: it never means the release is eligible.
+Live ROS topic/TF ownership, final image digest, native offline image boot,
+calibration, approved rule inputs, and physical stop response remain
+`NOT_RUN`/`BLOCKED`. The current versioned profile is
+[`phase6_sil_release_profile.json`](../config/schema/phase6_sil_release_profile.json).
+
+## 2.4 P6.5 two-stage SIL rehearsal and rollback boundary
+
+`tools/rehearse_phase6_sil.py` requires a passing hash preflight before it
+starts. It launches a fresh Python process to load the exact pinned
+fixture-only policy, injects a changed-manifest-hash and corrupted-policy
+digest, verifies both fail closed, reloads the pinned development baseline as
+the recovery artifact, then runs two bounded SIL stages on separate training
+fixtures. Virtual robot identities are attached to role endpoints and included
+in the evaluation-profile digest, while remaining unavailable to policy
+observations. The second stage swaps virtual robot-A/robot-B role identities;
+both episodes require strictly increasing telemetry, zero command during the
+synthetic freeze, terminalized Guardian/Explorer results, zero reported
+safety violations/collisions/wall contacts, and no held-out access. Failed
+checks are written as failures, not dropped from the report.
+
+This exercises a fresh process and fixture lifecycle only. It does not prove
+offline cold boot in the final image, host/container network isolation,
+physical robot identity or reset/retention behavior. The rollback target is
+the hash-pinned P6.3 development baseline, explicitly **not** a last accepted
+release because no accepted G4 release exists. A SIL report can therefore
+pass while formal P6.5/G6 stays blocked. Every report preserves terminal
+outcomes as synthetic diagnostics and leaves official scores null.
+
+Reproduction commands (use new output directories):
+
+```powershell
+python tools/release_freeze.py --release-id p64-sil-20260930 --output-dir artifacts/releases/p64_sil_20260930
+python tools/preflight_check.py --manifest artifacts/releases/p64_sil_20260930/manifest.json --output artifacts/releases/p64_sil_20260930/preflight.json
+python tools/rehearse_phase6_sil.py --manifest artifacts/releases/p64_sil_20260930/manifest.json --duration-s 30 --seed 20260930 --output-dir artifacts/reports/phase6/p65_sil_rehearsal_20260930
+```
+
+The P6.4 dossier and P6.5 report are software evidence only; they must not be
+used to claim G0–G6 acceptance, arm physical motion, or finalize Phase 6.
+
+The recorded 2026-09-30 run is in
+[`p64_sil_20260930_final`](../artifacts/releases/p64_sil_20260930_final/manifest.json),
+[`p65_sil_rehearsal_20260930_final`](../artifacts/reports/phase6/p65_sil_rehearsal_20260930_final/rehearsal_report.json),
+and [`P6.4_P6.5_SIL_closeout_20260930.json`](../artifacts/reports/phase6/P6.4_P6.5_SIL_closeout_20260930.json).
+Both 30-second fixture stages reached `TIMEOUT` at 29.85 s after 600 ticks.
+Each had three zero-command freeze samples, completed both role records, and
+reported zero safety violations, robot collisions and wall contacts. The
+preflight passed local hash/runtime checks while release remained blocked;
+the fresh subprocess and both tamper detections passed, and the selected
+development fallback was restored by digest. These results do not demonstrate
+a capture, learned improvement, physical role swap, final-image boot or
+official match behavior.
+
 The 2026-09-30 random-seed development run (`p63_random_seed_569726666`)
 evaluated one mutation against the baseline. The mutation was excluded by the
 hard safety/episode-completion filter, no training finalist was produced, and

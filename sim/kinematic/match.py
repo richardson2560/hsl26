@@ -126,6 +126,7 @@ class RoleEndpoint:
     topology_graph: TopologyGraph | None = None
     synthetic_goal_node_id: int | None = None
     synthetic_goal_zone_id: str = ""
+    robot_identity: str = ""
 
     def __post_init__(self) -> None:
         if not isinstance(self.role, MatchRole):
@@ -136,6 +137,10 @@ class RoleEndpoint:
             raise ValueError("role endpoint requires a kinematic plant and sensor")
         if not callable(self.policy):
             raise ValueError("role endpoint requires a policy callable")
+        if not isinstance(self.robot_identity, str):
+            raise ValueError("robot_identity must be a string")
+        if self.robot_identity and not self.robot_identity.strip():
+            raise ValueError("robot_identity must be non-empty when supplied")
         if (
             self.pose_estimator is not None
             and not isinstance(self.pose_estimator, SilDeadReckoningEstimator)

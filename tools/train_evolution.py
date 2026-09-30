@@ -10,6 +10,7 @@ import math
 from pathlib import Path
 import platform
 import sys
+from time import perf_counter
 from typing import Any
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -35,6 +36,7 @@ from sim.kinematic.benchmark import (  # noqa: E402
     SILBenchmarkRunner,
 )
 from sim.kinematic.maze_bank import load_maze_bank  # noqa: E402
+from tools.p63_parallel import ordered_process_map, validate_worker_count  # noqa: E402
 from tools.p63_policy import (  # noqa: E402
     EVIDENCE_CLASS,
     build_default_baseline,
@@ -46,6 +48,36 @@ from tools.p63_policy import (  # noqa: E402
 _DEFAULT_BANK = ROOT_DIR / "sim" / "kinematic" / "scenarios" / "phase6_maze_bank.json"
 
 
+def _baseline_fixture_job(job):
+    bank_path, scenario_id, bench_config, genome, seed = job
+    fixture = next(
+        item
+        for item in load_maze_bank(bank_path).fixtures
+        if item.scenario_id == scenario_id
+    )
+    episode = SILBenchmarkRunner(bench_config).run_episode(
+        genome, fixture, seed=seed
+    )
+    return scenario_id, episode
+
+
+def _role_swapped_fixture_job(job):
+    bank_path, scenario_id, bench_config, candidate, baseline, seed, baseline_ref = job
+    fixture = next(
+        item
+        for item in load_maze_bank(bank_path).fixtures
+        if item.scenario_id == scenario_id
+    )
+    evaluation = SILBenchmarkRunner(bench_config).run_role_swapped_evaluation(
+        candidate,
+        baseline,
+        fixture,
+        seed=seed,
+        baseline_reference=baseline_ref,
+    )
+    return candidate.sha256, scenario_id, evaluation
+
+
 def train_p63_evolution(
     *,
     generations: int = 3,
@@ -54,6 +86,7 @@ def train_p63_evolution(
     mutation_sigma: float = 0.08,
     seed: int = 2026,
     episode_duration_s: float = 8.0,
+    workers: int = 1,
     bank_path: str | Path = _DEFAULT_BANK,
     output_dir: str | Path,
     development_fixtures: bool = False,
@@ -68,6 +101,8 @@ def train_p63_evolution(
             "fixture search requires explicit development_fixtures=True; "
             "results are not eligible P6.3 evidence"
         )
+    validate_worker_count(workers)
+    started_at = perf_counter()
     config = EvolutionConfig(
         population_size=population_size,
         elite_count=elite_count,
@@ -135,12 +170,45 @@ def train_p63_evolution(
             fixture.scenario_id: fixture.seed + generation_index * 1_000_003
             for fixture in train_fixtures
         }
-        baseline_references = {
-            fixture.scenario_id: runner.run_episode(
-                baseline, fixture, seed=train_seeds[fixture.scenario_id]
+        baseline_results = ordered_process_map(
+            _baseline_fixture_job,
+            (
+                (
+                    str(Path(bank_path).resolve()),
+                    fixture.scenario_id,
+                    bench_config,
+                    baseline,
+                    train_seeds[fixture.scenario_id],
+                )
+                for fixture in train_fixtures
+            ),
+            workers=workers,
+        )
+        baseline_references = dict(baseline_results)
+        candidate_jobs = (
+            (
+                str(Path(bank_path).resolve()),
+                fixture.scenario_id,
+                bench_config,
+                candidate,
+                baseline,
+                train_seeds[fixture.scenario_id],
+                baseline_references[fixture.scenario_id],
             )
+            for candidate in population
+            if candidate.sha256 != baseline.sha256
             for fixture in train_fixtures
-        }
+        )
+        role_evaluations = ordered_process_map(
+            _role_swapped_fixture_job,
+            candidate_jobs,
+            workers=workers,
+        )
+        evaluations_by_candidate: dict[str, dict[str, Any]] = {}
+        for candidate_id, scenario_id, role_pair in role_evaluations:
+            evaluations_by_candidate.setdefault(candidate_id, {})[
+                scenario_id
+            ] = role_pair
         for candidate in population:
             if candidate.sha256 == baseline.sha256:
                 assessment = _baseline_assessment(baseline, len(train_fixtures))
@@ -148,13 +216,9 @@ def train_p63_evolution(
                 baseline_rows = []
                 candidate_rows = []
                 for fixture in train_fixtures:
-                    role_pair = runner.run_role_swapped_evaluation(
-                        candidate,
-                        baseline,
-                        fixture,
-                        seed=train_seeds[fixture.scenario_id],
-                        baseline_reference=baseline_references[fixture.scenario_id],
-                    )
+                    role_pair = evaluations_by_candidate[candidate.sha256][
+                        fixture.scenario_id
+                    ]
                     _record_pair_provenance(
                         pairing_provenance,
                         fixture,
@@ -214,20 +278,44 @@ def train_p63_evolution(
             fixture.scenario_id: fixture.seed + 9_000_001
             for fixture in validation_fixtures
         }
-        baseline_references = {
-            fixture.scenario_id: runner.run_episode(
-                baseline, fixture, seed=validation_seeds[fixture.scenario_id]
+        baseline_references = dict(
+            ordered_process_map(
+                _baseline_fixture_job,
+                (
+                    (
+                        str(Path(bank_path).resolve()),
+                        fixture.scenario_id,
+                        bench_config,
+                        baseline,
+                        validation_seeds[fixture.scenario_id],
+                    )
+                    for fixture in validation_fixtures
+                ),
+                workers=workers,
             )
-            for fixture in validation_fixtures
+        )
+        validation_pairs = ordered_process_map(
+            _role_swapped_fixture_job,
+            (
+                (
+                    str(Path(bank_path).resolve()),
+                    fixture.scenario_id,
+                    bench_config,
+                    finalist,
+                    baseline,
+                    validation_seeds[fixture.scenario_id],
+                    baseline_references[fixture.scenario_id],
+                )
+                for fixture in validation_fixtures
+            ),
+            workers=workers,
+        )
+        validation_by_scenario = {
+            scenario_id: role_pair
+            for _candidate_id, scenario_id, role_pair in validation_pairs
         }
         for fixture in validation_fixtures:
-            role_pair = runner.run_role_swapped_evaluation(
-                finalist,
-                baseline,
-                fixture,
-                seed=validation_seeds[fixture.scenario_id],
-                baseline_reference=baseline_references[fixture.scenario_id],
-            )
+            role_pair = validation_by_scenario[fixture.scenario_id]
             _record_pair_provenance(
                 pairing_provenance,
                 fixture,
@@ -271,7 +359,9 @@ def train_p63_evolution(
             "population_size": population_size,
             "elite_count": elite_count,
             "mutation_sigma": mutation_sigma,
+            "workers": workers,
         },
+        "wall_clock_s": perf_counter() - started_at,
         "benchmark_config": asdict(bench_config),
         "evaluation_plans": {
             "training": asdict(train_plan),
@@ -443,6 +533,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--elite-count", type=int, default=2)
     parser.add_argument("--mutation-sigma", type=float, default=0.08)
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--episode-duration-s", type=float, default=8.0)
     parser.add_argument("--bank", type=Path, default=_DEFAULT_BANK)
     parser.add_argument(
@@ -467,6 +558,7 @@ if __name__ == "__main__":
         elite_count=cli_args.elite_count,
         mutation_sigma=cli_args.mutation_sigma,
         seed=cli_args.seed,
+        workers=cli_args.workers,
         episode_duration_s=cli_args.episode_duration_s,
         bank_path=cli_args.bank,
         output_dir=cli_args.output_dir,

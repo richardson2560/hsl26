@@ -42,7 +42,12 @@ def test_p6_manifest_is_preparation_only_and_keeps_gates_open():
     assert packages["P6.3"] == (
         "FIXTURE_SEARCH_IMPLEMENTED_ELIGIBLE_EVALUATION_BLOCKED_UNTIL_G4_AND_ACCEPTED_DATA"
     )
-    assert packages["P6.5"] == "BLOCKED_UNTIL_ACCEPTED_RELEASE_AND_FINAL_TARGET"
+    assert packages["P6.4"] == (
+        "SIL_DOSSIER_PREFLIGHT_IMPLEMENTED_FORMAL_RELEASE_BLOCKED_UNTIL_G4_AND_APPROVED_INPUTS"
+    )
+    assert packages["P6.5"] == (
+        "TWO_STAGE_SIL_REHEARSAL_IMPLEMENTED_FORMAL_G6_BLOCKED_UNTIL_FINAL_TARGET"
+    )
 
 
 def test_p6_fixture_cannot_be_promoted_to_training_data():

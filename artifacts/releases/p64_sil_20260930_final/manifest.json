@@ -1,0 +1,1160 @@
+{
+  "authority": {
+    "held_out_evaluated": false,
+    "model": {
+      "sha256": null,
+      "status": "NOT_USED_IN_DECLARED_SIL_PROFILE"
+    },
+    "official_scoring_authority": false,
+    "physical_authority": false,
+    "policy_path": "artifacts/reports/phase6/p63_interior_dev_seed20260930/policy.json",
+    "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+    "scenario_bank_path": "sim/kinematic/scenarios/phase6_interior_tactics_bank.json",
+    "scenario_bank_split_counts": {
+      "held_out_reserved_not_run": 1,
+      "training": 2,
+      "validation": 2
+    },
+    "simulator_truth_available_to_policy": false
+  },
+  "config_validation": {
+    "checks": [
+      {
+        "check": "schema",
+        "detail": "Versioned P6 SIL profile schema and ID are required.",
+        "status": "PASS"
+      },
+      {
+        "check": "fixture_authority_boundary",
+        "detail": "Profile must not grant physical, scoring, or policy truth authority.",
+        "status": "PASS"
+      },
+      {
+        "check": "execution_isolation",
+        "detail": "Fixture execution must disable physical devices, downloads, and editable mounts.",
+        "status": "PASS"
+      },
+      {
+        "check": "official_inputs_explicitly_unresolved",
+        "detail": "Every organizer and physical input is explicitly null until authorized evidence exists.",
+        "status": "PASS"
+      },
+      {
+        "check": "supported_synthetic_timing",
+        "detail": "Synthetic timing, surrogate, and reset behavior must match the tested runner profile.",
+        "status": "PASS"
+      },
+      {
+        "check": "repository_relative_artifact_references",
+        "detail": "Fixture and policy references must be repository-relative and traversal-free.",
+        "status": "PASS"
+      }
+    ],
+    "physical_authority": false,
+    "release_eligible": false,
+    "schema": "hsl26.phase6.config-validation-report.v1",
+    "sil_profile_valid": true,
+    "status": "VALID_SIL_FIXTURE_ONLY"
+  },
+  "created_at_utc": "2026-09-30T01:19:04.371066+00:00",
+  "environment_constraints": {
+    "editable_bind_mounts_allowed": false,
+    "network_downloads_allowed": false,
+    "note": "These are intended constraints; this local dossier does not prove container or host isolation.",
+    "physical_devices_enabled": false
+  },
+  "frozen_inputs": [
+    {
+      "kind": "sil_profile",
+      "path": "config/schema/phase6_sil_release_profile.json",
+      "sha256": "725347aebc0513a2a4441ce69e526c0bc352287c15bebe869c12c854ecffe80b",
+      "size_bytes": 1290
+    },
+    {
+      "kind": "synthetic_fixture_bank",
+      "path": "sim/kinematic/scenarios/phase6_interior_tactics_bank.json",
+      "sha256": "edf64086198f77231a2944c2d0a5632bf76701f3bf19d65f29965c192d7e53de",
+      "size_bytes": 3128
+    },
+    {
+      "kind": "development_policy",
+      "path": "artifacts/reports/phase6/p63_interior_dev_seed20260930/policy.json",
+      "sha256": "083e0af7b141e2338b031862ea3394167f3b438c0ced3ce0f6b93286a24fa84e",
+      "size_bytes": 1966
+    },
+    {
+      "kind": "authority_or_evidence",
+      "path": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+      "sha256": "5b42a4c742cdbc89d50892096caf6b609db3797efea00d447eebff05fe7f66bd",
+      "size_bytes": 164455
+    },
+    {
+      "kind": "authority_or_evidence",
+      "path": "docs/HSL26_FINAL_ARCHITECTURE.md",
+      "sha256": "49e0569f37843ddba9590b82b66b4cfa9561ef9619402fd29c31a81f7e6fa02d",
+      "size_bytes": 49997
+    },
+    {
+      "kind": "authority_or_evidence",
+      "path": "docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md",
+      "sha256": "97d378d3e3ca88571b8904ec920db5f752235d065c84e8ff5fff4c57ac11ae0d",
+      "size_bytes": 20894
+    },
+    {
+      "kind": "authority_or_evidence",
+      "path": "docs/runbook_competition.md",
+      "sha256": "2eab19acdd5a86b021ab4e33df2fc755335c426f85b5de8989e7835ea5e9b38b",
+      "size_bytes": 7047
+    },
+    {
+      "kind": "authority_or_evidence",
+      "path": "artifacts/reports/phase5/P5.6_autonomous_integration_report.json",
+      "sha256": "0c14d769af24681dcb7b6362da64c3021c7d78296a56fa1b2fa1435c9ec1cada",
+      "size_bytes": 7446
+    },
+    {
+      "kind": "authority_or_evidence",
+      "path": "artifacts/reports/phase6/P6.3_interior_fixture_development_closeout.json",
+      "sha256": "c3a2060bf0b53d247836471b619c8f27cbf054c497d2dfc55e8785245208fe0f",
+      "size_bytes": 5707
+    }
+  ],
+  "gate_matrix": [
+    {
+      "evidence": null,
+      "gate": "G0",
+      "status": "BLOCKED"
+    },
+    {
+      "evidence": null,
+      "gate": "G1",
+      "status": "BLOCKED"
+    },
+    {
+      "evidence": null,
+      "gate": "G2",
+      "status": "BLOCKED"
+    },
+    {
+      "evidence": null,
+      "gate": "G3",
+      "status": "BLOCKED"
+    },
+    {
+      "evidence": null,
+      "gate": "G4",
+      "status": "BLOCKED_NOT_RUN"
+    },
+    {
+      "evidence": null,
+      "gate": "G5",
+      "status": "NOT_RUN"
+    },
+    {
+      "evidence": null,
+      "gate": "G6",
+      "status": "BLOCKED"
+    }
+  ],
+  "manifest_sha256": "bcc46908738bff9f852b970f481106603f684ced978606fc165e8ac413472cf6",
+  "official_inputs": {
+    "status": "INCOMPLETE",
+    "unresolved": [
+      "accepted_g4_baseline",
+      "official_zone_goal_and_scoring_provenance",
+      "approved_timing_trigger_and_memory_policy",
+      "physical_robot_identity_and_calibration",
+      "final_target_image_digest"
+    ],
+    "values": {
+      "accepted_g4_baseline": null,
+      "final_target_image_digest": null,
+      "memory_retention_policy": null,
+      "robot_identity_and_calibration": null,
+      "score_profile": null,
+      "stage_timing_and_trigger": null,
+      "zone_and_goal_provenance": null
+    }
+  },
+  "profile": "KINEMATIC_SIL_ONLY",
+  "release_decision": {
+    "blocking_reasons": [
+      "G4 has no accepted deterministic baseline.",
+      "Organizer-approved objective, score, stage timing, trigger, and memory policy are unavailable.",
+      "No physical robot identity, calibration, or stopping-response evidence is available.",
+      "No final target image digest, offline cold-start evidence, or immutable release environment is available.",
+      "This worktree is not an immutable signed release source."
+    ],
+    "official_score_available": false,
+    "physical_authority": false,
+    "promotion_eligible": false,
+    "sil_dossier_status": "HASHES_VERIFIED_NO_RELEASE_AUTHORITY",
+    "status": "BLOCKED_FOR_RELEASE"
+  },
+  "release_id": "p64-sil-20260930-final",
+  "runtime": {
+    "docker_image_digest": null,
+    "mvsim_version": null,
+    "os": "Windows-11-10.0.22631-SP0",
+    "packages": {
+      "numpy": "2.5.3",
+      "pytest": "9.1.1",
+      "scipy": "1.18.1"
+    },
+    "python": "3.14.7 | packaged by Anaconda, Inc. | (main, Aug 14 2026, 10:12:46) [MSC v.1942 64 bit (AMD64)]",
+    "python_executable": "C:\\Users\\edgar\\miniconda3\\python.exe",
+    "python_implementation": "CPython",
+    "ros_distribution": null
+  },
+  "schema": "hsl26.phase6.sil-release-dossier.v1",
+  "signature": {
+    "reason": "No trusted release signing authority or key was supplied.",
+    "signer_id": null,
+    "status": "NOT_SIGNED"
+  },
+  "sil_profile_sha256": "725347aebc0513a2a4441ce69e526c0bc352287c15bebe869c12c854ecffe80b",
+  "source_inventory": [
+    {
+      "path": "artifacts/reports/phase5/P5.6_autonomous_integration_report.json",
+      "sha256": "0c14d769af24681dcb7b6362da64c3021c7d78296a56fa1b2fa1435c9ec1cada",
+      "size_bytes": 7446
+    },
+    {
+      "path": "artifacts/reports/phase6/P6.3_interior_fixture_development_closeout.json",
+      "sha256": "c3a2060bf0b53d247836471b619c8f27cbf054c497d2dfc55e8785245208fe0f",
+      "size_bytes": 5707
+    },
+    {
+      "path": "config/schema/phase6_sil_release_profile.json",
+      "sha256": "725347aebc0513a2a4441ce69e526c0bc352287c15bebe869c12c854ecffe80b",
+      "size_bytes": 1290
+    },
+    {
+      "path": "docker/Dockerfile",
+      "sha256": "76c29f5aa52f82b7acb56051058452d8e298ee7e461ec42af0962491c03ce684",
+      "size_bytes": 1615
+    },
+    {
+      "path": "docker/entrypoint.bash",
+      "sha256": "5ea8474337208286cc2ea618c8d880deb4c4e94c024b5870b39b743a7a6a2bf7",
+      "size_bytes": 160
+    },
+    {
+      "path": "docs/HSL26_FINAL_ARCHITECTURE.md",
+      "sha256": "49e0569f37843ddba9590b82b66b4cfa9561ef9619402fd29c31a81f7e6fa02d",
+      "size_bytes": 49997
+    },
+    {
+      "path": "docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md",
+      "sha256": "97d378d3e3ca88571b8904ec920db5f752235d065c84e8ff5fff4c57ac11ae0d",
+      "size_bytes": 20894
+    },
+    {
+      "path": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+      "sha256": "5b42a4c742cdbc89d50892096caf6b609db3797efea00d447eebff05fe7f66bd",
+      "size_bytes": 164455
+    },
+    {
+      "path": "docs/runbook_competition.md",
+      "sha256": "2eab19acdd5a86b021ab4e33df2fc755335c426f85b5de8989e7835ea5e9b38b",
+      "size_bytes": 7047
+    },
+    {
+      "path": "hsl_core/hsl_core/__init__.py",
+      "sha256": "98956b1b308a88460c5e6b884ae7e34f1a74148a7a1b6d8aa8bc7ac87f2def31",
+      "size_bytes": 33
+    },
+    {
+      "path": "hsl_core/hsl_core/contracts.py",
+      "sha256": "67da29a54d5440397f5bb3a5a19c4705ec24fa40eea0cbea260704c31eaa5488",
+      "size_bytes": 9348
+    },
+    {
+      "path": "hsl_core/hsl_core/control/__init__.py",
+      "sha256": "384bbdb419ab94d24e53e364caa6b914a65b31eb503256a0260e1eaf2ed2e8b5",
+      "size_bytes": 251
+    },
+    {
+      "path": "hsl_core/hsl_core/control/braking.py",
+      "sha256": "b8b12c41c52b5bfa4add60176640d9b8370574f2e1ddc0f4c22d18b7f904d8d3",
+      "size_bytes": 4927
+    },
+    {
+      "path": "hsl_core/hsl_core/control/dwa_local.py",
+      "sha256": "5a88c35a193811522810efe283b1299cf7e8af63135426d7ccc2fc9fb7d64a63",
+      "size_bytes": 42
+    },
+    {
+      "path": "hsl_core/hsl_core/control/execution.py",
+      "sha256": "a72be6677f5d0e021b0b644225e4b6022ddf77beeac94f0cc8dad96b0af9c52d",
+      "size_bytes": 1384
+    },
+    {
+      "path": "hsl_core/hsl_core/control/regulated_pursuit.py",
+      "sha256": "78cd77ea0fd661217c088b145f5a6e2d43992667e57227f05f4665e7ca142770",
+      "size_bytes": 4336
+    },
+    {
+      "path": "hsl_core/hsl_core/control/safety.py",
+      "sha256": "982bea24b7ad22258557f03627478d0dd2a87ff8424f553253b586f43ff97eea",
+      "size_bytes": 25928
+    },
+    {
+      "path": "hsl_core/hsl_core/geometry.py",
+      "sha256": "8e8b2ff5ec01099d896e078c29aecb873f24ffc52aacce4a5165631c42331010",
+      "size_bytes": 831
+    },
+    {
+      "path": "hsl_core/hsl_core/kinematics.py",
+      "sha256": "0920f61bd17cca056d188b2c31eec80c8f7ec7b2d9c644fd00a1c9194a88ca66",
+      "size_bytes": 12665
+    },
+    {
+      "path": "hsl_core/hsl_core/learning/__init__.py",
+      "sha256": "46d2bf08919d58322157db54cf600c14b834a7328911e6860825c20725b28d6c",
+      "size_bytes": 1988
+    },
+    {
+      "path": "hsl_core/hsl_core/learning/dirichlet.py",
+      "sha256": "386a3291e827069fe9055a62bc7fd2b0d7f9dd276dfcd4994b681d3e8db1340e",
+      "size_bytes": 6213
+    },
+    {
+      "path": "hsl_core/hsl_core/learning/evolution.py",
+      "sha256": "53d389e7dc90c3afb92ef4647593e116fcb41e2552d1f41e3856238196f2d1ae",
+      "size_bytes": 25384
+    },
+    {
+      "path": "hsl_core/hsl_core/learning/option_value.py",
+      "sha256": "ddc3f6065e0f300594e439af411c7afad11cd5bedbc9f41fb003b909c54d5f7d",
+      "size_bytes": 13515
+    },
+    {
+      "path": "hsl_core/hsl_core/learning/transitions.py",
+      "sha256": "a79767085bb0848dbeddc97a572c286e2186c859bb0ec6970e356c87f5a24e02",
+      "size_bytes": 33651
+    },
+    {
+      "path": "hsl_core/hsl_core/mapping.py",
+      "sha256": "5c13f4882f1d0980085d33a27950c43f36a5994f69d47f98d8d4420b4d2e7bb9",
+      "size_bytes": 8924
+    },
+    {
+      "path": "hsl_core/hsl_core/match.py",
+      "sha256": "3866e2db2f60f77953c96aba943ba3643a56724437aef5b03c71c04201a53473",
+      "size_bytes": 61157
+    },
+    {
+      "path": "hsl_core/hsl_core/occupancy.py",
+      "sha256": "e39b1fced32bd811926a1b4883facc4dcf686020fcc6ce83f0b78f4f853da380",
+      "size_bytes": 13929
+    },
+    {
+      "path": "hsl_core/hsl_core/perception/__init__.py",
+      "sha256": "f5c449d85eb584cf856a025dd51596e3805a4b44bdbbab16e2f481c0db258413",
+      "size_bytes": 43
+    },
+    {
+      "path": "hsl_core/hsl_core/perception/bounded_worker.py",
+      "sha256": "197b204194e434742a41f2d643fd5667cb0b325059babac9ac048e191d79e692",
+      "size_bytes": 5625
+    },
+    {
+      "path": "hsl_core/hsl_core/perception/ekf_opponent.py",
+      "sha256": "94c496eeaafd93414b5c8f7d7d6922849cfaf0702196b8ba3c291adf6a8dd86f",
+      "size_bytes": 13481
+    },
+    {
+      "path": "hsl_core/hsl_core/perception/fidelity.py",
+      "sha256": "469323d160d085ec552350c5dbd7a7ae4323060bb849f83e16994641dcddc28f",
+      "size_bytes": 6694
+    },
+    {
+      "path": "hsl_core/hsl_core/perception/implicit_surface.py",
+      "sha256": "c6e40aeb9fbd42ee3b2a4a5693d93cb6f8f4e7b2bd01dac0bc6ac6d667713c2e",
+      "size_bytes": 14111
+    },
+    {
+      "path": "hsl_core/hsl_core/perception/registration.py",
+      "sha256": "62c757802c38360f864d9e5024e38f5f6637fc7323c41cca8b5287eaddc01011",
+      "size_bytes": 9998
+    },
+    {
+      "path": "hsl_core/hsl_core/perception/runtime_codec.py",
+      "sha256": "7d6d0f7f47ece98d32a1f894caabba95b6cbbd863a684c8c2d339828c53ab61c",
+      "size_bytes": 26132
+    },
+    {
+      "path": "hsl_core/hsl_core/perception/segmenter.py",
+      "sha256": "3a7de6743cfb5df16198b5987408c9b12e0eab7aa09cfb52b90feac4acf0c4fb",
+      "size_bytes": 4349
+    },
+    {
+      "path": "hsl_core/hsl_core/perception/topological_belief.py",
+      "sha256": "3a2feea7ddce885414b1c92ea838a44f9edebff209aa1bbfdfb5d044c87a20b1",
+      "size_bytes": 26277
+    },
+    {
+      "path": "hsl_core/hsl_core/planning/__init__.py",
+      "sha256": "7680ebb5f3881d407866bf8c884e98e5598feefa7e5c32fe640b813c286fcc5e",
+      "size_bytes": 332
+    },
+    {
+      "path": "hsl_core/hsl_core/planning/astar.py",
+      "sha256": "0c80ac131061c115205734140ad3a249a91870e32bec675a238e5d84a99d968b",
+      "size_bytes": 9056
+    },
+    {
+      "path": "hsl_core/hsl_core/planning/execution.py",
+      "sha256": "962c4d69f6df46279b4fb23743abec8a76bc240cf2c0dcdea5a6dc58b1a16aca",
+      "size_bytes": 7886
+    },
+    {
+      "path": "hsl_core/hsl_core/planning/intercept.py",
+      "sha256": "aa313f57cccd6cec61acf9510261929f8caa95af97eb462a320835055878f86a",
+      "size_bytes": 43
+    },
+    {
+      "path": "hsl_core/hsl_core/rules.py",
+      "sha256": "194b2337f1427bb026d21694890aae68e7445de8954034c167d132c0474c9da7",
+      "size_bytes": 27098
+    },
+    {
+      "path": "hsl_core/hsl_core/tactics/__init__.py",
+      "sha256": "97e48d445ce4dc091fdcd7e4f1149ba860fd62ceef408a4894531c08a2bef70b",
+      "size_bytes": 1165
+    },
+    {
+      "path": "hsl_core/hsl_core/tactics/fsm.py",
+      "sha256": "96bc93cda0682a55096213d5fefa8bee821973d61646f5dfcd2ed04d6bb763b8",
+      "size_bytes": 30352
+    },
+    {
+      "path": "hsl_core/hsl_core/tactics/options.py",
+      "sha256": "5e8e02c9f1995e5e52ac3076aeeb87238c7724a7fbae1fdb0b34c9937761695f",
+      "size_bytes": 37018
+    },
+    {
+      "path": "hsl_core/hsl_core/tactics/utility.py",
+      "sha256": "876f267669449c0067be9220c7fc9fb5b86817253da34df5508091c311f02486",
+      "size_bytes": 7451
+    },
+    {
+      "path": "hsl_core/hsl_core/topology.py",
+      "sha256": "9c028b680db6b09bd62c1999067943c0d67010762bed46f196fcb6b44ca31a57",
+      "size_bytes": 24701
+    },
+    {
+      "path": "hsl_core/hsl_core/types.py",
+      "sha256": "15ae5dc7d1188ff36b570a8aea5a635a944133424a3a49bfe773a2c1eb2f58ce",
+      "size_bytes": 5992
+    },
+    {
+      "path": "hsl_core/pyproject.toml",
+      "sha256": "47629011716c435baf009917683db714dca0a49b021d050d2706d6aab6bedb85",
+      "size_bytes": 439
+    },
+    {
+      "path": "kobuki/workspace/src/cmd_vel_mux/config/cmd_vel_mux_params.yaml",
+      "sha256": "918a3d3dfbaceb7b9e44d60b6d4825218b285447fba8c8c64555d0510ada6dcb",
+      "size_bytes": 836
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/config/execution_profiles.yaml",
+      "sha256": "268750717e9f1dad8039bb5129fed46afeb3976728769876a4d62c0f3532e3d6",
+      "size_bytes": 571
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/config/frames.yaml",
+      "sha256": "951678b7c0f820700492cd71d3fe7c2a4b1fbb8c0e72455b5bd9f275701534ed",
+      "size_bytes": 97
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/config/hardware.yaml",
+      "sha256": "c08ffeaa18b7f58772d14e3b6a05505150a147d7d215858902f5ccfc5d749a48",
+      "size_bytes": 1217
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/config/perception.yaml",
+      "sha256": "672d6d85d439d4b1ca145228f83a3e39801b21aabee2f3fa71331956654da474",
+      "size_bytes": 268
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/config/score_profile.yaml",
+      "sha256": "12173acda1b4cd680de03da3a1e39a9237ae6540bc39fd81f7124e77fc88547b",
+      "size_bytes": 135
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/config/tactics.yaml",
+      "sha256": "6e0b1b67095d5f31c327f40507a272e25223a892cdbd1f7c6c8e253ceee298f2",
+      "size_bytes": 197
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/hsl_bringup/__init__.py",
+      "sha256": "89be05f5f39064497312708a7a0224fd51e0eb9286c6490369826492974a57a9",
+      "size_bytes": 49
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/launch/hsl26.launch.py",
+      "sha256": "f7a7bf2473040eabd1448cbfb12be06df52dbe8157b40173854a503b8f35dfef",
+      "size_bytes": 1212
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/launch/real_hardware.launch.py",
+      "sha256": "970a716807846fba3e7d411e174c117dee3f48113d7a6977aab3ef82c4f9d834",
+      "size_bytes": 458
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/launch/replay_bag.launch.py",
+      "sha256": "cf6cd37e78e98c377f22808742cec811323ef88d5e8dc5f54d3cdb9039545728",
+      "size_bytes": 570
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/launch/sim_mvsim.launch.py",
+      "sha256": "22cf11b3083fbb8d9e306f6c2ca637182e6f4032509382b0d84b62fc64001875",
+      "size_bytes": 451
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/package.xml",
+      "sha256": "c0dca1ac0a413337db6138cf234a4cd56872efac1f6ef9ae5c6ac191524697b9",
+      "size_bytes": 829
+    },
+    {
+      "path": "ros_ws/src/hsl_bringup/setup.py",
+      "sha256": "e8b2d67a2d98bdad0bac2bc347dea277976ccfd6b305a2dc21a5d9aae9d79ad1",
+      "size_bytes": 786
+    },
+    {
+      "path": "ros_ws/src/hsl_decision/hsl_decision/__init__.py",
+      "sha256": "2c32b7042fd5767a8cf5a3ed665ac3523b3d36deaea9220b02906b4ff9b3a626",
+      "size_bytes": 51
+    },
+    {
+      "path": "ros_ws/src/hsl_decision/hsl_decision/option_lifecycle.py",
+      "sha256": "100e4da65d606899e0d90826c1c2abb74a337c4115b2c2c0b9981f62a2d2f8ae",
+      "size_bytes": 60
+    },
+    {
+      "path": "ros_ws/src/hsl_decision/hsl_decision/tactics_node.py",
+      "sha256": "f6ab874c4f63ecf82dfc85e41240764040239680ad990f16428ad892d17079ce",
+      "size_bytes": 56
+    },
+    {
+      "path": "ros_ws/src/hsl_decision/launch/decision.launch.py",
+      "sha256": "09e6bca4e13e3fd55d0c8f0cc6aa12a1e0454652a03ca128d5b6c2ee2eb7afc5",
+      "size_bytes": 53
+    },
+    {
+      "path": "ros_ws/src/hsl_decision/package.xml",
+      "sha256": "ba45c1a596bb7c38614b27a6ad5bdb17797217d28ad277cb04e6bdbc24a9e807",
+      "size_bytes": 708
+    },
+    {
+      "path": "ros_ws/src/hsl_decision/setup.py",
+      "sha256": "5f20e32f9ada5ada50fb49766cbeb929355fb7835ccca14cdb0788edc47f5dd8",
+      "size_bytes": 707
+    },
+    {
+      "path": "ros_ws/src/hsl_diagnostics/hsl_diagnostics/__init__.py",
+      "sha256": "d2227cf79d71f452803455665752730c1b9ce4c00d46e0133d744e188f0f40cd",
+      "size_bytes": 57
+    },
+    {
+      "path": "ros_ws/src/hsl_diagnostics/hsl_diagnostics/terminal_hud_node.py",
+      "sha256": "ef35d8012664d1ee5c556152dbed0eb89f53e2e445652b00280d718a022f077f",
+      "size_bytes": 67
+    },
+    {
+      "path": "ros_ws/src/hsl_diagnostics/package.xml",
+      "sha256": "f5733b01867e214955e653da7396d2885a38b2824dd98688e0638bcfdabfa8b0",
+      "size_bytes": 715
+    },
+    {
+      "path": "ros_ws/src/hsl_diagnostics/setup.py",
+      "sha256": "a6acfaab351a6626086d773f6cd9982edcf21d15b303ffc977904abdb4c90077",
+      "size_bytes": 716
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/CMakeLists.txt",
+      "sha256": "20538d67831ac61a3950f54d0b8dd9ac139168400d529201ad0a552bdd9266c8",
+      "size_bytes": 1691
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/action/ExecuteOption.action",
+      "sha256": "931d95f9a9bc5ea5e47e2f76f39807f881123f9c31edc984c500c039833761ec",
+      "size_bytes": 73
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/BeliefCell.msg",
+      "sha256": "da920a6e8df8ce786f0b369bb960119ea9c8d0d3d1765dcc297c59fc929d0110",
+      "size_bytes": 91
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/ContractHeader.msg",
+      "sha256": "c2fdb2a88e7e81b7e619f98c0109cea6d6ca6fdce0e1c0cacea9fc08fce30556",
+      "size_bytes": 459
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/CoverageGrid.msg",
+      "sha256": "5e5cac8113f9ba6a6c45d9c3f56cff877aff81ff150b0de0421b08bc6ddb11ff",
+      "size_bytes": 205
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/EgoState.msg",
+      "sha256": "737a341e0cf9f012e9cb2d28aeb75ece146d6b81b769b528f225b3a1f00db14e",
+      "size_bytes": 219
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/ExecutionState.msg",
+      "sha256": "286d1df8332f2de740579f82f3cd50c12f3fe13d8de224b9a0091f6d4119b498",
+      "size_bytes": 135
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/GoalZone.msg",
+      "sha256": "a88a02bf3cd49961c632d2b7387e53aa457baa4df5b8dabbe24388b6899cb95f",
+      "size_bytes": 259
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/LocalObstacleSnapshot.msg",
+      "sha256": "c2f90272e06b327114bfca8ed75a8ff151b5aa65c298cb79cd119ce46e944614",
+      "size_bytes": 229
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/MatchState.msg",
+      "sha256": "ae03aa3b87a9d6999e389143245c29b154872b558eab851aaf263e7828d08a37",
+      "size_bytes": 678
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/MotionCandidate.msg",
+      "sha256": "6d05e8dbfe67a67f8b23cac34125213abb7f8af54e0ca9d249c8fa0f240a9808",
+      "size_bytes": 327
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/Obstacle2.msg",
+      "sha256": "26de104a7932f0bff9b11c70a2e7d33dddc76031eb6df10225d72ca8266a3acf",
+      "size_bytes": 225
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/OpponentBelief.msg",
+      "sha256": "ba06b120aaf701d2f7b614881e16f642c2fc01894dc413524a1300ee1f6881af",
+      "size_bytes": 336
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/OpponentTrack.msg",
+      "sha256": "36955b85bcb1fa29a2ad6221a8594af6ba8106703883a132da6466d8418f7186",
+      "size_bytes": 525
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/OptionFeedback.msg",
+      "sha256": "c181aee8ff152c136dae3d5de446784465cf3ec46967e103efa701e255d6ae97",
+      "size_bytes": 423
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/OptionGoal.msg",
+      "sha256": "46fe501f8ddcb6b4cbbf51a804baa098e587a7434cfb95561e2d531990e53ae1",
+      "size_bytes": 677
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/OptionResult.msg",
+      "sha256": "3d35c57a950ef18b486a22c6189094199604d17a9b6bd7104daa2e3a38175bb2",
+      "size_bytes": 347
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/PathPlan.msg",
+      "sha256": "7b5ed4eae6793bb46fd9df583ca4a37f517f5f3bbc83a8223d8c0340385845bf",
+      "size_bytes": 224
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/Point2.msg",
+      "sha256": "096cab619b6c01057c9ccc3c4a037fe37b575dcf413ea5cb27f0661c2b1f7bfb",
+      "size_bytes": 22
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/Polygon2.msg",
+      "sha256": "b07823eced2d35692233d047939f90fa29ec0cd08babcba77ec7c82d5d4abc72",
+      "size_bytes": 32
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/RuleEvent.msg",
+      "sha256": "2a10755c5511969809f2f6602abb88c9dbf8d2e8e89aaafdef97ec9fc5c96daa",
+      "size_bytes": 504
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/SafetyStatus.msg",
+      "sha256": "d01117ca656bd8e3c26d6c104a371dffe7782a6f1bdbd4775cb7be1172b5b94c",
+      "size_bytes": 538
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/SupervisorHeartbeat.msg",
+      "sha256": "0da321557078fd5f62fb17ebfc93cea5ce91f8387eada10b3faa5a5d8a81fce7",
+      "size_bytes": 143
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/TopologyEdge.msg",
+      "sha256": "63943d4bec8aa6e3c4343e1bd6f8ee8308e165d43e9f6f81820fd832c53156f3",
+      "size_bytes": 321
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/TopologyNode.msg",
+      "sha256": "f9a4b54ac4c8122a25719df876d7c7bccc870d911d93626bd2d678b22dc9c73f",
+      "size_bytes": 253
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/WatchdogHealth.msg",
+      "sha256": "0c58dd2abd6e50f2d2a0611fd722a3dfdc898730cef1200e9b5aca2ea807f34a",
+      "size_bytes": 162
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/msg/WorldSnapshot.msg",
+      "sha256": "cd92c650dbd8470f050843710fe54fdbe5bf41ff80a278578fcda58e1f97be66",
+      "size_bytes": 231
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/package.xml",
+      "sha256": "baa62dcdcf9d194a049169a820ba55d7f16a93673e0cca2408022a1d7d5ad77b",
+      "size_bytes": 913
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/srv/RearmSafety.srv",
+      "sha256": "4c9e713de4b627f43cbe7051a65143526138698b63f292f32c24335f6672ade7",
+      "size_bytes": 162
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/srv/ResetStage.srv",
+      "sha256": "17236d4b31b3ee463cb1bdfe5a02a4ca4059a8b04a1f6c6d87760e93e3cbea5f",
+      "size_bytes": 195
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/srv/ResolveEvent.srv",
+      "sha256": "d996cba1a0fa13808348b15de3f8784d94b055137b85b15be2674122cc3d5cbd",
+      "size_bytes": 263
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/srv/SetGoalZone.srv",
+      "sha256": "8bd9b99ceb52804d4ccac9ab94f8976b2eaf43082d8c38fc03bcb6431ef5644e",
+      "size_bytes": 146
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/srv/StartStage.srv",
+      "sha256": "499d0babef83fae64ac3ee680a4645467d18bdd211807f521478783eb05deeac",
+      "size_bytes": 162
+    },
+    {
+      "path": "ros_ws/src/hsl_interfaces/test/test_contract_schema.py",
+      "sha256": "ace29242aaf3840316e175ed60d66bcbd6096ef02364a78970d0d11f001af8f8",
+      "size_bytes": 5665
+    },
+    {
+      "path": "ros_ws/src/hsl_match/hsl_match/__init__.py",
+      "sha256": "5c2c8093e0c286eb5e20af01c3cf67daf069c4608c003e480b4d85eec9a417a9",
+      "size_bytes": 45
+    },
+    {
+      "path": "ros_ws/src/hsl_match/hsl_match/stage_manager_node.py",
+      "sha256": "2a50658ddfc3ce67912a4699f62d78b59b2227e875d18f5a5fdd9d6586046ff9",
+      "size_bytes": 56
+    },
+    {
+      "path": "ros_ws/src/hsl_match/launch/match.launch.py",
+      "sha256": "24e8d436998363fada25debbd614b6ff0a03b6e58e32f3223b9b6acde4d10241",
+      "size_bytes": 47
+    },
+    {
+      "path": "ros_ws/src/hsl_match/package.xml",
+      "sha256": "f1e6ce6e7fa840a0a95c7f487b130b9704c1522abd20e585ae75c1c024ff13dc",
+      "size_bytes": 708
+    },
+    {
+      "path": "ros_ws/src/hsl_match/setup.py",
+      "sha256": "989a6c64c6e75ec924be630b50d8dd912e53dd18fcd88cc376207f5c3cf890f2",
+      "size_bytes": 711
+    },
+    {
+      "path": "ros_ws/src/hsl_navigation/hsl_navigation/__init__.py",
+      "sha256": "c55893938fe014e97a91095d191ce933f70fda09556c2dfda93ba55617a517c5",
+      "size_bytes": 55
+    },
+    {
+      "path": "ros_ws/src/hsl_navigation/hsl_navigation/global_planner_node.py",
+      "sha256": "6f5d088da074928c5b4b7a893f10c6d11b4b57468b507a48f1e873e68da7041f",
+      "size_bytes": 67
+    },
+    {
+      "path": "ros_ws/src/hsl_navigation/hsl_navigation/local_control_node.py",
+      "sha256": "8e0695aa3daa1c3e3d03f0c53480da5bae17c3c7b90876c25b1d15fc091bb802",
+      "size_bytes": 66
+    },
+    {
+      "path": "ros_ws/src/hsl_navigation/launch/navigation.launch.py",
+      "sha256": "f01eb5b312c3ab047301f81da8ad3866ea5c082b98df0e7416fd85324ee6ecee",
+      "size_bytes": 57
+    },
+    {
+      "path": "ros_ws/src/hsl_navigation/package.xml",
+      "sha256": "3755a467ccbf9eaffb4553ebb2427780da3c3da6dbfd12aabb37c671a62a94d8",
+      "size_bytes": 753
+    },
+    {
+      "path": "ros_ws/src/hsl_navigation/setup.py",
+      "sha256": "816ec8a58088b6ff1bede6f81a82e4943c78da353e42fafa940543b986887de2",
+      "size_bytes": 713
+    },
+    {
+      "path": "ros_ws/src/hsl_perception/hsl_perception/__init__.py",
+      "sha256": "794ae2d6f6b2d1d95bfe6be8955cb1bb90084b572a65c55ae971d627f9b67186",
+      "size_bytes": 55
+    },
+    {
+      "path": "ros_ws/src/hsl_perception/hsl_perception/ego_state_node.py",
+      "sha256": "fb20f5075b19cb5661de9ee2790612c8bfe35619d6ee94d427bdd0eeb20c3c4f",
+      "size_bytes": 62
+    },
+    {
+      "path": "ros_ws/src/hsl_perception/hsl_perception/local_obstacles_node.py",
+      "sha256": "5afb14036a2fcde18c3d458f18d063f54459555fbe86f5b55a9658df5ee47d7e",
+      "size_bytes": 68
+    },
+    {
+      "path": "ros_ws/src/hsl_perception/hsl_perception/opponent_tracker_node.py",
+      "sha256": "0b6fed0d470c0a932a1029f3f42a0b5551c01ce4a755e081fc7cc085ca28fb5e",
+      "size_bytes": 69
+    },
+    {
+      "path": "ros_ws/src/hsl_perception/launch/perception.launch.py",
+      "sha256": "278dc2dd4a1a64db2b8764cb2efd2c40610468c05ad16964a5693992cc70f657",
+      "size_bytes": 57
+    },
+    {
+      "path": "ros_ws/src/hsl_perception/package.xml",
+      "sha256": "64ae70491634ab33a4c6fde1acb90dc3cd7abeffa9417fae3a980cb5ce5e64e3",
+      "size_bytes": 699
+    },
+    {
+      "path": "ros_ws/src/hsl_perception/setup.py",
+      "sha256": "7a1a9d2238ba89dd369f904728cd8dc4cca7d661b8608ca039f54c8a22d5b191",
+      "size_bytes": 713
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/hsl_safety/__init__.py",
+      "sha256": "df4e02bbbb98547333dfff211d387eb7b2bf29cb523a52f430356665a6bae233",
+      "size_bytes": 47
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/hsl_safety/adapters.py",
+      "sha256": "5e0dfbf8cfb2b4a46f80352c7c938cab31a502b11126260c674750ef73b6cc2f",
+      "size_bytes": 24741
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/hsl_safety/braking_envelope.py",
+      "sha256": "748e867eb505a4e6c6cc3fe1503abfae966b120a75bb434b4e029fe2dfed593a",
+      "size_bytes": 56
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/hsl_safety/mux_contract.py",
+      "sha256": "c067f3942871babe52c85072385f4d1886912bbd71108675af60dd425c896c59",
+      "size_bytes": 2859
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/hsl_safety/supervisor_node.py",
+      "sha256": "c63cc4bef9411ca82938daca09853c6a347fa10f28292c80fd26224ffa553d79",
+      "size_bytes": 3615
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/hsl_safety/watchdog.py",
+      "sha256": "7fad19f5524db9f8ef93f4a4b0482913b386d934ed29117cfac807f7f189ee1c",
+      "size_bytes": 5517
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/launch/safety.launch.py",
+      "sha256": "fcd5ba433117680796f204f2e940c35790a43efa1091f3f6b06402d13ab0e4e7",
+      "size_bytes": 904
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/package.xml",
+      "sha256": "d0da7c113f870fcf5c73b1ef506cadcc7dd7411d3a0c817c365469396f0ae888",
+      "size_bytes": 757
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/setup.py",
+      "sha256": "d3089acfb8517f87b1c233fecb09abc94684ddde4ffd81bf0f71beb89ff37e58",
+      "size_bytes": 903
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/test/fixtures.py",
+      "sha256": "f25949d6df1906ce13c4b7830cc18465f128af83a8c065a299957d287ca26bf8",
+      "size_bytes": 5838
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/test/test_adapters.py",
+      "sha256": "8dfc8bb6cb3d108490893dea5053ed9b9b51afca744c484fa9a5ea8c35fa3cf2",
+      "size_bytes": 13094
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/test/test_p16_runtime.py",
+      "sha256": "3d605bb1275dd503f74ddd70da58456ea9e9085c8e41bfadc57e265ef423a5b2",
+      "size_bytes": 6746
+    },
+    {
+      "path": "ros_ws/src/hsl_safety/test/test_p17_mux.py",
+      "sha256": "88e70d71c063e4ae7a895b70984aa785a489b3ae3c75c407854625ddcbe6a691",
+      "size_bytes": 3037
+    },
+    {
+      "path": "ros_ws/src/hsl_world/hsl_world/__init__.py",
+      "sha256": "933961111fbdc05235425ca01c7969b30699800def1dd51a3820c1f14c0ae5fe",
+      "size_bytes": 45
+    },
+    {
+      "path": "ros_ws/src/hsl_world/hsl_world/map_server_node.py",
+      "sha256": "4eba964e25ff03c393d204dcb344c3ef18b973bb156409d3a6a9eb82d9c8e1bb",
+      "size_bytes": 53
+    },
+    {
+      "path": "ros_ws/src/hsl_world/hsl_world/odom_fusion_node.py",
+      "sha256": "8c620f938b03786b9aa48ff7ccfdba66f67b5703286d039625cd714a98b8e84f",
+      "size_bytes": 54
+    },
+    {
+      "path": "ros_ws/src/hsl_world/hsl_world/topology_node.py",
+      "sha256": "a8b17bcfb65f14bf266623188a8f2fedccaabd3ec2efa96a3c1abd40328e2c9c",
+      "size_bytes": 51
+    },
+    {
+      "path": "ros_ws/src/hsl_world/launch/world.launch.py",
+      "sha256": "cd0269cb56ac4263abbd749ee1d152a9b2bd2b45a145580cf250299a59bfd866",
+      "size_bytes": 47
+    },
+    {
+      "path": "ros_ws/src/hsl_world/package.xml",
+      "sha256": "a61a5bb9ac0c914e7d7cf62c59ef429c1c8b65b9f77781cf593ee5292a74b9ff",
+      "size_bytes": 711
+    },
+    {
+      "path": "ros_ws/src/hsl_world/setup.py",
+      "sha256": "1ff85255a4ec4baa4c77a0a594bb24b809e88da9359a18fade8c3f92e25ce427",
+      "size_bytes": 704
+    },
+    {
+      "path": "sim/kinematic/autonomous.py",
+      "sha256": "251efefdeaf12f215be01ef0d85018a7e35af93c5f7921f819d3626511fad0b7",
+      "size_bytes": 77900
+    },
+    {
+      "path": "sim/kinematic/benchmark.py",
+      "sha256": "73efa158e3ff7da5853a0dd854252d4ea53775f7acf3d2d02fcc3c8fe41faf41",
+      "size_bytes": 47885
+    },
+    {
+      "path": "sim/kinematic/common.py",
+      "sha256": "4344cab7f5975aff9de64767a1b5f1dbb58abb91d8b580396ccfc16b4774046a",
+      "size_bytes": 4972
+    },
+    {
+      "path": "sim/kinematic/engine.py",
+      "sha256": "c254cb0435a57e05500725d03ae5f41988ead6e91ec1e26d7e2e5540dbb05d5f",
+      "size_bytes": 27
+    },
+    {
+      "path": "sim/kinematic/match.py",
+      "sha256": "3ebeb4bb8efe54236944da4531d1e0afbdd1fa9dc3b970cf6d9b13a18a3ba72f",
+      "size_bytes": 26669
+    },
+    {
+      "path": "sim/kinematic/maze_bank.py",
+      "sha256": "5df5c5185bba394002bfb7d9ef146074874e180244fc0c1d75f2924870c5846a",
+      "size_bytes": 11387
+    },
+    {
+      "path": "sim/kinematic/perception.py",
+      "sha256": "0d6311c1fcea0d81b2b578be4c4dee8eb4f12c372ef41b754b92325e61dd6284",
+      "size_bytes": 8060
+    },
+    {
+      "path": "sim/kinematic/plant.py",
+      "sha256": "7693096cdbc55688a34c812dc384f0c9c19b739a38255d2c5697d1aecf515d56",
+      "size_bytes": 6323
+    },
+    {
+      "path": "sim/kinematic/raycaster.py",
+      "sha256": "328b56b8011754e94cb2764724dfcb7d9d2529ebd9e8511d9cf185529291faca",
+      "size_bytes": 7522
+    },
+    {
+      "path": "sim/kinematic/referee.py",
+      "sha256": "aa1e2771cae93909845788ba4a310eff43a31b6bcaf28b82f4f2b11df9b906c6",
+      "size_bytes": 1245
+    },
+    {
+      "path": "sim/kinematic/scenario.py",
+      "sha256": "cbd54381da9d4ff5ba5607821a36589fca8aeff0edbdf5294a6f2606c9c7e3d3",
+      "size_bytes": 2792
+    },
+    {
+      "path": "sim/kinematic/scenarios/match_tactics.json",
+      "sha256": "8ae02e191852571628e85de4229ebce77a1a04e168667d3956388354e0583962",
+      "size_bytes": 5421
+    },
+    {
+      "path": "sim/kinematic/scenarios/opponent_perception.json",
+      "sha256": "8a5ca568dfac49ad543cc46d11d578abc323f760e0355ca50a79562ac70b403b",
+      "size_bytes": 1341
+    },
+    {
+      "path": "sim/kinematic/scenarios/parallel_corridors.json",
+      "sha256": "75f418e41909e03474e7ff72be82b6d3eb9d59ce79881eac0b3cee721276446f",
+      "size_bytes": 857
+    },
+    {
+      "path": "sim/kinematic/scenarios/phase6_interior_tactics_bank.json",
+      "sha256": "edf64086198f77231a2944c2d0a5632bf76701f3bf19d65f29965c192d7e53de",
+      "size_bytes": 3128
+    },
+    {
+      "path": "sim/kinematic/scenarios/phase6_learning_release.json",
+      "sha256": "3e73919d99e3b2bc2788b9d791e68d961222bf9521ccbb538d050c4b0590d59a",
+      "size_bytes": 4112
+    },
+    {
+      "path": "sim/kinematic/scenarios/phase6_maze_bank.json",
+      "sha256": "69722b7d555628dc99843ec4f8ee5c91e40b3f683a05eb6f46d75c1aea8e9250",
+      "size_bytes": 3960
+    },
+    {
+      "path": "sim/kinematic/sensors.py",
+      "sha256": "1a85e9f8dc77352e3e7e62528ba73ffe7ffa5da4767fb445f63075d116bb3b99",
+      "size_bytes": 3252
+    },
+    {
+      "path": "sim/kinematic/test_p34.py",
+      "sha256": "443fa72d6c2c57e651e9dd49f0e910dcf9dbcb9a3965f4ddde9e68a1e92f3370",
+      "size_bytes": 10566
+    },
+    {
+      "path": "sim/kinematic/test_p54_referee.py",
+      "sha256": "643e0d3d35661ee95818e6995695ca1866e0428a88a5a7cd51f4407c63e09ed5",
+      "size_bytes": 11900
+    },
+    {
+      "path": "sim/kinematic/test_p55_rehearsal.py",
+      "sha256": "76c459fdeaa65f9a39d510e91ac2541bc2aa7c326e05817ff13df780ec1057f8",
+      "size_bytes": 17271
+    },
+    {
+      "path": "sim/kinematic/test_p56_autonomous.py",
+      "sha256": "15ab69a2dc2de1cbb786de82ddf8e26655bbd8cbee433cc6487ecf6ba3a6b2c0",
+      "size_bytes": 37155
+    },
+    {
+      "path": "sim/kinematic/test_p56_perception.py",
+      "sha256": "0236e55e5d5cde6579cb479c2e26b582ece4dd5fef2447e28819a5d02a2b017b",
+      "size_bytes": 4727
+    },
+    {
+      "path": "sim/kinematic/test_p5_manifest.py",
+      "sha256": "b58c0dc660ade508479105660da811d5a73cf1c078c0238214ae7d4d86171032",
+      "size_bytes": 2717
+    },
+    {
+      "path": "sim/kinematic/test_p63_benchmark.py",
+      "sha256": "638f8c5d409c6b53792d6d5fa564148761a2cf518d391b3bf210736b30b6d594",
+      "size_bytes": 8889
+    },
+    {
+      "path": "sim/kinematic/test_p63_sil_preparation.py",
+      "sha256": "9efd7c75d938df27001250242b3cc1e1377d0e09e5be3a30aa220757f20c274e",
+      "size_bytes": 9299
+    },
+    {
+      "path": "sim/kinematic/test_p63_tools.py",
+      "sha256": "aa3eb33bb291e7b3143c5f5e5b17ad0b83f3054a8272f129502eb66349f73ea7",
+      "size_bytes": 12902
+    },
+    {
+      "path": "sim/kinematic/test_p64_p65_sil.py",
+      "sha256": "658b2b0a93d9d5cf221c4d8bb8b3dfd3a196d9d16bbf5c75ec7d1c533b3d7add",
+      "size_bytes": 10276
+    },
+    {
+      "path": "sim/kinematic/test_p6_manifest.py",
+      "sha256": "8163f036c5372aea6f0a409a55ce103c7312b5ffdbf1797c647548bdf63bbb5e",
+      "size_bytes": 3306
+    },
+    {
+      "path": "sim/kinematic/test_visualizer.py",
+      "sha256": "d608146ee280e3a20bd3ebb6d9a0b8c177a70ba917a7f7ff74086047ef128d21",
+      "size_bytes": 3446
+    },
+    {
+      "path": "sim/kinematic/trace.py",
+      "sha256": "5326a3ad781e85478d532290aa1a804adb85dfd08d089e0a80023ff22c7b6a18",
+      "size_bytes": 1420
+    },
+    {
+      "path": "sim/kinematic/visualizer.py",
+      "sha256": "bb148366c655e27682531d4d5dd78953260f29867aadd44de6c9e202db220b1e",
+      "size_bytes": 7273
+    },
+    {
+      "path": "tools/benchmark_p63.py",
+      "sha256": "5c1df52167f44268854a611a248d5a1b2bf5a33251bbacbb122f69c1fc4423ce",
+      "size_bytes": 10600
+    },
+    {
+      "path": "tools/check_ros_graph_authority.py",
+      "sha256": "cfdad263c37b5f4c604b5f67c697736306400c0dff8fbe14ca046a305818e630",
+      "size_bytes": 1785
+    },
+    {
+      "path": "tools/demo_p63_match.py",
+      "sha256": "ead176d3bd1a6865dfdaffac2f648349b9a2d478b9ff3be3d819810872aef3bf",
+      "size_bytes": 12521
+    },
+    {
+      "path": "tools/p63_policy.py",
+      "sha256": "b932fe28c8f1b974edb74ee1e20fe2125b4af6f0417984dbef164778a2fa2e98",
+      "size_bytes": 5251
+    },
+    {
+      "path": "tools/preflight_check.py",
+      "sha256": "09f24a452adc40ced2f1b22c1bc5c03e503ee5b0dd4085ffdf07e6a57cd6cef0",
+      "size_bytes": 13107
+    },
+    {
+      "path": "tools/rehearse_phase6_sil.py",
+      "sha256": "103862e5b28d458b5856c2b0dfc0105c817cfe90a0d2172fba9f3f780efab50c",
+      "size_bytes": 16266
+    },
+    {
+      "path": "tools/release_freeze.py",
+      "sha256": "a5be8491349dbbf77bd14aa5db5d3ec4d735b015c0ec51858e5e4f8513f0daf8",
+      "size_bytes": 14473
+    },
+    {
+      "path": "tools/train_evolution.py",
+      "sha256": "7b0c137e51e373f5b05af74951f66154b33e49d71cc6c24092ef61068e7c29be",
+      "size_bytes": 20985
+    },
+    {
+      "path": "tools/validate_config.py",
+      "sha256": "f616992c6a17992101ea6fb2c5f73e7d48c7930127292af33b09f39da8445894",
+      "size_bytes": 5024
+    }
+  ],
+  "source_revision": {
+    "dirty_path_count": 25,
+    "head": "3dd9a1466e575420ad4f05acaf9b9cb079d06073",
+    "working_tree": "DIRTY"
+  },
+  "static_authority_review": {
+    "configuration_calibration_acceptance": "BLOCKED",
+    "evidence_inputs_hashed": [
+      "kobuki/workspace/src/cmd_vel_mux/config/cmd_vel_mux_params.yaml",
+      "ros_ws/src/hsl_interfaces",
+      "ros_ws/src/hsl_safety"
+    ],
+    "expected_velocity_topic": "/commands/velocity",
+    "expected_velocity_writer": "cmd_vel_mux",
+    "live_ros_graph_probe": "NOT_RUN",
+    "tf_ownership_runtime_probe": "NOT_RUN"
+  }
+}

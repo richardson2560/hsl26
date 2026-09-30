@@ -1,0 +1,110 @@
+{
+  "schema": "hsl26.phase6.synthetic-maze-bank.v1",
+  "bank_id": "phase6-interior-tactics-bank-v1",
+  "purpose": "software_fixture_only",
+  "physical_authority": false,
+  "competition_map": false,
+  "cell_size_m": 1.0,
+  "held_out_policy": "reserved_for_once_only_final_evaluation_after_preregistration",
+  "scenarios": [
+    {
+      "scenario_id": "maze_interior_loops_train_c",
+      "split": "training",
+      "map_bank_id": "map-training-interior-loops-c-v1",
+      "opponent_bank_id": "opponent-training-interior-c-v1",
+      "seed_bank_id": "seed-training-interior-c-v1",
+      "seed": 6401,
+      "grid": [
+        "#########",
+        "#.......#",
+        "#.###.#.#",
+        "#...#...#",
+        "###...###",
+        "#...#...#",
+        "#.#.###.#",
+        "#.......#",
+        "#########"
+      ],
+      "guardian_start_rc": [1, 1],
+      "explorer_start_rc": [7, 7],
+      "synthetic_goal_rc": [4, 4]
+    },
+    {
+      "scenario_id": "maze_interior_loops_train_d",
+      "split": "training",
+      "map_bank_id": "map-training-interior-loops-d-v1",
+      "opponent_bank_id": "opponent-training-interior-d-v1",
+      "seed_bank_id": "seed-training-interior-d-v1",
+      "seed": 6402,
+      "grid": [
+        "#########",
+        "#.......#",
+        "#.#.###.#",
+        "#...#...#",
+        "###...###",
+        "#...#...#",
+        "#.###.#.#",
+        "#.......#",
+        "#########"
+      ],
+      "guardian_start_rc": [1, 7],
+      "explorer_start_rc": [7, 1],
+      "synthetic_goal_rc": [4, 4]
+    },
+    {
+      "scenario_id": "maze_validation_rooms_e",
+      "split": "validation",
+      "map_bank_id": "map-validation-rooms-e-v1",
+      "opponent_bank_id": "opponent-validation-rooms-e-v1",
+      "seed_bank_id": "seed-validation-rooms-e-v1",
+      "seed": 6501,
+      "grid": [
+        "#######",
+        "#...###",
+        "#.....#",
+        "###...#",
+        "#######"
+      ],
+      "guardian_start_rc": [1, 1],
+      "explorer_start_rc": [3, 5],
+      "synthetic_goal_rc": [1, 3]
+    },
+    {
+      "scenario_id": "maze_validation_crossings_f",
+      "split": "validation",
+      "map_bank_id": "map-validation-crossings-f-v1",
+      "opponent_bank_id": "opponent-validation-crossings-f-v1",
+      "seed_bank_id": "seed-validation-crossings-f-v1",
+      "seed": 6502,
+      "grid": [
+        ".......",
+        ".#.#...",
+        "...###.",
+        ".#.....",
+        ".###.#.",
+        "...#...",
+        "......."
+      ],
+      "guardian_start_rc": [0, 0],
+      "explorer_start_rc": [6, 6],
+      "synthetic_goal_rc": [6, 0]
+    },
+    {
+      "scenario_id": "maze_heldout_grid_g",
+      "split": "held_out",
+      "map_bank_id": "map-heldout-grid-g-v1",
+      "opponent_bank_id": "opponent-heldout-grid-g-v1",
+      "seed_bank_id": "seed-heldout-grid-g-v1",
+      "seed": 6601,
+      "grid": [
+        "....",
+        ".#..",
+        "....",
+        "..#."
+      ],
+      "guardian_start_rc": [0, 0],
+      "explorer_start_rc": [3, 3],
+      "synthetic_goal_rc": [3, 0]
+    }
+  ]
+}

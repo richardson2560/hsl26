@@ -1,0 +1,30 @@
+{
+  "schema": "hsl26.phase6.sil-release-profile.v1",
+  "profile_id": "phase6-kinematic-sil-release-v1",
+  "profile_kind": "SOFTWARE_FIXTURE_ONLY",
+  "physical_authority": false,
+  "official_scoring_authority": false,
+  "simulator_truth_available_to_policy": false,
+  "physical_devices_enabled": false,
+  "network_downloads_allowed": false,
+  "editable_bind_mounts_allowed": false,
+  "fixture_bank": "sim/kinematic/scenarios/phase6_interior_tactics_bank.json",
+  "development_policy": "artifacts/reports/phase6/p63_interior_dev_seed20260930/policy.json",
+  "synthetic_stage": {
+    "freeze_duration_ns": 150000000,
+    "stage_duration_s": 30.0,
+    "control_period_s": 0.05,
+    "score_profile_id": "synthetic-zero-sum-win-loss-surrogate-v1",
+    "memory_between_stages": "RESET_FOR_SIL_ONLY"
+  },
+  "official_inputs": {
+    "accepted_g4_baseline": null,
+    "zone_and_goal_provenance": null,
+    "stage_timing_and_trigger": null,
+    "score_profile": null,
+    "memory_retention_policy": null,
+    "robot_identity_and_calibration": null,
+    "final_target_image_digest": null
+  },
+  "authority_note": "Fixture timing, maps, goals, policy, limits and surrogate scoring are software assumptions only; this profile cannot arm hardware or satisfy G4, G5 or G6."
+}

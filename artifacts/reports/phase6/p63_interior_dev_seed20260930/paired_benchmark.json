@@ -1,0 +1,410 @@
+{
+  "assessments": {
+    "selection": {
+      "candidate_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+      "eligible": false,
+      "promotion_eligible": false,
+      "reason": "selected_policy_is_baseline_no_candidate_comparison"
+    }
+  },
+  "bank_id": "phase6-interior-tactics-bank-v1",
+  "bank_sha256": "edf64086198f77231a2944c2d0a5632bf76701f3bf19d65f29965c192d7e53de",
+  "baseline_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "benchmark_config": {
+    "control_period_s": 0.05,
+    "discount_rate_per_s": 0.01,
+    "episode_duration_s": 30.0,
+    "lidar_beam_count": 360,
+    "lidar_max_range_m": 6.0,
+    "lidar_noise_std_m": 0.0,
+    "max_episode_steps": 100000,
+    "robot_max_speed_mps": 0.2,
+    "robot_radius_m": 0.15
+  },
+  "episodes": [
+    {
+      "baseline": {
+        "active_duration_s": 29.85,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "57ccfbb5ffe9b5989c10d584f5349423a076840761596b656959c59cb20dc6ce",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "57ccfbb5ffe9b5989c10d584f5349423a076840761596b656959c59cb20dc6ce",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 600,
+        "terminal_kind": "TIMEOUT"
+      },
+      "baseline_guardian_vs_candidate_explorer": {
+        "active_duration_s": 29.85,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "57ccfbb5ffe9b5989c10d584f5349423a076840761596b656959c59cb20dc6ce",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "57ccfbb5ffe9b5989c10d584f5349423a076840761596b656959c59cb20dc6ce",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 600,
+        "terminal_kind": "TIMEOUT"
+      },
+      "candidate_guardian_vs_baseline_explorer": {
+        "active_duration_s": 29.85,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "57ccfbb5ffe9b5989c10d584f5349423a076840761596b656959c59cb20dc6ce",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "57ccfbb5ffe9b5989c10d584f5349423a076840761596b656959c59cb20dc6ce",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 600,
+        "terminal_kind": "TIMEOUT"
+      },
+      "scenario_id": "maze_interior_loops_train_c",
+      "scenario_sha256": "6217c254e1e853ab44d8380007c33f4ce609df9a50a5277b91a2977e869955e2",
+      "seed": 20267331,
+      "split": "training"
+    },
+    {
+      "baseline": {
+        "active_duration_s": 29.85,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "de648265aecc8efdbc5ae99baeac8adac83f59828cc3374a641d191574e9a130",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "de648265aecc8efdbc5ae99baeac8adac83f59828cc3374a641d191574e9a130",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 600,
+        "terminal_kind": "TIMEOUT"
+      },
+      "baseline_guardian_vs_candidate_explorer": {
+        "active_duration_s": 29.85,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "de648265aecc8efdbc5ae99baeac8adac83f59828cc3374a641d191574e9a130",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "de648265aecc8efdbc5ae99baeac8adac83f59828cc3374a641d191574e9a130",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 600,
+        "terminal_kind": "TIMEOUT"
+      },
+      "candidate_guardian_vs_baseline_explorer": {
+        "active_duration_s": 29.85,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "de648265aecc8efdbc5ae99baeac8adac83f59828cc3374a641d191574e9a130",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "de648265aecc8efdbc5ae99baeac8adac83f59828cc3374a641d191574e9a130",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 600,
+        "terminal_kind": "TIMEOUT"
+      },
+      "scenario_id": "maze_interior_loops_train_d",
+      "scenario_sha256": "d66f15df657738d3749cafcfc114f929ebf822101497fb2866dc077d5a829d46",
+      "seed": 20267332,
+      "split": "training"
+    },
+    {
+      "baseline": {
+        "active_duration_s": 19.9,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 1,
+            "completed": true,
+            "evaluation_profile_id": "e13f2fec5bdbf0cc5c3b2ce945db361233e380c74363cdb5897a0d62d20499a2",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.8195498933329256,
+            "safety_overrides": 1,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 1,
+            "completed": true,
+            "evaluation_profile_id": "e13f2fec5bdbf0cc5c3b2ce945db361233e380c74363cdb5897a0d62d20499a2",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.8195498933329256,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 401,
+        "terminal_kind": "CAPTURE"
+      },
+      "baseline_guardian_vs_candidate_explorer": {
+        "active_duration_s": 19.9,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 1,
+            "completed": true,
+            "evaluation_profile_id": "e13f2fec5bdbf0cc5c3b2ce945db361233e380c74363cdb5897a0d62d20499a2",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.8195498933329256,
+            "safety_overrides": 1,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 1,
+            "completed": true,
+            "evaluation_profile_id": "e13f2fec5bdbf0cc5c3b2ce945db361233e380c74363cdb5897a0d62d20499a2",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.8195498933329256,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 401,
+        "terminal_kind": "CAPTURE"
+      },
+      "candidate_guardian_vs_baseline_explorer": {
+        "active_duration_s": 19.9,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 1,
+            "completed": true,
+            "evaluation_profile_id": "e13f2fec5bdbf0cc5c3b2ce945db361233e380c74363cdb5897a0d62d20499a2",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.8195498933329256,
+            "safety_overrides": 1,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 1,
+            "completed": true,
+            "evaluation_profile_id": "e13f2fec5bdbf0cc5c3b2ce945db361233e380c74363cdb5897a0d62d20499a2",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.8195498933329256,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 401,
+        "terminal_kind": "CAPTURE"
+      },
+      "scenario_id": "maze_validation_rooms_e",
+      "scenario_sha256": "f0dca99d21935622d7f8bfa94f018c9d59635bda9d01a2e84213ea988bddca11",
+      "seed": 20267431,
+      "split": "validation"
+    },
+    {
+      "baseline": {
+        "active_duration_s": 29.85,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "1fe0541b65b7cfec03e5646bbc1aced21cd23fbb547461cb045b5d8c904a4511",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "1fe0541b65b7cfec03e5646bbc1aced21cd23fbb547461cb045b5d8c904a4511",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 600,
+        "terminal_kind": "TIMEOUT"
+      },
+      "baseline_guardian_vs_candidate_explorer": {
+        "active_duration_s": 29.85,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "1fe0541b65b7cfec03e5646bbc1aced21cd23fbb547461cb045b5d8c904a4511",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "1fe0541b65b7cfec03e5646bbc1aced21cd23fbb547461cb045b5d8c904a4511",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 600,
+        "terminal_kind": "TIMEOUT"
+      },
+      "candidate_guardian_vs_baseline_explorer": {
+        "active_duration_s": 29.85,
+        "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+        "explorer_wall_contacts": 0,
+        "guardian_wall_contacts": 0,
+        "promotion_eligible": false,
+        "roles": {
+          "EXPLORER": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "1fe0541b65b7cfec03e5646bbc1aced21cd23fbb547461cb045b5d8c904a4511",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": 0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          },
+          "GUARDIAN": {
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "1fe0541b65b7cfec03e5646bbc1aced21cd23fbb547461cb045b5d8c904a4511",
+            "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "return": -0.7419302818501052,
+            "safety_overrides": 0,
+            "safety_violations": 0
+          }
+        },
+        "step_count": 600,
+        "terminal_kind": "TIMEOUT"
+      },
+      "scenario_id": "maze_validation_crossings_f",
+      "scenario_sha256": "de13781a119f832dc40830f3a77f81329878c42c72189e38ad1bf0eb8030efbf",
+      "seed": 20267432,
+      "split": "validation"
+    }
+  ],
+  "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+  "held_out_fixtures_evaluated": 0,
+  "official_score_available": false,
+  "physical_authority": false,
+  "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "promotion_eligible": false,
+  "replicates_per_fixture": 1,
+  "run_id": "p63_interior_dev_seed20260930",
+  "schema": "hsl26.p63-paired-benchmark.v1",
+  "seed": 20260930,
+  "wall_clock_s": 225.31427039997652,
+  "workers": 2
+}

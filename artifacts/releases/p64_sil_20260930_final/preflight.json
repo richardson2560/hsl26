@@ -1,0 +1,991 @@
+{
+  "checks": [
+    {
+      "check": "manifest_digest",
+      "detail": "Canonical manifest SHA-256 must match its recorded digest.",
+      "status": "PASS"
+    },
+    {
+      "check": "source_inventory_coverage",
+      "detail": "Manifest inventory must cover the complete declared release source set.",
+      "status": "PASS"
+    },
+    {
+      "check": "frozen_inputs",
+      "detail": "All referenced profile, policy, fixture, authority and evidence inputs must match.",
+      "status": "PASS"
+    },
+    {
+      "check": "authority_and_gate_boundary",
+      "detail": "Fixture dossier must stay non-promotable and keep G4/G5/G6 unresolved.",
+      "status": "PASS"
+    },
+    {
+      "check": "runtime_authority_scope",
+      "detail": "Expected static writer is pinned, while live ROS/TF ownership remains explicitly NOT_RUN.",
+      "status": "PASS"
+    },
+    {
+      "check": "serialized_policy_boundary",
+      "detail": "Pinned policy must match the genome digest and remain fixture-only/non-promotable.",
+      "status": "PASS"
+    },
+    {
+      "check": "sil_profile_constraints",
+      "detail": "The hashed profile must identify SIL-only use with downloads, mounts, and hardware disabled.",
+      "status": "PASS"
+    },
+    {
+      "check": "runtime_fingerprint",
+      "detail": "Current OS/interpreter/package versions must match the locally frozen SIL environment.",
+      "status": "PASS"
+    }
+  ],
+  "frozen_input_checks": [
+    {
+      "detail": "size and SHA-256 match",
+      "path": "config/schema/phase6_sil_release_profile.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/scenarios/phase6_interior_tactics_bank.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "artifacts/reports/phase6/p63_interior_dev_seed20260930/policy.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "docs/HSL26_TECHNICAL_SPECIFICATION.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "docs/HSL26_FINAL_ARCHITECTURE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "docs/runbook_competition.md",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "artifacts/reports/phase5/P5.6_autonomous_integration_report.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "artifacts/reports/phase6/P6.3_interior_fixture_development_closeout.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "docker/Dockerfile",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "docker/entrypoint.bash",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/contracts.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/control/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/control/braking.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/control/dwa_local.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/control/execution.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/control/regulated_pursuit.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/control/safety.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/geometry.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/kinematics.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/learning/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/learning/dirichlet.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/learning/evolution.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/learning/option_value.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/learning/transitions.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/mapping.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/match.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/occupancy.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/perception/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/perception/bounded_worker.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/perception/ekf_opponent.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/perception/fidelity.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/perception/implicit_surface.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/perception/registration.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/perception/runtime_codec.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/perception/segmenter.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/perception/topological_belief.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/planning/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/planning/astar.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/planning/execution.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/planning/intercept.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/rules.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/tactics/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/tactics/fsm.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/tactics/options.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/tactics/utility.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/topology.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/hsl_core/types.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "hsl_core/pyproject.toml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "kobuki/workspace/src/cmd_vel_mux/config/cmd_vel_mux_params.yaml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/config/execution_profiles.yaml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/config/frames.yaml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/config/hardware.yaml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/config/perception.yaml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/config/score_profile.yaml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/config/tactics.yaml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/hsl_bringup/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/launch/hsl26.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/launch/real_hardware.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/launch/replay_bag.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/launch/sim_mvsim.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/package.xml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_bringup/setup.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_decision/hsl_decision/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_decision/hsl_decision/option_lifecycle.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_decision/hsl_decision/tactics_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_decision/launch/decision.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_decision/package.xml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_decision/setup.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_diagnostics/hsl_diagnostics/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_diagnostics/hsl_diagnostics/terminal_hud_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_diagnostics/package.xml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_diagnostics/setup.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/CMakeLists.txt",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/action/ExecuteOption.action",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/BeliefCell.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/ContractHeader.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/CoverageGrid.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/EgoState.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/ExecutionState.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/GoalZone.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/LocalObstacleSnapshot.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/MatchState.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/MotionCandidate.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/Obstacle2.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/OpponentBelief.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/OpponentTrack.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/OptionFeedback.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/OptionGoal.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/OptionResult.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/PathPlan.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/Point2.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/Polygon2.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/RuleEvent.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/SafetyStatus.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/SupervisorHeartbeat.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/TopologyEdge.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/TopologyNode.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/WatchdogHealth.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/msg/WorldSnapshot.msg",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/package.xml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/srv/RearmSafety.srv",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/srv/ResetStage.srv",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/srv/ResolveEvent.srv",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/srv/SetGoalZone.srv",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/srv/StartStage.srv",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_interfaces/test/test_contract_schema.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_match/hsl_match/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_match/hsl_match/stage_manager_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_match/launch/match.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_match/package.xml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_match/setup.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_navigation/hsl_navigation/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_navigation/hsl_navigation/global_planner_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_navigation/hsl_navigation/local_control_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_navigation/launch/navigation.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_navigation/package.xml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_navigation/setup.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_perception/hsl_perception/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_perception/hsl_perception/ego_state_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_perception/hsl_perception/local_obstacles_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_perception/hsl_perception/opponent_tracker_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_perception/launch/perception.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_perception/package.xml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_perception/setup.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/hsl_safety/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/hsl_safety/adapters.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/hsl_safety/braking_envelope.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/hsl_safety/mux_contract.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/hsl_safety/supervisor_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/hsl_safety/watchdog.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/launch/safety.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/package.xml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/setup.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/test/fixtures.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/test/test_adapters.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/test/test_p16_runtime.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_safety/test/test_p17_mux.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_world/hsl_world/__init__.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_world/hsl_world/map_server_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_world/hsl_world/odom_fusion_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_world/hsl_world/topology_node.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_world/launch/world.launch.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_world/package.xml",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "ros_ws/src/hsl_world/setup.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/autonomous.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/benchmark.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/common.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/engine.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/match.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/maze_bank.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/perception.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/plant.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/raycaster.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/referee.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/scenario.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/scenarios/match_tactics.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/scenarios/opponent_perception.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/scenarios/parallel_corridors.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/scenarios/phase6_learning_release.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/scenarios/phase6_maze_bank.json",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/sensors.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p34.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p54_referee.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p55_rehearsal.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p56_autonomous.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p56_perception.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p5_manifest.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p63_benchmark.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p63_sil_preparation.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p63_tools.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p64_p65_sil.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_p6_manifest.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/test_visualizer.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/trace.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "sim/kinematic/visualizer.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "tools/benchmark_p63.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "tools/check_ros_graph_authority.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "tools/demo_p63_match.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "tools/p63_policy.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "tools/preflight_check.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "tools/rehearse_phase6_sil.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "tools/release_freeze.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "tools/train_evolution.py",
+      "status": "PASS"
+    },
+    {
+      "detail": "size and SHA-256 match",
+      "path": "tools/validate_config.py",
+      "status": "PASS"
+    }
+  ],
+  "gate_matrix": {
+    "G0": "BLOCKED",
+    "G1": "BLOCKED",
+    "G2": "BLOCKED",
+    "G3": "BLOCKED",
+    "G4": "BLOCKED_NOT_RUN",
+    "G5": "NOT_RUN",
+    "G6": "BLOCKED"
+  },
+  "must_not_arm_or_deploy": true,
+  "physical_authority": false,
+  "release_eligible": false,
+  "schema": "hsl26.phase6.preflight-report.v1",
+  "sil_integrity_pass": true,
+  "status": "PASS_SIL_INTEGRITY_RELEASE_BLOCKED"
+}
