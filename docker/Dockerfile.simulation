@@ -1,0 +1,24 @@
+# Test-only profile. It never replaces hsl26:acceptance and does not start MVSim
+# by default. Docker Desktop cannot resolve a local-only RepoDigest as a FROM
+# source, so the invoking procedure verifies this local tag's immutable image ID.
+ARG ACCEPTANCE_IMAGE=hsl26:acceptance
+ARG REQUIRE_MVSIM_CACHE=0
+FROM ${ACCEPTANCE_IMAGE}
+
+COPY docker/r0/apt-mvsim/ /opt/hsl26-r0/apt-mvsim/
+RUN test -n "$(find /opt/hsl26-r0/apt-mvsim -maxdepth 1 -name '*.deb' -print -quit)" && \
+    dpkg --install /opt/hsl26-r0/apt-mvsim/*.deb && \
+    /bin/bash -c "source /opt/ros/humble/setup.bash && command -v mvsim && ros2 pkg prefix mvsim && ros2 pkg executables mvsim && ros2 pkg executables mvsim | awk '\$2 == \"mvsim_node\" { found=1 } END { exit !found }'"
+
+# Official demo worlds fetch meshes lazily. R0-E vendors the reviewed cache so
+# headless validation never needs network access at runtime.
+COPY docker/r0/mvsim-cache/ /root/
+RUN rm -rf /root/.ros && \
+    if [ "$REQUIRE_MVSIM_CACHE" = 1 ]; then test -n "$(find /root/.cache/mvsim-storage -type f -print -quit)"; fi
+
+ENV HSL26_EXECUTION_PROFILE=simulation \
+    HSL26_SIMULATION_ENABLED=0 \
+    HSL26_MVSIM_HEADLESS=1 \
+    HSL26_MVSIM_GUI=0
+COPY docker/r0/run_mvsim.sh /usr/local/bin/hsl26-run-mvsim
+RUN chmod +x /usr/local/bin/hsl26-run-mvsim

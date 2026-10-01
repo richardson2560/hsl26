@@ -1,0 +1,43 @@
+# R0-D acceptance candidate. Build stages may use the network for the explicitly
+# recorded apt build dependencies; the final stage installs Python only from R0's
+# wheelhouse and is validated at runtime with --network none.
+ARG BASE_IMAGE=nickodema/kobuki@sha256:2034fe21fbe8aae8677191967ec9c4fc168a1337ada7bb1913a642b92f2b8619
+
+FROM ${BASE_IMAGE} AS kobuki-build
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libudev-dev libusb-1.0-0-dev libyaml-cpp-dev python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /workspace_kobuki
+COPY kobuki/workspace/src src
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
+
+FROM kobuki-build AS hsl-build
+COPY docker/r0/requirements.lock /opt/hsl26-r0/requirements.lock
+COPY docker/r0/wheelhouse/ /opt/hsl26-r0/wheelhouse/
+RUN pip3 install --no-index --require-hashes --find-links /opt/hsl26-r0/wheelhouse -r /opt/hsl26-r0/requirements.lock && pip3 check
+WORKDIR /workspace_hsl26
+COPY hsl_core /workspace_hsl26/hsl_core
+RUN pip3 wheel --no-index --no-deps --no-build-isolation --wheel-dir /opt/hsl26-artifacts /workspace_hsl26/hsl_core && \
+    pip3 install --no-index --no-deps /opt/hsl26-artifacts/hsl_core-0.1.0-py3-none-any.whl
+COPY ros_ws/src /workspace_hsl26/src
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && source /workspace_kobuki/install/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
+
+FROM ${BASE_IMAGE} AS hsl26-acceptance
+ENV DEBIAN_FRONTEND=noninteractive
+COPY docker/r0/apt-wheel-resolver/ /opt/hsl26-r0/apt/
+RUN dpkg --install /opt/hsl26-r0/apt/*.deb
+COPY docker/r0/requirements.lock /opt/hsl26-r0/requirements.lock
+COPY docker/r0/wheelhouse/ /opt/hsl26-r0/wheelhouse/
+RUN pip3 install --no-index --require-hashes --find-links /opt/hsl26-r0/wheelhouse -r /opt/hsl26-r0/requirements.lock && \
+    python3 -c "import pytest, setuptools; assert int(pytest.__version__.split('.', 1)[0]) < 8; assert int(setuptools.__version__.split('.', 1)[0]) < 80" && pip3 check
+COPY --from=hsl-build /opt/hsl26-artifacts/hsl_core-0.1.0-py3-none-any.whl /opt/hsl26-artifacts/
+RUN pip3 install --no-index --no-deps /opt/hsl26-artifacts/hsl_core-0.1.0-py3-none-any.whl && python3 -c "import hsl_core"
+COPY --from=kobuki-build /workspace_kobuki/install /workspace_kobuki/install
+COPY --from=hsl-build /workspace_hsl26/install /workspace_hsl26/install
+COPY docker/entrypoint.bash /entrypoint.bash
+COPY docker/r0/acceptance_smoke.sh /usr/local/bin/hsl26-acceptance-smoke
+RUN chmod +x /entrypoint.bash /usr/local/bin/hsl26-acceptance-smoke
+WORKDIR /workspace_hsl26
+ENTRYPOINT ["/entrypoint.bash"]
+CMD ["bash"]

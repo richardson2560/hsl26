@@ -1,0 +1,81 @@
+﻿[
+    {
+        "Id": "sha256:7497cea8979a7018e41dbede76bca550d8a2e21017a48256af75053acd95a282",
+        "RepoTags": [
+            "hsl26:development"
+        ],
+        "RepoDigests": [
+            "hsl26@sha256:7497cea8979a7018e41dbede76bca550d8a2e21017a48256af75053acd95a282"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-10-01T15:14:05.434157369Z",
+        "Author": "Nikolay Dema <ndema2301@gmail.com>",
+        "Config": {
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "WS=/workspace",
+                "ROS_DISTRO=humble",
+                "DEBIAN_FRONTEND=noninteractive"
+            ],
+            "Entrypoint": [
+                "/entrypoint.bash"
+            ],
+            "Cmd": [
+                "bash"
+            ],
+            "WorkingDir": "/workspace_hsl26",
+            "Labels": {
+                "org.opencontainers.image.ref.name": "ubuntu",
+                "org.opencontainers.image.version": "22.04"
+            },
+            "ArgsEscaped": true
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 8885951696,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:f862e1968e4b4c3c3af141e37d2ec22b19ec0fd50d6a8aaf683de6729e296226",
+                "sha256:9ceef5cda0c480b5d44234abb55745e12c2ddbca7a2db00f78f84f32ca04e26d",
+                "sha256:12a7202ac5ae116f5d9e45ce8ef258e6676de70f9150613a15dd3dfee7d64670",
+                "sha256:3a7e4e594fbf1886fdbd541e6c74faf429b31213d7bd52a00237121209b237f5",
+                "sha256:e633a764c54c81bc32fab0375c2c0d535642f433404c00c130e216a255e5a9e6",
+                "sha256:ba98df7be0b9b72b3ba185183e4ea822313fa6d993b4f636269d1612dcd55308",
+                "sha256:d3ab1e0b4533742572092b95a6e3ea49ffc04d9aa35da2126e5e6f351ba424a8",
+                "sha256:16f8054a6e937657a8ab6fcde8956d8e969664f448cfd4ac12fdaa87f7df08cf",
+                "sha256:9d9972bc05e00f404ebb642114f15445333fef7e545306a01d603d7bd9500879",
+                "sha256:3762537af29deacd14bf79a90a2b287f34367f5cdf2623a1967ca83f5f5aa7b2",
+                "sha256:d75adb83c0a839a8493fd51407f63950fdc5499ea28f2eda03145a1362b53fdc",
+                "sha256:735a9a6193e6f3bfa579a4e4b4b1c6195f4fc05cd8e4cda04f828655001d9e17",
+                "sha256:21783e9527556c99d6b916fc7eed26b518f8dc3d724f254d0a9441fa3ed47b7d",
+                "sha256:1c13f6e0e5534f3b134f6716e1b9df81b13c4966c1daf978c450d54f62af9d2f",
+                "sha256:a70b7069196a27fddb9acaef97615d101f0424c796fbf110002b637457994ac6",
+                "sha256:385794bbe025ef01495c7b35b498872881f68079bf0d4aa47503fdc882a42410",
+                "sha256:9b7b1969a0de082e968e25c2693e800716418da3f5ecce8f45ef2fee5d7d2a1e",
+                "sha256:eda76bb6e22f30ce98e0689dd3d80484cbd2cb006c63fd605c7b9866026b3eef",
+                "sha256:13d894d80e73c54ea0ae5f2c6263c7ba0a461e3e88f791fe59e545476b5e89b0",
+                "sha256:5a58b28494aa0c4dfa81e1ae7f143759ee74b90d6c36cbea9e5a1b1efa16d540",
+                "sha256:11631a97ae5b403eff607058f18a2d2e83a2604c21e1880ba9009ff3d1c7b995",
+                "sha256:cecbb790d093b0040262e3c2ee419e241432239c51729035b3d58d6525c825a7",
+                "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-01T15:14:56.76281191Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:7497cea8979a7018e41dbede76bca550d8a2e21017a48256af75053acd95a282",
+            "size": 856
+        },
+        "Identity": {
+            "Build": [
+                {
+                    "Ref": "h4ziwr6rzyiz5hxouxxl7000x",
+                    "CreatedAt": "2026-10-01T15:15:20.097322491Z"
+                }
+            ]
+        }
+    }
+]

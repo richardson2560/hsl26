@@ -1,0 +1,15 @@
+# Bootstrap-only R0 image. It is never an integration, acceptance, or release
+# image. Its sole purpose is to install the reviewed local apt bundle that
+# supplies pip, then resolve Python wheels for the pinned Linux base.
+ARG BASE_IMAGE=nickodema/kobuki@sha256:2034fe21fbe8aae8677191967ec9c4fc168a1337ada7bb1913a642b92f2b8619
+FROM ${BASE_IMAGE}
+
+COPY docker/r0/apt-wheel-resolver/ /opt/hsl26-r0/apt/
+
+RUN set -eux; \
+    test -n "$(find /opt/hsl26-r0/apt -maxdepth 1 -type f -name '*.deb' -print -quit)"; \
+    dpkg --install /opt/hsl26-r0/apt/*.deb; \
+    python3 -m pip --version
+
+LABEL org.hsl26.r0.role="bootstrap-wheel-resolver" \
+      org.hsl26.r0.not_for_acceptance="true"

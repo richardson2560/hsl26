@@ -8,6 +8,11 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+docker/r0/wheelhouse/
+docker/r0/apt-wheel-resolver/
+docker/r0/apt-mvsim/
+docker/r0/mvsim-cache/*
+!docker/r0/mvsim-cache/.gitkeep
 build/
 develop-eggs/
 dist/

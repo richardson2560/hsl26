@@ -1,0 +1,12 @@
+# R0 input only. Resolve this inside the declared Linux base image, never on
+# Windows. The generated requirements.lock is the acceptance input.
+numpy>=1.22.0
+scipy>=1.8.0
+open3d
+# ROS 2 Humble's launch_testing plugin implements the pre-pytest-8 collection
+# hook signature. Pin a compatible, deterministic test runner for R0.
+pytest==7.4.4
+# `colcon build --symlink-install` for ROS 2 Humble invokes the legacy
+# `setup.py develop --editable` path for ament_python packages. Setuptools 80+
+# no longer accepts that option; keep the resolver below that boundary.
+setuptools==79.0.1

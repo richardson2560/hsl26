@@ -21,7 +21,7 @@ ros_ws/src/     HSL26 ROS 2 interfaces and node packages
 kobuki/         Frozen/inherited HSL25 Kobuki and Livox hardware layer
 sim/kinematic/  Lightweight NumPy simulation
 sim/mvsim/      MVSim integration adapter
-docker/         Pinned multi-stage ROS 2 build and environment entrypoint
+docker/         Multi-stage ROS 2 build and environment entrypoint; release pinning is pending R0 evidence
 docs/           Architecture, Phase 1 design, roadmap, and audit records
 ```
 
@@ -67,16 +67,18 @@ marked `DONE`.
 ## Docker and ROS 2 workflow
 
 Docker is the supported environment for ROS 2 Humble, the inherited drivers,
-MVSim, and integration testing. The Dockerfile intentionally starts from the
-pinned HSL25 hardware image
-`nickodema/kobuki:humble-22.04-100625`; replacing it with a clean ROS image
+MVSim, and integration testing. The Dockerfile now defaults to the R0-A
+Linux/amd64 digest of the inherited HSL25 image. R0 has also captured the apt
+bootstrap bundle and Python wheelhouse; the current Dockerfile still has an
+unlocked apt development layer and is therefore not an acceptance image. A tag
+is never release evidence. Replacing the inherited base with a clean ROS image
 requires rebuilding and validating Livox-SDK2 and Kobuki dependencies.
 
 From the repository root:
 
 ```bash
-docker build -f docker/Dockerfile -t hsl26:latest .
-docker run --rm -it hsl26:latest bash
+docker build -f docker/Dockerfile -t hsl26:development .
+docker run --rm -it hsl26:development bash
 ```
 
 Inside the container:
@@ -86,7 +88,8 @@ colcon test --packages-select hsl_interfaces hsl_safety hsl_bringup
 colcon test-result --verbose
 ```
 
-The complete workspace build is performed by the image build. When iterating
+The complete workspace build is performed by the image build. Until R0 passes,
+this is a development workflow, not a reproducible release build. When iterating
 on source code, rebuild the image or mount a development checkout explicitly;
 do not assume a running container sees unmounted host changes.
 
@@ -140,10 +143,15 @@ for the competition runtime.
 5. Only then implement higher-level perception, navigation, tactics, and
    offline learning integration.
 
-Read [`docs/HSL26_PHASE1_TECHNICAL_DESIGN.md`](docs/HSL26_PHASE1_TECHNICAL_DESIGN.md)
+Read [`docs/HSL26_TECHNICAL_SPECIFICATION.md`](docs/HSL26_TECHNICAL_SPECIFICATION.md)
 for normative APIs, algorithms, timing, and safety behavior. Read
+[`docs/HSL26_PHASE1_IMPLEMENTATION_PLAN.md`](docs/HSL26_PHASE1_IMPLEMENTATION_PLAN.md)
+for the Phase 1 implementation sequence and
 [`docs/HSL26_IMPLEMENTATION_ROADMAP.md`](docs/HSL26_IMPLEMENTATION_ROADMAP.md)
 for task status and acceptance evidence.
+
+For the current ROS/MVSim integration, SIL conformance, and two-role learning
+work, start with the [integration and competition master plan](docs/HSL26_INTEGRATION_AND_COMPETITION_MASTER_PLAN.md).
 
 For Phase 6 learning and release preparation, read
 [`docs/HSL26_PHASE6_IMPLEMENTATION_PLAN.md`](docs/HSL26_PHASE6_IMPLEMENTATION_PLAN.md)
