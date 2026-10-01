@@ -98,6 +98,14 @@ La automatización inicial queda versionada en `tools/r0_capture_environment.py`
 
 ### R0.8 — decisión de puerta y traspaso
 
+**Cierre técnico a 2026-10-02:** R0-A–R0-F tienen evidencia `PASS`. La simulación
+MVSim se ejecuta headless y sin red desde un cache de recursos hash-verificado; el
+rebuild sin caché también carga el mundo y su inventario runtime coincide con el
+original (SHA-256 `1d60f17b5a8f25da97f5a7e9885295f0653b5b14690d3f81d4893e39b2a102ef`).
+Los digests de imágenes difieren solo por metadatos de BuildKit y quedan
+registrados en la evidencia R0. La puerta global sigue pendiente de revisión por
+una persona distinta del autor, como exige esta sección.
+
 R0 pasa a `PASS` únicamente si R0-A–R0-F están aprobados por un revisor distinto del autor y la imagen `acceptance` se identifica por digest. La ausencia de Docker, de acceso al registro, de digest base, de wheelhouse o de una fuente MVSim verificable deja R0 en `BLOCKED_NOT_RUN`; no autoriza sustituirlos con números supuestos. Al pasar R0, se congelan el digest de imagen, locks, SBOM, commit y configuración de build como baseline de R1. Cualquier cambio en ellos invalida R0-B–R0-F y la evidencia ROS/MVSim que dependa de esa imagen.
 
 ## 3. Caracterización obligatoria de MVSim y MID-360

@@ -1,0 +1,36 @@
+         115128649 function calls (114887993 primitive calls) in 56.564 seconds
+
+   Ordered by: cumulative time
+   List reduced from 480 to 28 due to restriction <28>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.042    0.042   58.734   58.734 benchmark.py:403(run_episode)
+      986    0.113    0.000   56.843    0.058 match.py:393(step)
+     1972    0.060    0.000   48.670    0.025 autonomous.py:293(__call__)
+     1972    0.148    0.000   26.859    0.014 autonomous.py:669(_proposals)
+    24619    0.502    0.000   25.010    0.001 autonomous.py:763(_path_to_node)
+    16813    9.054    0.001   22.975    0.001 astar.py:116(dijkstra_tree)
+     1685    0.052    0.000   14.797    0.009 autonomous.py:1290(_execute_candidate)
+     1685    0.038    0.000   14.520    0.009 autonomous.py:1414(_stop_turn_go_candidate)
+     1265    9.093    0.007   14.335    0.011 autonomous.py:1664(_curved_path_clearance)
+      960    0.020    0.000   12.263    0.013 autonomous.py:884(_explorer_proposals)
+  1412292    0.990    0.000    7.181    0.000 astar.py:36(_edge_cost)
+     1972    1.199    0.001    6.661    0.003 sensors.py:48(observe)
+  2824584    2.402    0.000    6.023    0.000 topology.py:108(metric_length_m)
+     3944    1.862    0.000    4.309    0.001 raycaster.py:47(cast_many)
+     1972    0.047    0.000    4.008    0.002 autonomous.py:503(_update_opponent_track)
+2861086/2836418    1.695    0.000    3.998    0.000 {built-in method builtins.sum}
+     1972    0.418    0.000    3.114    0.002 perception.py:39(extract_synthetic_opponent)
+717195/696885    0.757    0.000    2.593    0.000 {built-in method builtins.sorted}
+  5649168    1.519    0.000    1.963    0.000 topology.py:110(<genexpr>)
+ 12325674    1.954    0.000    1.954    0.000 {method 'append' of 'list' objects}
+     1972    0.031    0.000    1.786    0.001 review_checks.py:35(measured_select)
+     1972    0.045    0.000    1.736    0.001 fsm.py:286(select)
+     1972    0.059    0.000    1.681    0.001 benchmark.py:1068(_swept_wall_contact)
+   126208    0.234    0.000    1.620    0.000 benchmark.py:1132(_segment_distance)
+    24365    0.020    0.000    1.578    0.000 fsm.py:315(<genexpr>)
+    22393    0.126    0.000    1.558    0.000 fsm.py:492(_evaluate)
+    20421    0.237    0.000    1.540    0.000 autonomous.py:1149(_make_proposal)
+  1423784    0.908    0.000    1.461    0.000 raycaster.py:65(<genexpr>)
+
+

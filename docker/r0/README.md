@@ -215,6 +215,12 @@ docker scout sbom --format spdx --output "$Report/simulation.spdx.json" local://
 docker build --no-cache --pull=false --network none --progress=plain --build-arg ACCEPTANCE_IMAGE=$AcceptanceImage --build-arg REQUIRE_MVSIM_CACHE=1 -f docker/Dockerfile.simulation -t hsl26:simulation-r0f-rebuild . 2>&1 | Tee-Object "$Report/mvsim-simulation-rebuild.txt"
 docker image inspect hsl26:simulation hsl26:simulation-r0f-rebuild | Out-File "$Report/mvsim-rebuild-image-inspect.json" -Encoding utf8
 docker run --rm --network none -e HSL26_SIMULATION_ENABLED=1 --entrypoint /usr/local/bin/hsl26-run-mvsim hsl26:simulation-r0f-rebuild 2>&1 | Tee-Object "$Report/mvsim-rebuild-headless-smoke.txt"
+
+docker run --rm --network none --entrypoint /bin/bash hsl26:simulation -lc "dpkg-query -W | sort; python3 -m pip freeze --all | sort; find /root/.cache/mvsim-storage -type f | sort" | Out-File "$Report/mvsim-runtime-inventory-original.txt" -Encoding utf8
+docker run --rm --network none --entrypoint /bin/bash hsl26:simulation-r0f-rebuild -lc "dpkg-query -W | sort; python3 -m pip freeze --all | sort; find /root/.cache/mvsim-storage -type f | sort" | Out-File "$Report/mvsim-runtime-inventory-rebuild.txt" -Encoding utf8
+$InventoryDiff = Compare-Object (Get-Content "$Report/mvsim-runtime-inventory-original.txt") (Get-Content "$Report/mvsim-runtime-inventory-rebuild.txt")
+if ($InventoryDiff) { $InventoryDiff | Out-File "$Report/mvsim-runtime-inventory-diff.txt" -Encoding utf8; throw "R0-F FAIL: los inventarios runtime difieren; revise mvsim-runtime-inventory-diff.txt" }
+'R0-F inventory comparison: identical' | Tee-Object "$Report/mvsim-runtime-inventory-compare.txt"
 ```
 
 Los dos digests de imagen pueden diferir por metadatos de build. R0-F exige que ambos builds carguen el mundo sin red y que el bundle apt, `requirements.lock` y `mvsim-resource-sha256.txt` sean idénticos; cualquier diferencia debe explicarse antes de cerrar R0.

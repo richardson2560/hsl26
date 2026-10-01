@@ -40,18 +40,16 @@ apt de `python3-pip` y cree un resolver bootstrap explícitamente no aceptable.
 | R0-C | `PASS` | Con `pytest 7.4.4`, `hsl_interfaces/contract_schema_test` pasa y `colcon test-result --verbose` informa `Summary: 9 tests, 0 errors, 0 failures, 0 skipped`. Se ejecutó con `--network none`, sin mounts ni dispositivos. |
 | R0-D | `PASS` | `hsl26:acceptance` se reconstruyó con el smoke corregido como `hsl26@sha256:3c8a8251f65805c486023c2fafdd7276668e523d6981cb8bd535ac5645aa231b` para Linux/amd64. El smoke, sin red, mounts ni dispositivos, cargó los tres entornos ROS e importó `hsl_core`/`rclpy`; no detectó procesos Kobuki, Livox, MVSim ni `cmd_vel_mux`. El digest anterior `1acd…` queda supersedido por esta reconstrucción. |
 | R0-E | `PASS` | `ros-humble-mvsim=1.4.0-1jammy.20260908.093724` y sus dependencias se descargaron como bundle hash-verificado. El cache de recursos del mundo se congeló; `hsl26:simulation` se construyó sin red como `hsl26@sha256:bf6664fa055484a269d87e90e59967e29a5c886c66c2ba066e0dba75efb255c8`. El smoke sin red cargó `demo_warehouse.world.xml` hasta `World file load done.` sin `wget`. Kobuki/Livox no se iniciaron ni se abrieron dispositivos. Se observaron avisos de simulación más lenta que tiempo real; son baseline de rendimiento, no aprobación temporal. |
-| R0-F | `NOT_RUN` | Falta SBOM y rebuild independiente con los mismos insumos; el digest local de acceptance no sustituye esa repetición. |
+| R0-F | `PASS` | SBOM SPDX 2.3 generado (`2492` paquetes; SHA-256 `8d6f443f3ebb0192efe832596c7aeb6ff81cda9c82d1ba644cf99ef70bdb8a50`). El rebuild sin caché, a `hsl26@sha256:dae951d77402ef4487f39b054dcf2e08e10c63a7bcf88d264ad431a8d3de3089`, cargó el mundo sin red. Aunque el digest difiere del original `bf6664…` por metadatos de BuildKit, ambos inventarios runtime son idénticos, SHA-256 `1d60f17b5a8f25da97f5a7e9885295f0653b5b14690d3f81d4893e39b2a102ef`. |
 
-## Siguiente comando
+## Conclusión técnica
 
-La evidencia de las 18:15–18:20 cierra R0-B y R0-C con el lock final. El hash
-antiguo de `requirements-lock-sha256.txt` debe renovarse con
-`Get-FileHash docker/r0/requirements.lock -Algorithm SHA256 | Tee-Object
-"$Report/requirements-lock-sha256.txt"` antes de archivar el run-id.
-
-El siguiente trabajo es R0-E: identificar una fuente verificable de MVSim y
-ejecutar su caracterización sin GUI ni hardware. Después, R0-F debe publicar un
-SBOM y repetir el build acceptance desde los mismos insumos para comparar hashes.
+R0-A–R0-F están en `PASS`. La baseline técnica queda formada por acceptance
+`hsl26@sha256:3c8a8251f65805c486023c2fafdd7276668e523d6981cb8bd535ac5645aa231b`,
+simulation `hsl26@sha256:bf6664fa055484a269d87e90e59967e29a5c886c66c2ba066e0dba75efb255c8`,
+el lock Python `a84132086fc027b569bc005d19c97d6c3a0cdfebcd2ea9586fc7747e3006a6fb`,
+el cache MVSim hash-verificado y el SBOM SPDX. Antes de declarar R0 global `PASS`,
+un revisor distinto del autor debe comprobar esta evidencia y firmar la puerta.
 
 ## Avance autorizado
 

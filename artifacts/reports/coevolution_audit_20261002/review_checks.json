@@ -1,0 +1,78 @@
+{
+  "schema": "hsl26.coevolution.document-audit.v1",
+  "date": "2026-10-02",
+  "evidence_class": "development_fixture_diagnostic",
+  "promotion_eligible": false,
+  "gate_acceptance": false,
+  "python": "3.14.7",
+  "host": "Windows-11-10.0.26200-SP0",
+  "scenario_id": "maze_multiring_7x7_train_a",
+  "seed": 20260931,
+  "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "unprofiled_short_runs": [
+    {
+      "wall_s": 2.9395160999997643,
+      "active_s": 7.85,
+      "steps": 160,
+      "terminal": "TIMEOUT"
+    },
+    {
+      "wall_s": 1.9351980999999796,
+      "active_s": 7.85,
+      "steps": 160,
+      "terminal": "TIMEOUT"
+    },
+    {
+      "wall_s": 1.8175237999998899,
+      "active_s": 7.85,
+      "steps": 160,
+      "terminal": "TIMEOUT"
+    }
+  ],
+  "instrumented_selector_counts": {
+    "GUARDIAN": {
+      "calls": 986,
+      "eligible_count_0": 3,
+      "eligible_count_36": 230,
+      "utility_choice_calls": 543,
+      "eligible_count_37": 90,
+      "eligible_count_35": 141,
+      "eligible_count_29": 30,
+      "eligible_count_34": 45,
+      "eligible_count_30": 7,
+      "eligible_count_1": 440
+    },
+    "EXPLORER": {
+      "calls": 986,
+      "eligible_count_0": 271,
+      "eligible_count_1": 715,
+      "utility_choice_calls": 0
+    }
+  },
+  "instrumented_terminal": "CAPTURE",
+  "instrumented_active_s": 49.15,
+  "instrumented_collisions_by_role": {
+    "GUARDIAN": 1,
+    "EXPLORER": 1
+  },
+  "margin_schema_checks": {
+    "0.06": "clearance_margin_m must include at least the robot radius",
+    "0.08": "clearance_margin_m must include at least the robot radius",
+    "0.2": "accepted_by_fixture_schema"
+  },
+  "source_sha256": {
+    "sim/kinematic/autonomous.py": "251efefdeaf12f215be01ef0d85018a7e35af93c5f7921f819d3626511fad0b7",
+    "sim/kinematic/benchmark.py": "73efa158e3ff7da5853a0dd854252d4ea53775f7acf3d2d02fcc3c8fe41faf41",
+    "hsl_core/hsl_core/tactics/fsm.py": "96bc93cda0682a55096213d5fefa8bee821973d61646f5dfcd2ed04d6bb763b8",
+    "hsl_core/hsl_core/learning/evolution.py": "53d389e7dc90c3afb92ef4647593e116fcb41e2552d1f41e3856238196f2d1ae",
+    "hsl_core/hsl_core/perception/registration.py": "62c757802c38360f864d9e5024e38f5f6637fc7323c41cca8b5287eaddc01011",
+    "hsl_core/hsl_core/perception/implicit_surface.py": "c6e40aeb9fbd42ee3b2a4a5693d93cb6f8f4e7b2bd01dac0bc6ac6d667713c2e",
+    "tools/train_evolution.py": "7b0c137e51e373f5b05af74951f66154b33e49d71cc6c24092ef61068e7c29be",
+    "docs/\u0420\u0435\u0433\u043b\u0430\u043c\u0435\u043d\u0442 HSL26 - v06092026.md": "b5a2eea6e58a164583cd39466f89d50cbfaf609b9e2013c5ee324cded4608ac4"
+  },
+  "limitations": [
+    "One deterministic training fixture only; no statistical claim of improvement.",
+    "Profiler and selector wrapper add overhead; profiled timing is not throughput.",
+    "No ROS, hardware, real-cloud, validation or held-out execution."
+  ]
+}
