@@ -1,0 +1,634 @@
+{
+  "schema": "hsl26.coevolution.package-b-verification.v1",
+  "generated_at_utc": "2026-10-02T11:51:32.904727+00:00",
+  "commit": "8d1c6a96d1517bd953cb6d16da1dfe4d653d69e3",
+  "evidence_class": "DEVELOPMENT_ONLY",
+  "promotion_eligible": false,
+  "gate_acceptance": false,
+  "reference_a_autonomous_sha256": "0d7b1a748de5839b5c36aa32597bfbc5d5afabc6f6a0b89a07024c5e0d9e37ab",
+  "baseline_genome_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "zero_dwell_genome_sha256": "6edab538e170c863fe4ba5f95574033dc54881089c38d35a5f49fa00e9759ea7",
+  "regression": {
+    "command": "python -m pytest hsl_core/tests/test_p53_tactics.py hsl_core/tests/test_p63_evolution.py hsl_core/tests/test_p52_option_authority.py hsl_core/tests/test_p35_planning_control.py hsl_core/tests/test_safety.py hsl_core/tests/test_p51_match.py sim/kinematic/test_selection_diagnostics.py sim/kinematic/test_active_option_lifecycle.py sim/kinematic/test_p56_autonomous.py sim/kinematic/test_p63_benchmark.py sim/kinematic/test_p63_tools.py -q -p no:cacheprovider --tb=short",
+    "passed": 419,
+    "elapsed_s": 29.98,
+    "log_sha256": "2d68907d9108b6355b245c8d3c62ea41250d99e0dcf5509170c17d53297694e0",
+    "note": "Validates/hashes the completed regression log; does not rerun pytest."
+  },
+  "source_sha256": {
+    "sim/kinematic/autonomous.py": "42c1f8e5209be53e14501809497436a442e0dcfc3dc118c88a0e1e346b9ba693",
+    "sim/kinematic/selection_diagnostics.py": "9e93402023534818cb6296a783235d450e12b26324f40861d2b026ea3e2720b1",
+    "sim/kinematic/test_active_option_lifecycle.py": "c6e4c6fec8d4cf0ef86bec3b4302ba917fc65d98164001aab0a414d83574f109",
+    "sim/kinematic/test_p56_autonomous.py": "877f632a69ea347830e3e29a49baee59a5762ae2a5d723989b3d1f70efdd7e61",
+    "sim/kinematic/test_selection_diagnostics.py": "092fd357b909c24ee7350d66c51ea163ecf7595a702c44e251316813bf591076",
+    "sim/kinematic/benchmark.py": "73efa158e3ff7da5853a0dd854252d4ea53775f7acf3d2d02fcc3c8fe41faf41",
+    "sim/kinematic/match.py": "3ebeb4bb8efe54236944da4531d1e0afbdd1fa9dc3b970cf6d9b13a18a3ba72f",
+    "sim/kinematic/referee.py": "aa1e2771cae93909845788ba4a310eff43a31b6bcaf28b82f4f2b11df9b906c6",
+    "sim/kinematic/sensors.py": "1a85e9f8dc77352e3e7e62528ba73ffe7ffa5da4767fb445f63075d116bb3b99",
+    "hsl_core/hsl_core/tactics/fsm.py": "96bc93cda0682a55096213d5fefa8bee821973d61646f5dfcd2ed04d6bb763b8",
+    "hsl_core/hsl_core/tactics/options.py": "5e8e02c9f1995e5e52ac3076aeeb87238c7724a7fbae1fdb0b34c9937761695f",
+    "hsl_core/hsl_core/tactics/utility.py": "876f267669449c0067be9220c7fc9fb5b86817253da34df5508091c311f02486",
+    "hsl_core/hsl_core/planning/execution.py": "962c4d69f6df46279b4fb23743abec8a76bc240cf2c0dcdea5a6dc58b1a16aca",
+    "hsl_core/hsl_core/planning/astar.py": "0c80ac131061c115205734140ad3a249a91870e32bec675a238e5d84a99d968b",
+    "hsl_core/hsl_core/control/safety.py": "982bea24b7ad22258557f03627478d0dd2a87ff8424f553253b586f43ff97eea",
+    "hsl_core/hsl_core/match.py": "3866e2db2f60f77953c96aba943ba3643a56724437aef5b03c71c04201a53473",
+    "tools/p63_policy.py": "b932fe28c8f1b974edb74ee1e20fe2125b4af6f0417984dbef164778a2fa2e98",
+    "sim/kinematic/scenarios/phase6_maze_bank.json": "69722b7d555628dc99843ec4f8ee5c91e40b3f683a05eb6f46d75c1aea8e9250",
+    "artifacts/reports/coevolution_package_b_20261002/verify_runtime.py": "e60b58cd25b10547fe933bf047e7b486bc0a2270a223c4f7a9540b0fcc9e03c2",
+    "docs/HSL26_COEVOLUTION_IMPLEMENTATION_REVIEW_20261002.md": "c2b4c5ff0044084bfee824cb6b9ae6226bca4f422d9cd892664f0360ab81adf0"
+  },
+  "cases": [
+    {
+      "scenario_id": "maze_loop_o_train",
+      "split": "training",
+      "seed": 20261002,
+      "zero_dwell_behavior_equal": true,
+      "zero_dwell_outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "6edab538e170c863fe4ba5f95574033dc54881089c38d35a5f49fa00e9759ea7",
+            "scenario_id": "maze_loop_o_train",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loop-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "dfbdf34ef6d041ff50379b61a36b654b6dda26caf06f77d2a3d9618ebe4baac8"
+          },
+          {
+            "policy_id": "6edab538e170c863fe4ba5f95574033dc54881089c38d35a5f49fa00e9759ea7",
+            "scenario_id": "maze_loop_o_train",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loop-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "dfbdf34ef6d041ff50379b61a36b654b6dda26caf06f77d2a3d9618ebe4baac8"
+          }
+        ]
+      },
+      "zero_dwell_decision_command_authority_sha256": "27006fa3478e37599aa3a8575245dd32fce25e21f0a8751e23cf34adedfce52c",
+      "reference_wall_s": 3.4444379000051413,
+      "zero_dwell_wall_s": 2.6307474999994156,
+      "positive_dwell_wall_s": 2.2359307000006083,
+      "positive_dwell_outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_loop_o_train",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loop-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "dfbdf34ef6d041ff50379b61a36b654b6dda26caf06f77d2a3d9618ebe4baac8"
+          },
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_loop_o_train",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loop-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "dfbdf34ef6d041ff50379b61a36b654b6dda26caf06f77d2a3d9618ebe4baac8"
+          }
+        ]
+      },
+      "positive_dwell_caller_ages": {
+        "guardian": {
+          "observations": 154,
+          "min_age_ns": 50000000,
+          "max_age_ns": 4250000000,
+          "at_or_beyond_dwell": 141,
+          "start_resets_within_instance": 0
+        },
+        "explorer": {
+          "observations": 156,
+          "min_age_ns": 50000000,
+          "max_age_ns": 7800000000,
+          "at_or_beyond_dwell": 152,
+          "start_resets_within_instance": 0
+        }
+      },
+      "positive_dwell_selection_totals": {
+        "guardian": {
+          "policy_calls": 160,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 157,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "explorer": {
+          "policy_calls": 160,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 0,
+          "n_forced": 157,
+          "n_empty": 0
+        }
+      }
+    },
+    {
+      "scenario_id": "maze_t_junction_train",
+      "split": "training",
+      "seed": 20261002,
+      "zero_dwell_behavior_equal": true,
+      "zero_dwell_outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "6edab538e170c863fe4ba5f95574033dc54881089c38d35a5f49fa00e9759ea7",
+            "scenario_id": "maze_t_junction_train",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-t-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "fba880e73231b08aa0ef27f5e8e90f0cc9b75beafa590b3fcb38ba0e2f0c3fbf"
+          },
+          {
+            "policy_id": "6edab538e170c863fe4ba5f95574033dc54881089c38d35a5f49fa00e9759ea7",
+            "scenario_id": "maze_t_junction_train",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-t-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "fba880e73231b08aa0ef27f5e8e90f0cc9b75beafa590b3fcb38ba0e2f0c3fbf"
+          }
+        ]
+      },
+      "zero_dwell_decision_command_authority_sha256": "8c823aa8a4199f78dc0df543bbbecc20a7cc03ceb4067bc9f37e7a866198385f",
+      "reference_wall_s": 1.4030597000019043,
+      "zero_dwell_wall_s": 1.5367666000020108,
+      "positive_dwell_wall_s": 1.5517630999966059,
+      "positive_dwell_outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_t_junction_train",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-t-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "fba880e73231b08aa0ef27f5e8e90f0cc9b75beafa590b3fcb38ba0e2f0c3fbf"
+          },
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_t_junction_train",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-t-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "fba880e73231b08aa0ef27f5e8e90f0cc9b75beafa590b3fcb38ba0e2f0c3fbf"
+          }
+        ]
+      },
+      "positive_dwell_caller_ages": {
+        "guardian": {
+          "observations": 155,
+          "min_age_ns": 50000000,
+          "max_age_ns": 4250000000,
+          "at_or_beyond_dwell": 146,
+          "start_resets_within_instance": 0
+        },
+        "explorer": {
+          "observations": 156,
+          "min_age_ns": 50000000,
+          "max_age_ns": 7800000000,
+          "at_or_beyond_dwell": 152,
+          "start_resets_within_instance": 0
+        }
+      },
+      "positive_dwell_selection_totals": {
+        "guardian": {
+          "policy_calls": 160,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 157,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "explorer": {
+          "policy_calls": 160,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 0,
+          "n_forced": 157,
+          "n_empty": 0
+        }
+      }
+    },
+    {
+      "scenario_id": "maze_multiring_7x7_train_a",
+      "split": "training",
+      "seed": 20261002,
+      "zero_dwell_behavior_equal": true,
+      "zero_dwell_outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "6edab538e170c863fe4ba5f95574033dc54881089c38d35a5f49fa00e9759ea7",
+            "scenario_id": "maze_multiring_7x7_train_a",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-multiring-a-v1",
+            "opponent_bank_id": "opponent-training-multiring-a-v1",
+            "seed_bank_id": "seed-training-multiring-a-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "13f126327007abe22638c8fb61b86bbe33519fd572befa9050d6681b00b6a95d"
+          },
+          {
+            "policy_id": "6edab538e170c863fe4ba5f95574033dc54881089c38d35a5f49fa00e9759ea7",
+            "scenario_id": "maze_multiring_7x7_train_a",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-multiring-a-v1",
+            "opponent_bank_id": "opponent-training-multiring-a-v1",
+            "seed_bank_id": "seed-training-multiring-a-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "13f126327007abe22638c8fb61b86bbe33519fd572befa9050d6681b00b6a95d"
+          }
+        ]
+      },
+      "zero_dwell_decision_command_authority_sha256": "ffb97c18021b1d3815fc37a30aed9f7cad43533918fca5ffc705644c55b7270c",
+      "reference_wall_s": 7.307877500003087,
+      "zero_dwell_wall_s": 6.013253500001156,
+      "positive_dwell_wall_s": 5.352526800001215,
+      "positive_dwell_outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_multiring_7x7_train_a",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-multiring-a-v1",
+            "opponent_bank_id": "opponent-training-multiring-a-v1",
+            "seed_bank_id": "seed-training-multiring-a-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "13f126327007abe22638c8fb61b86bbe33519fd572befa9050d6681b00b6a95d"
+          },
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_multiring_7x7_train_a",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-multiring-a-v1",
+            "opponent_bank_id": "opponent-training-multiring-a-v1",
+            "seed_bank_id": "seed-training-multiring-a-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "13f126327007abe22638c8fb61b86bbe33519fd572befa9050d6681b00b6a95d"
+          }
+        ]
+      },
+      "positive_dwell_caller_ages": {
+        "guardian": {
+          "observations": 154,
+          "min_age_ns": 50000000,
+          "max_age_ns": 4250000000,
+          "at_or_beyond_dwell": 141,
+          "start_resets_within_instance": 0
+        },
+        "explorer": {
+          "observations": 156,
+          "min_age_ns": 50000000,
+          "max_age_ns": 7800000000,
+          "at_or_beyond_dwell": 152,
+          "start_resets_within_instance": 0
+        }
+      },
+      "positive_dwell_selection_totals": {
+        "guardian": {
+          "policy_calls": 160,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 157,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "explorer": {
+          "policy_calls": 160,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 0,
+          "n_forced": 157,
+          "n_empty": 0
+        }
+      }
+    },
+    {
+      "scenario_id": "maze_loops_deadends_7x7_train_b",
+      "split": "training",
+      "seed": 20261002,
+      "zero_dwell_behavior_equal": true,
+      "zero_dwell_outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "6edab538e170c863fe4ba5f95574033dc54881089c38d35a5f49fa00e9759ea7",
+            "scenario_id": "maze_loops_deadends_7x7_train_b",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loops-deadends-b-v1",
+            "opponent_bank_id": "opponent-training-loops-deadends-b-v1",
+            "seed_bank_id": "seed-training-loops-deadends-b-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "ad7a8cc68d00ed981f9134775b3cf2f067b0e922c42de85765e722d33af303ef"
+          },
+          {
+            "policy_id": "6edab538e170c863fe4ba5f95574033dc54881089c38d35a5f49fa00e9759ea7",
+            "scenario_id": "maze_loops_deadends_7x7_train_b",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loops-deadends-b-v1",
+            "opponent_bank_id": "opponent-training-loops-deadends-b-v1",
+            "seed_bank_id": "seed-training-loops-deadends-b-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "ad7a8cc68d00ed981f9134775b3cf2f067b0e922c42de85765e722d33af303ef"
+          }
+        ]
+      },
+      "zero_dwell_decision_command_authority_sha256": "0de97c3d8dd31ea51836458d0d4872941f4a8f691a2348b5ba8d574befadd431",
+      "reference_wall_s": 4.4442742000028375,
+      "zero_dwell_wall_s": 4.387978899998416,
+      "positive_dwell_wall_s": 4.348180099994352,
+      "positive_dwell_outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_loops_deadends_7x7_train_b",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loops-deadends-b-v1",
+            "opponent_bank_id": "opponent-training-loops-deadends-b-v1",
+            "seed_bank_id": "seed-training-loops-deadends-b-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "ad7a8cc68d00ed981f9134775b3cf2f067b0e922c42de85765e722d33af303ef"
+          },
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_loops_deadends_7x7_train_b",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loops-deadends-b-v1",
+            "opponent_bank_id": "opponent-training-loops-deadends-b-v1",
+            "seed_bank_id": "seed-training-loops-deadends-b-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "ad7a8cc68d00ed981f9134775b3cf2f067b0e922c42de85765e722d33af303ef"
+          }
+        ]
+      },
+      "positive_dwell_caller_ages": {
+        "guardian": {
+          "observations": 154,
+          "min_age_ns": 50000000,
+          "max_age_ns": 4250000000,
+          "at_or_beyond_dwell": 141,
+          "start_resets_within_instance": 0
+        },
+        "explorer": {
+          "observations": 156,
+          "min_age_ns": 50000000,
+          "max_age_ns": 7800000000,
+          "at_or_beyond_dwell": 152,
+          "start_resets_within_instance": 0
+        }
+      },
+      "positive_dwell_selection_totals": {
+        "guardian": {
+          "policy_calls": 160,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 157,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "explorer": {
+          "policy_calls": 160,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 0,
+          "n_forced": 157,
+          "n_empty": 0
+        }
+      }
+    }
+  ],
+  "controlled_dwell_counterfactuals": [
+    {
+      "role": "GUARDIAN",
+      "emulate_old_clock": false,
+      "caller_ages_ns": [
+        250000000
+      ],
+      "selected_target": 2,
+      "reason": "utility_improvement_exceeds_hysteresis",
+      "original_started_at_ns": 100000000,
+      "active_started_at_ns": 350000000
+    },
+    {
+      "role": "GUARDIAN",
+      "emulate_old_clock": true,
+      "caller_ages_ns": [
+        0
+      ],
+      "selected_target": 1,
+      "reason": "minimum_dwell",
+      "original_started_at_ns": 100000000,
+      "active_started_at_ns": 100000000
+    },
+    {
+      "role": "EXPLORER",
+      "emulate_old_clock": false,
+      "caller_ages_ns": [
+        250000000
+      ],
+      "selected_target": 2,
+      "reason": "utility_improvement_exceeds_hysteresis",
+      "original_started_at_ns": 100000000,
+      "active_started_at_ns": 350000000
+    },
+    {
+      "role": "EXPLORER",
+      "emulate_old_clock": true,
+      "caller_ages_ns": [
+        0
+      ],
+      "selected_target": 1,
+      "reason": "minimum_dwell",
+      "original_started_at_ns": 100000000,
+      "active_started_at_ns": 100000000
+    }
+  ],
+  "controlled_endpoint_counterfactuals": [
+    {
+      "source": "frozen_package_A",
+      "mismatch": "target",
+      "status": "option_effect_satisfied",
+      "target_marked_complete": true,
+      "diagnostic_valid": false,
+      "candidate_authorized": false
+    },
+    {
+      "source": "frozen_package_A",
+      "mismatch": "versions",
+      "status": "option_effect_satisfied",
+      "target_marked_complete": true,
+      "diagnostic_valid": false,
+      "candidate_authorized": false
+    },
+    {
+      "source": "frozen_package_A",
+      "mismatch": "geometry",
+      "status": "option_effect_satisfied",
+      "target_marked_complete": true,
+      "diagnostic_valid": false,
+      "candidate_authorized": false
+    },
+    {
+      "source": "package_B",
+      "mismatch": "target",
+      "status": "authority_or_planning_rejected",
+      "target_marked_complete": false,
+      "diagnostic_valid": false,
+      "candidate_authorized": false
+    },
+    {
+      "source": "package_B",
+      "mismatch": "versions",
+      "status": "authority_or_planning_rejected",
+      "target_marked_complete": false,
+      "diagnostic_valid": false,
+      "candidate_authorized": false
+    },
+    {
+      "source": "package_B",
+      "mismatch": "geometry",
+      "status": "authority_or_planning_rejected",
+      "target_marked_complete": false,
+      "diagnostic_valid": false,
+      "candidate_authorized": false
+    }
+  ],
+  "limitations": [
+    "Four deterministic training fixtures, 8 s, one seed; not learned or physical performance.",
+    "Equivalence against A is asserted with dwell=0; positive dwell intentionally repairs behavior.",
+    "Controlled proposals isolate utility/dwell; production selector/authority/control/safety remain active.",
+    "Clock epoch change revokes at last old-clock authority stamp and requires a fresh policy instance.",
+    "Wall times include wrapper/warm-up effects; not a sustained overhead benchmark.",
+    "Package C, sensitivity, training eligibility and G4/G5/G6 acceptance remain pending."
+  ]
+}

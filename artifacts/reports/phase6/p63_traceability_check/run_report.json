@@ -1,0 +1,334 @@
+{
+  "baseline_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "benchmark_config": {
+    "control_period_s": 0.05,
+    "discount_rate_per_s": 0.01,
+    "episode_duration_s": 8.0,
+    "lidar_beam_count": 360,
+    "lidar_max_range_m": 5.0,
+    "lidar_noise_std_m": 0.0,
+    "max_episode_steps": 100000,
+    "robot_max_speed_mps": 0.2,
+    "robot_radius_m": 0.15
+  },
+  "eligible_empirical_training": false,
+  "evaluation_plans": {
+    "training": {
+      "confidence_level": 0.95,
+      "maximum_safety_overrides_per_episode": 150,
+      "minimum_pairs": 4,
+      "plan_id": "p63-development-train-v1"
+    },
+    "validation": {
+      "confidence_level": 0.95,
+      "maximum_safety_overrides_per_episode": 150,
+      "minimum_pairs": 2,
+      "plan_id": "p63-development-validation-v1"
+    }
+  },
+  "evidence_class": "SIL_DEVELOPMENT_FIXTURE_NOT_PROMOTION_ELIGIBLE",
+  "evolution": {
+    "elite_count": 1,
+    "generations": 1,
+    "mutation_sigma": 0.08,
+    "population_size": 2,
+    "workers": 1
+  },
+  "fixture_search_performed": true,
+  "gates": {
+    "G4": "BLOCKED_NOT_RUN",
+    "G5": "NOT_RUN",
+    "G6": "BLOCKED"
+  },
+  "generation_records": [
+    {
+      "candidate_assessments": [
+        {
+          "balanced_mean_delta": 0.0,
+          "confidence_interval": [
+            0.0,
+            0.0
+          ],
+          "eligible": true,
+          "explorer_mean_delta": 0.0,
+          "genome_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+          "guardian_mean_delta": 0.0,
+          "official_score_available": false,
+          "pair_count": 4,
+          "reason": "baseline_reference",
+          "split": "training"
+        },
+        {
+          "balanced_mean_delta": 0.0,
+          "confidence_interval": [
+            0.0,
+            0.0
+          ],
+          "eligible": true,
+          "explorer_mean_delta": 0.0,
+          "genome_sha256": "7b49951a15ce0d271916c8606011da260695560d4c9d9646ac0303fcc708e304",
+          "guardian_mean_delta": 0.0,
+          "official_score_available": false,
+          "pair_count": 4,
+          "reason": "paired_both_roles_safety_constraints_pass",
+          "split": "training"
+        }
+      ],
+      "generation_index": 0
+    }
+  ],
+  "held_out_episodes_evaluated": 0,
+  "invocation": [
+    "tools/train_evolution.py",
+    "--development-fixtures",
+    "--output-dir",
+    "artifacts/reports/phase6/p63_traceability_check",
+    "--generations",
+    "1",
+    "--population-size",
+    "2",
+    "--elite-count",
+    "1"
+  ],
+  "maze_bank_sha256": "69722b7d555628dc99843ec4f8ee5c91e40b3f683a05eb6f46d75c1aea8e9250",
+  "official_score_available": false,
+  "pairing_provenance": [
+    {
+      "evaluation_profile_id": "f7e12661580364d73e0a50e6697489f4861c641db74890df964a7183649e82e8",
+      "map_bank_id": "map-training-loop-v1",
+      "opponent_bank_id": "opponent-training-v1",
+      "scenario_id": "maze_loop_o_train",
+      "scenario_sha256": "3144a176f3fe1263bd8d3a0be15544e29fa349387b7c97f4eaf85aabbfcb19ee",
+      "seed": 6101,
+      "seed_bank_id": "seed-training-v1",
+      "split": "training"
+    },
+    {
+      "evaluation_profile_id": "8eb941b9b2069f7ee8cb6a915b1776e217f18ac932caffe473b22e14dbce46c0",
+      "map_bank_id": "map-training-loops-deadends-b-v1",
+      "opponent_bank_id": "opponent-training-loops-deadends-b-v1",
+      "scenario_id": "maze_loops_deadends_7x7_train_b",
+      "scenario_sha256": "ab67bcbddf566eaad43195f78986b94c038c171fcf93613329affebfd8a22608",
+      "seed": 6104,
+      "seed_bank_id": "seed-training-loops-deadends-b-v1",
+      "split": "training"
+    },
+    {
+      "evaluation_profile_id": "65a5b5a5b93412d331c3927a32094cb67e04d722fded7c4ceeb97c127d88c884",
+      "map_bank_id": "map-training-multiring-a-v1",
+      "opponent_bank_id": "opponent-training-multiring-a-v1",
+      "scenario_id": "maze_multiring_7x7_train_a",
+      "scenario_sha256": "00306256d64952772bfae18146b55c22d58219f61333385ba84b0a24d0045ed3",
+      "seed": 6103,
+      "seed_bank_id": "seed-training-multiring-a-v1",
+      "split": "training"
+    },
+    {
+      "evaluation_profile_id": "2e5dabec843009d3af7e5a3cf181153c1143208f3032633efb2ceb30a4e7d1fa",
+      "map_bank_id": "map-training-t-v1",
+      "opponent_bank_id": "opponent-training-v1",
+      "scenario_id": "maze_t_junction_train",
+      "scenario_sha256": "249f8d1011e9606b32a22addd95335fd43bfc03ac15bf6e5464793e7da4c0f73",
+      "seed": 6102,
+      "seed_bank_id": "seed-training-v1",
+      "split": "training"
+    }
+  ],
+  "promotion_eligible": false,
+  "python_version": "3.14.7",
+  "run_id": "p63_traceability_check",
+  "schema": "hsl26.p63-development-run.v1",
+  "seed": 2026,
+  "selected_policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "selection_reason": "baseline_retained_no_training_supported_candidate",
+  "source_file_sha256": {
+    "hsl_core\\hsl_core\\learning\\evolution.py": "53d389e7dc90c3afb92ef4647593e116fcb41e2552d1f41e3856238196f2d1ae",
+    "sim\\kinematic\\autonomous.py": "251efefdeaf12f215be01ef0d85018a7e35af93c5f7921f819d3626511fad0b7",
+    "sim\\kinematic\\benchmark.py": "73efa158e3ff7da5853a0dd854252d4ea53775f7acf3d2d02fcc3c8fe41faf41",
+    "sim\\kinematic\\scenarios\\phase6_maze_bank.json": "69722b7d555628dc99843ec4f8ee5c91e40b3f683a05eb6f46d75c1aea8e9250",
+    "tools\\p63_policy.py": "b932fe28c8f1b974edb74ee1e20fe2125b4af6f0417984dbef164778a2fa2e98",
+    "tools\\train_evolution.py": "7b0c137e51e373f5b05af74951f66154b33e49d71cc6c24092ef61068e7c29be"
+  },
+  "training_finalist_mean_delta": null,
+  "training_finalist_sha256": null,
+  "training_scenarios": [
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        4,
+        4
+      ],
+      "guardian_start_rc": [
+        0,
+        0
+      ],
+      "map_bank_id": "map-training-loop-v1",
+      "opponent_bank_id": "opponent-training-v1",
+      "rows": [
+        ".....",
+        ".###.",
+        ".###.",
+        ".###.",
+        "....."
+      ],
+      "scenario_id": "maze_loop_o_train",
+      "scenario_sha256": "3144a176f3fe1263bd8d3a0be15544e29fa349387b7c97f4eaf85aabbfcb19ee",
+      "seed_bank_id": "seed-training-v1",
+      "split": "training",
+      "synthetic_goal_rc": [
+        4,
+        0
+      ]
+    },
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        2,
+        0
+      ],
+      "guardian_start_rc": [
+        0,
+        2
+      ],
+      "map_bank_id": "map-training-t-v1",
+      "opponent_bank_id": "opponent-training-v1",
+      "rows": [
+        "##.##",
+        "##.##",
+        ".....",
+        "#####",
+        "#####"
+      ],
+      "scenario_id": "maze_t_junction_train",
+      "scenario_sha256": "249f8d1011e9606b32a22addd95335fd43bfc03ac15bf6e5464793e7da4c0f73",
+      "seed_bank_id": "seed-training-v1",
+      "split": "training",
+      "synthetic_goal_rc": [
+        2,
+        4
+      ]
+    },
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        6,
+        6
+      ],
+      "guardian_start_rc": [
+        0,
+        0
+      ],
+      "map_bank_id": "map-training-multiring-a-v1",
+      "opponent_bank_id": "opponent-training-multiring-a-v1",
+      "rows": [
+        ".......",
+        ".###.#.",
+        "...#...",
+        ".#...#.",
+        "...#...",
+        ".#.###.",
+        "......."
+      ],
+      "scenario_id": "maze_multiring_7x7_train_a",
+      "scenario_sha256": "00306256d64952772bfae18146b55c22d58219f61333385ba84b0a24d0045ed3",
+      "seed_bank_id": "seed-training-multiring-a-v1",
+      "split": "training",
+      "synthetic_goal_rc": [
+        6,
+        0
+      ]
+    },
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        6,
+        6
+      ],
+      "guardian_start_rc": [
+        0,
+        0
+      ],
+      "map_bank_id": "map-training-loops-deadends-b-v1",
+      "opponent_bank_id": "opponent-training-loops-deadends-b-v1",
+      "rows": [
+        ".......",
+        ".#.#..#",
+        "...#..#",
+        ".#...##",
+        "...#...",
+        ".#.##.#",
+        "......."
+      ],
+      "scenario_id": "maze_loops_deadends_7x7_train_b",
+      "scenario_sha256": "ab67bcbddf566eaad43195f78986b94c038c171fcf93613329affebfd8a22608",
+      "seed_bank_id": "seed-training-loops-deadends-b-v1",
+      "split": "training",
+      "synthetic_goal_rc": [
+        6,
+        0
+      ]
+    }
+  ],
+  "validation_assessment": null,
+  "validation_scenarios": [
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        3,
+        5
+      ],
+      "guardian_start_rc": [
+        1,
+        1
+      ],
+      "map_bank_id": "map-validation-offset-v1",
+      "opponent_bank_id": "opponent-validation-v1",
+      "rows": [
+        "#######",
+        "#...###",
+        "#.....#",
+        "###...#",
+        "#######"
+      ],
+      "scenario_id": "maze_offset_rooms_validation",
+      "scenario_sha256": "ed71a117544793a10063e9e1acf0f804f715ebfc73eeb5c7aeabd87067ba02ff",
+      "seed_bank_id": "seed-validation-v1",
+      "split": "validation",
+      "synthetic_goal_rc": [
+        1,
+        3
+      ]
+    },
+    {
+      "cell_size_m": 1.0,
+      "explorer_start_rc": [
+        6,
+        6
+      ],
+      "guardian_start_rc": [
+        0,
+        0
+      ],
+      "map_bank_id": "map-validation-crossings-7x7-v1",
+      "opponent_bank_id": "opponent-validation-crossings-7x7-v1",
+      "rows": [
+        ".......",
+        ".#.#...",
+        "...###.",
+        ".#.....",
+        ".###.#.",
+        "...#...",
+        "......."
+      ],
+      "scenario_id": "maze_offset_crossings_7x7_validation",
+      "scenario_sha256": "e4141cafbebf928dd0523e4dcb0ad1f7abe00924abf888ab70e2c47c67bbc84c",
+      "seed_bank_id": "seed-validation-crossings-7x7-v1",
+      "split": "validation",
+      "synthetic_goal_rc": [
+        6,
+        0
+      ]
+    }
+  ],
+  "wall_clock_s": 84.37217560000136
+}

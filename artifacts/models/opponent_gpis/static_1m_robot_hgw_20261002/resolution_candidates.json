@@ -1,0 +1,58 @@
+{
+  "status": "CLOUD_FIT_RESOLUTION_CANDIDATES",
+  "input_npz": "data\\static_1m_robot.npz",
+  "input_npz_sha256": "e85e0842653756ce94e6488685aea22a47d4272ba4540cf41264113b5870c07d",
+  "input_point_count": 22449,
+  "metadata_json": "data\\static_1m_robot.json",
+  "metadata_json_sha256": "9d641ee0f2281aa299f66781fba5f211ec15d9825995cab50e65e205a62bc980",
+  "array": "points_base_link",
+  "normal_estimator": "Open3D PointCloud.estimate_normals",
+  "normal_radius_m": 0.04,
+  "normal_max_neighbors": 30,
+  "support_radius_m": 0.06,
+  "amplitude": 1.0,
+  "off_surface_anchors": false,
+  "variants": [
+    {
+      "surface_sample_count": 100,
+      "hermite_observation_count": 200,
+      "value_observation_count": 100,
+      "normal_derivative_observation_count": 100,
+      "model_id": "opponent-gpis-9900d8e2ebde",
+      "model_sha256": "9900d8e2ebde39654ff6c83273f20f1060c9e7809f8b3beb364231773c829130",
+      "condition_number": 5238.440327852858,
+      "model_directory": "surface_points_100"
+    },
+    {
+      "surface_sample_count": 150,
+      "hermite_observation_count": 300,
+      "value_observation_count": 150,
+      "normal_derivative_observation_count": 150,
+      "model_id": "opponent-gpis-425a5e19bebb",
+      "model_sha256": "425a5e19bebb4f9cadd7f15c2d8802f35818a7f0faedddcce6996fa8d2a5cc0e",
+      "condition_number": 5829.446089788557,
+      "model_directory": "surface_points_150"
+    },
+    {
+      "surface_sample_count": 200,
+      "hermite_observation_count": 400,
+      "value_observation_count": 200,
+      "normal_derivative_observation_count": 200,
+      "model_id": "opponent-gpis-9f60199117b9",
+      "model_sha256": "9f60199117b9eccf6800e161b0186e5448f9e00307c1c0d9e8394525a4f544be",
+      "condition_number": 6857.7959267353735,
+      "model_directory": "surface_points_200"
+    },
+    {
+      "surface_sample_count": 250,
+      "hermite_observation_count": 500,
+      "value_observation_count": 250,
+      "normal_derivative_observation_count": 250,
+      "model_id": "opponent-gpis-101c72b16121",
+      "model_sha256": "101c72b161219800785cac4bfd423cb09866458ce4987c46b3ffc0d8c482e233",
+      "condition_number": 9369.543515771762,
+      "model_directory": "surface_points_250"
+    }
+  ],
+  "note": "These are alternative model sample counts, not a measured identification accuracy or a resolution threshold."
+}

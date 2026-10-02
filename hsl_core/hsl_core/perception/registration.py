@@ -122,17 +122,8 @@ class PlanarRegistrar:
         last = None
         for iterations in range(1, self.config.max_iterations + 1):
             model_points = _pose_transform(points, pose)
-            means = []
-            variances = []
-            gradients = []
-            for point in model_points:
-                mean, variance, gradient = self.model.evaluate(point)
-                means.append(mean)
-                variances.append(variance)
-                gradients.append(gradient)
-            means_array = np.asarray(means)
-            gradients_array = np.asarray(gradients)
-            sigma_sq = np.asarray(variances) + point_variance_m2
+            means_array, variances_array, gradients_array = self.model.evaluate_many(model_points)
+            sigma_sq = variances_array + point_variance_m2
             if np.any(sigma_sq <= 0) or not np.all(np.isfinite(sigma_sq)):
                 return self._rejected(pose, "INVALID_FIELD_UNCERTAINTY", support, iterations)
             residual = means_array / np.sqrt(sigma_sq)

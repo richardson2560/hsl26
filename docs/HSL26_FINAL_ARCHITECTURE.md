@@ -68,18 +68,18 @@ These corrections retain the useful separation in rev1: pure domain code, typed 
 | ID | Rulebook fact | Engineering interpretation |
 |---|---|---|
 | R1 | TurtleBot2 with MID-360 as main data source, p. 4 | Differential base; confirm all supplied sensor interfaces. |
-| R2 | Approximately 1 m modules, p. 4 | Module size is not clear corridor width; measure footprint and clearance. |
-| R3 | Maze configuration announced on day 1 and fixed during competition, p. 4 | Support approved structural map and online-only profiles; retention permission remains an organizer decision. |
+| R2 | Approximately 1 m modules, p. 4 | Model nominal 1 m wall panels; do not infer corridor clearance or full arena dimensions from panel size. The attached sketch suggests a provisional 4 m × 3 m footprint only. |
+| R3 | Maze configuration announced on day 1 and fixed during competition, p. 4 | Support approved structural map and online-only profiles; retention permission remains an organizer decision. The schematic evolution fixture is not the competition map. |
 | R4 | Static obstacles at least 0.1 m in width/length and 0.15 m high, p. 4 | Demonstrate detection at the stopping distance, including low and nearby obstacles. |
 | R5 | Opaque, non-mirror surfaces, p. 4 | Do not infer guaranteed returns or treat missing returns as free space. |
 | R6 | Two symmetric 10-minute stages with swapped roles, p. 5 | Same executable and contract registry for both roles. |
-| R7 | Four preparation minutes after stage start; do not cross the starting line, p. 5 | Default 600 s total, 240 s freeze, 360 s active; zero-motion freeze is our policy. Organizer clarification can revise the signed timing profile. |
+| R7 | Four preparation minutes after stage start; do not cross the starting line, p. 5 | Model each 600 s stage as 240 s freeze plus 360 s active; zero-motion freeze is our policy. `t_mark` and `t_catch` use only active time. |
 | R8 | Preparation through organizer PCs and SSH, p. 5 | Headless cold start; no mandatory GUI or cloud dependency. |
 | R9 | Do not fix in software information tied to previously unknown trial specifics, p. 5 | Metadata provenance and permission matter equally for source, YAML, maps and policies. |
 | R10 | Source editing during preparation before crossing and with organizer agreement, p. 5 | Hash the approved executable, configuration and artifacts before release. |
 | R11 | No extra sensors, networking equipment, compute enhancements or appearance changes, p. 5 | Use supplied hardware. CPU-only/no-NN is a project decision, not a literal ban on all neural algorithms. |
 | R12 | Arrival, capture or timeout ends a stage; uncaptured explorer wins, p. 5 | Timeout is not explorer failure. Keep internal estimates separate from adjudication. |
-| R13 | Detailed points announced on day 1; match sums two stages, pp. 5–6 | Versioned score profile; no invented official numeric rewards. |
+| R13 | Detailed points announced on day 1; match sums two stages, pp. 5–6 | The subsequently supplied score sheet/clarification defines conditional Guardian/Explorer points (see `HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md`). Keep this profile separate from SIL surrogate returns; adjudication precedence and rounding remain unresolved. |
 | R14 | Arrival at first robot-contour/start-zone-contour contact, p. 6 | Physical footprint, continuous event detection, known zone geometry. |
 | R15 | Frame distance <0.45 m, guardian X-axis deviation ≤45°, no intervening obstacle, p. 6 | Exact inequalities and tri-state LOS; estimated confidence separate from true predicate. |
 | R16 | Informative terminal indication recommended, p. 6 | SSH-readable stage/event/safety diagnostics. |
@@ -87,7 +87,7 @@ These corrections retain the useful separation in rev1: pure domain code, typed 
 | R18 | Access ends 30 minutes before competition; robots off and handed over, p. 3 | Reproducible offline cold start and archived release. |
 | R19 | One complete restart by both captains or organizer; stopping concedes maximum score, p. 5 | Internal safety hold is not an official concession or permission to restart. |
 
-**Open-input register.** Before G6, record organizer decisions for map retention, stage-to-stage data retention, goal/start-zone identity and coordinates, allowed metadata entry, stage-start signal, numerical scoring, simultaneous terminal events, reference-frame origins and any timing clarification. No software fallback may invent these answers. Development proceeds using explicitly labeled simulation assumptions.
+**Open-input register.** Before G6, record organizer decisions for map retention, stage-to-stage data retention, approved zone identity/coordinates and metadata entry, stage-start signal, event simultaneity/rounding, reference-frame origins, exact maze geometry and the treatment of movable boxes. The received score formula and 240/360 s split are documented as clarifications, but still require an approved provenance/profile before an official-score claim. No software fallback may invent unresolved answers. Development proceeds using explicitly labeled simulation assumptions.
 
 The default goal is `UNRESOLVED`. Valid providers are organizer-approved metadata, approved map semantics, or a separately validated onboard semantic detector using permitted sensors. A farthest node, a rectangular room or a high-reflectance return is not by itself the guardian's start zone. If goal identity is unavailable, explorer survival/search may run under an explicit fallback policy, but autonomous arrival is unavailable. Guardian base defense additionally requires its own start-zone geometry.
 
@@ -384,6 +384,8 @@ World truth, observation generation and referee are separate capabilities. Polic
 
 Maintain separate `hardware.yaml` (controller assumptions), simulator dynamics/sensor profiles (plant), perception configuration, and measurement artifacts. Share geometry deliberately, but do not automatically copy randomized true friction into the controller's knowledge. Calibration records include robot identity, floor, battery/load range, methods, samples, uncertainty and valid operating range. Invalidation of a bound disables the corresponding high-speed mode; one new b_min number does not eliminate all sim-to-real error.
 
+The schematic 1 m-panel layout, both interchangeable end-zone starts, Guardian-base metadata, active-time definitions, conditional score equations and optional static-box fixtures are documented in [`HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md`](HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md). Its top-view drawing and SIL bank are development references, not measured competition geometry or approved zone metadata. The bank's optional `wall_segments_m` supplies explicit raycast geometry while its grid is a conservative routing raster; both contribute to scenario provenance.
+
 GPIS pipeline and artifacts: `tools/train_gpis_prior.py` → `artifacts/models/opponent_gpis/{model.npz,manifest.json,validation.json}`. These are target paths to implement. Store models separately from physical safety calibration and learned tactics. No untrusted executable pickle is required. Exact schemas and promotion checks are in TS §§8, 14–15.
 
 ### 11.1 Fidelity boundaries and permitted bypass points
@@ -407,7 +409,7 @@ For each `(s,o)`, store counts `n_j`, prior `alpha_j>0`, duration and reward sta
 
 For option duration tau, use continuous-time discount `exp(-beta*tau)` and actual integrated discounted reward, or an explicitly fixed-timestep SMDP equivalent. Terminal transitions have no bootstrap. Optional state fusion requires, for each option and class C, equality of `E[discounted reward]` and `E[exp(-beta*tau)*1{S' in C}]`. Equal destination probabilities and mean duration alone fail because exponential expectation depends on the duration distribution and its association with destination.
 
-Bounded evolution optimizes a small versioned vector of tactical weights, horizons and hysteresis. Use projected mutations within approved bounds, held-out maps, both roles and a fixed opponent bank. A Gaussian mutation is not automatically CMA-ES. Keep official scoring, surrogate training rewards and diagnostic fitness separate. Safety parameters, capture thresholds, sensor truth access and runtime contracts are immutable. Hard safety feasibility filters cannot be traded for a higher reward. L7 stays out of the critical runtime and competition updates remain disabled.
+Bounded evolution optimizes a small versioned vector of tactical weights, horizons and hysteresis. Use projected mutations within approved bounds, held-out maps, both roles and a fixed opponent bank. A Gaussian mutation is not automatically CMA-ES. When an adjudicated mark-arrival model and approved timing/score profile are available, use the conditional score equations in `HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md`; reaching the mark late is more valuable to Explorer, while an early capture is more valuable to Guardian. A timeout without mark/capture scores zero for both roles. Keep these points, surrogate training rewards and diagnostic fitness separate; the current fixture benchmark does not establish official mark-arrival scoring. Safety parameters, capture thresholds, sensor truth access and runtime contracts are immutable. Hard safety feasibility filters cannot be traded for a higher reward. L7 stays out of the critical runtime and competition updates remain disabled.
 
 ## 13. Repository alignment and release workflow
 

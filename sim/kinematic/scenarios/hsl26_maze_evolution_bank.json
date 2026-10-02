@@ -1,0 +1,145 @@
+{
+  "schema": "hsl26.phase6.synthetic-maze-bank.v1",
+  "bank_id": "hsl26-schematic-evolution-fixtures-v1",
+  "purpose": "software_fixture_only",
+  "physical_authority": false,
+  "competition_map": false,
+  "cell_size_m": 0.5,
+  "held_out_policy": "reserved_for_once_only_final_evaluation_after_preregistration",
+  "wall_segments_m": [
+    [[0.0, 3.0], [1.0, 3.0]],
+    [[1.0, 3.0], [2.0, 3.0]],
+    [[2.0, 3.0], [3.0, 3.0]],
+    [[3.0, 3.0], [4.0, 3.0]],
+    [[0.0, 0.0], [1.0, 0.0]],
+    [[1.0, 0.0], [2.0, 0.0]],
+    [[2.0, 0.0], [3.0, 0.0]],
+    [[3.0, 0.0], [4.0, 0.0]],
+    [[0.0, 0.0], [0.0, 1.0]],
+    [[0.0, 1.0], [0.0, 2.0]],
+    [[0.0, 2.0], [0.0, 3.0]],
+    [[4.0, 0.0], [4.0, 1.0]],
+    [[4.0, 1.0], [4.0, 2.0]],
+    [[4.0, 2.0], [4.0, 3.0]],
+    [[1.0, 3.0], [1.5, 2.1339745962]],
+    [[1.5, 2.1339745962], [2.5, 2.1339745962]],
+    [[2.5, 2.1339745962], [3.0, 3.0]],
+    [[1.0, 1.65], [1.5, 0.7839745962]],
+    [[3.0, 1.65], [2.5, 0.7839745962]]
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "hsl26_schematic_train_left_base",
+      "split": "training",
+      "map_bank_id": "map-hsl26-schematic-train-left-v1",
+      "opponent_bank_id": "opponent-hsl26-train-left-v1",
+      "seed_bank_id": "seed-hsl26-train-left-v1",
+      "seed": 6801,
+      "grid": [
+        "..#..#..",
+        "..####..",
+        "........",
+        "..#..#..",
+        "...##...",
+        "........"
+      ],
+      "guardian_start_rc": [0, 1],
+      "explorer_start_rc": [0, 6],
+      "synthetic_goal_rc": [0, 1]
+    },
+    {
+      "scenario_id": "hsl26_schematic_train_right_base_box",
+      "split": "training",
+      "map_bank_id": "map-hsl26-schematic-train-right-box-v1",
+      "opponent_bank_id": "opponent-hsl26-train-right-box-v1",
+      "seed_bank_id": "seed-hsl26-train-right-box-v1",
+      "seed": 6802,
+      "grid": [
+        "..#..#..",
+        "..####..",
+        "........",
+        "..#..#..",
+        "...##...",
+        "...#...."
+      ],
+      "guardian_start_rc": [0, 6],
+      "explorer_start_rc": [0, 1],
+      "synthetic_goal_rc": [0, 6],
+      "additional_wall_segments_m": [
+        [[1.4, 0.1], [1.8, 0.1]],
+        [[1.8, 0.1], [1.8, 0.5]],
+        [[1.8, 0.5], [1.4, 0.5]],
+        [[1.4, 0.5], [1.4, 0.1]]
+      ]
+    },
+    {
+      "scenario_id": "hsl26_schematic_validation_left_box",
+      "split": "validation",
+      "map_bank_id": "map-hsl26-schematic-validation-left-box-v1",
+      "opponent_bank_id": "opponent-hsl26-validation-left-box-v1",
+      "seed_bank_id": "seed-hsl26-validation-left-box-v1",
+      "seed": 6901,
+      "grid": [
+        "..#..#..",
+        "..####..",
+        "........",
+        "..#..#..",
+        ".#..##..",
+        "........"
+      ],
+      "guardian_start_rc": [0, 0],
+      "explorer_start_rc": [0, 7],
+      "synthetic_goal_rc": [0, 0],
+      "additional_wall_segments_m": [
+        [[0.55, 0.55], [0.95, 0.55]],
+        [[0.95, 0.55], [0.95, 0.95]],
+        [[0.95, 0.95], [0.55, 0.95]],
+        [[0.55, 0.95], [0.55, 0.55]]
+      ]
+    },
+    {
+      "scenario_id": "hsl26_schematic_validation_right",
+      "split": "validation",
+      "map_bank_id": "map-hsl26-schematic-validation-right-v1",
+      "opponent_bank_id": "opponent-hsl26-validation-right-v1",
+      "seed_bank_id": "seed-hsl26-validation-right-v1",
+      "seed": 6902,
+      "grid": [
+        "..#..#..",
+        "..####..",
+        "........",
+        "..#..#..",
+        "...##...",
+        "........"
+      ],
+      "guardian_start_rc": [0, 6],
+      "explorer_start_rc": [0, 1],
+      "synthetic_goal_rc": [0, 6]
+    },
+    {
+      "scenario_id": "hsl26_schematic_held_out_box",
+      "split": "held_out",
+      "map_bank_id": "map-hsl26-schematic-held-out-box-v1",
+      "opponent_bank_id": "opponent-hsl26-held-out-box-v1",
+      "seed_bank_id": "seed-hsl26-held-out-box-v1",
+      "seed": 7001,
+      "grid": [
+        "..#..#..",
+        "..####..",
+        "........",
+        "..#..#..",
+        "...##...",
+        ".....#.."
+      ],
+      "guardian_start_rc": [0, 1],
+      "explorer_start_rc": [0, 7],
+      "synthetic_goal_rc": [0, 1],
+      "additional_wall_segments_m": [
+        [[2.4, 0.2], [2.8, 0.2]],
+        [[2.8, 0.2], [2.8, 0.6]],
+        [[2.8, 0.6], [2.4, 0.6]],
+        [[2.4, 0.6], [2.4, 0.2]]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 560" role="img" aria-labelledby="title desc">
+  <title id="title">Vista superior esquemática del laberinto HSL26</title>
+  <desc id="desc">Polígono de referencia de 4 por 3 metros, paredes modulares de un metro, dos zonas de extremo, deflectores interiores y caja opcional.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse">
+      <path d="M0,0 L8,4 L0,8 z" fill="#344054"/>
+    </marker>
+  </defs>
+  <rect width="820" height="560" fill="#fff"/>
+  <text x="410" y="34" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700" fill="#172b4d">HSL26 — referencia conceptual, vista superior</text>
+
+  <!-- 1 m grid, shown for scale; not a prescribed navigation grid. -->
+  <g stroke="#dce6f1" stroke-width="1">
+    <path d="M140 215H620 M140 335H620 M260 95V455 M380 95V455 M500 95V455"/>
+  </g>
+  <rect x="140" y="95" width="480" height="360" fill="none" stroke="#98a2b3" stroke-width="1.5" stroke-dasharray="5 5"/>
+
+  <!-- Four 1 m outer-wall panels on each long side; three on each short side. -->
+  <g stroke="#d92d20" stroke-width="9" stroke-linecap="butt">
+    <path d="M144 95H256 M264 95H376 M384 95H496 M504 95H616"/>
+    <path d="M144 455H256 M264 455H376 M384 455H496 M504 455H616"/>
+    <path d="M140 99V211 M140 219V331 M140 339V451"/>
+    <path d="M620 99V211 M620 219V331 M620 339V451"/>
+    <path d="M260 99L318 199"/>
+    <path d="M322 199H438"/>
+    <path d="M442 199L500 99"/>
+    <path d="M260 257L318 357"/>
+    <path d="M500 257L442 357"/>
+  </g>
+
+  <!-- End zones are both legal placement areas; the marked Guardian base is configured per stage. -->
+  <rect x="158" y="113" width="84" height="84" fill="#1570ef" fill-opacity="0.12" stroke="#1570ef" stroke-width="3"/>
+  <text x="200" y="149" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#175cd3">ZONA A</text>
+  <text x="200" y="168" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#175cd3">inicio / base*</text>
+  <rect x="518" y="113" width="84" height="84" fill="#12b76a" fill-opacity="0.12" stroke="#12b76a" stroke-width="3"/>
+  <text x="560" y="149" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#039855">ZONA B</text>
+  <text x="560" y="168" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#039855">inicio / base*</text>
+
+  <!-- Optional light, empty box shown as a non-scoring movable obstruction. -->
+  <rect x="356" y="389" width="48" height="48" rx="2" fill="#fdb022" fill-opacity="0.22" stroke="#dc6803" stroke-width="3" stroke-dasharray="6 4"/>
+  <text x="410" y="450" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#b54708">caja opcional; posición variable</text>
+
+  <!-- Dimensions and scale. -->
+  <g stroke="#344054" stroke-width="1.5" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)">
+    <path d="M140 500H620"/>
+    <path d="M95 95V455"/>
+  </g>
+  <g font-family="sans-serif" font-size="15" font-weight="700" fill="#344054">
+    <text x="380" y="525" text-anchor="middle">4 módulos × 1 m = 4 m (inferencia del croquis)</text>
+    <text x="66" y="275" text-anchor="middle" transform="rotate(-90 66 275)">3 módulos × 1 m = 3 m</text>
+  </g>
+  <g font-family="sans-serif" font-size="12" fill="#475467">
+    <text x="140" y="478">0 m</text>
+    <text x="254" y="478">1 m</text>
+    <text x="374" y="478">2 m</text>
+    <text x="494" y="478">3 m</text>
+    <text x="610" y="478">4 m</text>
+    <text x="640" y="105">rojo: paneles nominales de 1 m</text>
+    <text x="640" y="127">azul / verde: zonas de extremo</text>
+    <text x="640" y="149">naranja: ejemplo de caja</text>
+    <text x="640" y="185">*La base del Guardian se</text>
+    <text x="640" y="202">identifica por metadato válido,</text>
+    <text x="640" y="219">no por el color ni por el lado.</text>
+    <text x="140" y="548">Los ángulos y áreas coloreadas son aproximados; confirmar el montaje físico y las holguras antes de aceptar el mapa.</text>
+  </g>
+</svg>

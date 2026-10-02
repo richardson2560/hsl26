@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'safety_supervisor = hsl_safety.supervisor_node:main',
             'safety_watchdog = hsl_safety.watchdog:main',
+            'r2_stop_priority_probe = hsl_safety.r2_stop_priority_probe:main',
         ],
     },
 )

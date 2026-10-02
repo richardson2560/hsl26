@@ -547,6 +547,103 @@ def _corner_policy_frame(*, dynamic_target=None):
     return frame, path, goal
 
 
+def _assert_selection_partition(trace):
+    assert trace.diagnostic_valid, trace.diagnostic_error
+    assert trace.trace_schema == "hsl26.policy-cycle.v2"
+    assert 0 <= trace.n_choice <= trace.n_available <= trace.n_active <= 1
+    assert trace.n_choice + trace.n_forced + trace.n_empty == trace.n_active
+
+
+def _next_frame(match, tick):
+    estimate = match.guardian.pose_estimator.estimate
+    return PolicyInput(
+        MatchRole.GUARDIAN, "/robot_guardian", tick.stamp_ns,
+        match.guardian.sensor.observe(estimate.pose, tick.stamp_ns / 1e9, WorldGeometry(())),
+        match._stage_manager.snapshot(now_ns=tick.stamp_ns), estimate,
+        match.guardian.topology_graph, 0.15,
+    )
+
+
+@pytest.mark.parametrize("failure", ["missing_graph", "missing_match", "incoherent_pose", "repeated_time"])
+def test_early_returns_reset_previous_active_selection(failure):
+    match, policy, _ = _runner(Role.GUARDIAN, _graph())
+    for _ in range(3):
+        tick = match.step(0.05)
+    assert policy.last_trace.n_active == 1
+    sequence = policy.last_trace.cycle_sequence
+    frame = _next_frame(match, tick)
+    if failure == "missing_graph":
+        frame = replace(frame, topology_graph=None)
+    elif failure == "missing_match":
+        frame = replace(frame, match_state=None)
+    elif failure == "incoherent_pose":
+        frame = replace(frame, pose_estimate=replace(frame.pose_estimate, stamp_ns=frame.stamp_ns - 1))
+    else:
+        frame = replace(frame, stamp_ns=policy._last_policy_stamp_ns)
+    assert policy(frame) == Actuation(0.0, 0.0)
+    trace = policy.last_trace
+    _assert_selection_partition(trace)
+    assert trace.cycle_sequence == sequence + 1 and trace.cycle_stamp_ns == frame.stamp_ns
+    assert not trace.selector_invoked and trace.system_ready is None
+    assert trace.n_active == trace.n_available == trace.n_choice == trace.n_forced == trace.n_empty == 0
+    assert trace.proposal_total == trace.proposal_feasible == trace.proposal_choice == 0
+    assert trace.phase == ("" if failure == "missing_match" else "ACTIVE")
+    assert not policy.authority.execution_state.candidate_authorized
+
+
+@pytest.mark.parametrize("error_type", [ValueError, RuntimeError])
+def test_selector_failure_records_incomplete_invocation_and_revokes_motion(monkeypatch, error_type):
+    match, policy, _ = _runner(Role.GUARDIAN, _graph())
+    for _ in range(3):
+        tick = match.step(0.05)
+    def fail(*args, **kwargs):
+        raise error_type("injected-selector-error")
+    monkeypatch.setattr(policy.selector, "select", fail)
+    frame = _next_frame(match, tick)
+    if error_type is ValueError:
+        assert policy(frame) == Actuation(0.0, 0.0)
+    else:
+        with pytest.raises(RuntimeError, match="injected-selector-error"):
+            policy(frame)
+    trace = policy.last_trace
+    assert trace.status == "selector_failed" and trace.command == Actuation(0.0, 0.0)
+    assert trace.selector_invoked and trace.n_active == 1
+    assert not trace.diagnostic_valid and "injected-selector-error" in trace.diagnostic_error
+    assert trace.n_available is trace.n_choice is trace.n_forced is trace.n_empty is None
+    assert not policy.authority.execution_state.candidate_authorized
+
+
+@pytest.mark.parametrize("failure", ["authority", "candidate", "missing_path"])
+def test_post_selection_failures_keep_selection_context(monkeypatch, failure):
+    match, policy, _ = _runner(Role.GUARDIAN, _graph())
+    if failure == "authority":
+        monkeypatch.setattr(policy.authority, "submit", lambda *a, **k:
+                            SimpleNamespace(accepted=False, reason="injected-admission-denial"))
+    elif failure == "candidate":
+        def reject(*args):
+            raise ValueError("injected-candidate-error")
+        monkeypatch.setattr(policy, "_stop_turn_go_candidate", reject)
+    else:
+        original = policy._proposals
+        def without_path(*args):
+            proposals, _ = original(*args)
+            return proposals, {}
+        monkeypatch.setattr(policy, "_proposals", without_path)
+    for _ in range(3):
+        tick = match.step(0.05)
+    assert tick.guardian_command == Actuation(0.0, 0.0)
+    trace = policy.last_trace
+    assert trace.phase == "ACTIVE" and trace.n_active == trace.n_available == 1
+    if failure == "missing_path":
+        assert trace.status == "path_unavailable"
+        assert not trace.diagnostic_valid and trace.n_choice is None
+    else:
+        _assert_selection_partition(trace)
+        assert trace.n_choice == 0 and trace.n_forced == 1
+        assert trace.status == ("option_not_admitted" if failure == "authority"
+                                else "candidate_or_safety_contract_rejected")
+
+
 def test_guardian_executes_selected_search_through_plan_lease_and_safety():
     match, guardian_policy, _ = _runner(Role.GUARDIAN, _graph())
     observed_motion = False
@@ -554,6 +651,11 @@ def test_guardian_executes_selected_search_through_plan_lease_and_safety():
     for _ in range(120):
         for _ in range(3):
             tick = match.step(0.05)
+        _assert_selection_partition(guardian_policy.last_trace)
+        if guardian_policy.last_trace.status == "candidate_supervised":
+            assert guardian_policy.last_trace.phase == "ACTIVE"
+            assert guardian_policy.last_trace.system_ready is True
+            assert guardian_policy.last_trace.n_active == guardian_policy.last_trace.n_available == 1
         assert "truth" not in {field.name for field in fields(PolicyInput)}
         assert not hasattr(tick.guardian_observation, "target_id")
         if tick.guardian_command.linear_mps > 0.0:
@@ -567,6 +669,7 @@ def test_guardian_executes_selected_search_through_plan_lease_and_safety():
     assert effect_completed
     assert guardian_policy.last_trace.selected_kind.name == "SEARCH_PORTAL"
     assert guardian_policy.last_trace.authority_reason == "effect_satisfied"
+    assert guardian_policy.last_trace.n_active == 1
     assert guardian_policy.authority.execution_state.phase.name == "FINISHED"
     assert guardian_policy.authority.journal
     assert guardian_policy.last_trace.selected_kind.name == "SEARCH_PORTAL"
@@ -586,6 +689,12 @@ def test_explorer_observe_safe_is_authorized_and_never_moves():
     assert active_tick.explorer_command.linear_mps == 0.0
     assert active_tick.explorer_command.angular_rps == 0.0
     assert explorer_policy.last_trace.status == "observation_completed"
+    _assert_selection_partition(explorer_policy.last_trace)
+    assert explorer_policy.last_trace.phase == "ACTIVE"
+    assert explorer_policy.last_trace.system_ready is True
+    assert explorer_policy.last_trace.selector_invoked
+    assert explorer_policy.last_trace.proposal_choice == 1
+    assert explorer_policy.last_trace.n_active == explorer_policy.last_trace.n_forced == 1
     assert explorer_policy.last_trace.selected_kind.name == "OBSERVE_SAFE"
     assert explorer_policy.last_trace.effect_evidence_id.startswith("lidar-observation:")
     assert not explorer_policy.authority.execution_state.candidate_authorized
@@ -612,6 +721,9 @@ def test_blind_forward_sector_fails_closed_to_hold_safe():
     assert tick.guardian_command.angular_rps == 0.0
     assert guardian_policy.last_trace.status == "hold_safe"
     assert guardian_policy.last_trace.selected_kind.name == "HOLD_SAFE"
+    _assert_selection_partition(guardian_policy.last_trace)
+    assert guardian_policy.last_trace.phase == "ACTIVE"
+    assert guardian_policy.last_trace.n_active == guardian_policy.last_trace.n_empty == 1
 
 
 def test_unreachable_portal_is_not_fabricated_as_a_path():
@@ -731,6 +843,8 @@ def test_rotation_requires_fully_covered_scan_and_conservative_radial_clearance(
         tick = match.step(0.05)
     assert tick.guardian_command == Actuation(0.0, 0.0)
     assert policy.last_trace.safety_reason == "OUTSIDE_COVERAGE"
+    _assert_selection_partition(policy.last_trace)
+    assert policy.last_trace.n_active == policy.last_trace.n_available == 1
 
     match, policy, _ = _runner(
         Role.GUARDIAN,
@@ -741,6 +855,8 @@ def test_rotation_requires_fully_covered_scan_and_conservative_radial_clearance(
         tick = match.step(0.05)
     assert tick.guardian_command == Actuation(0.0, 0.0)
     assert policy.last_trace.safety_reason == "ROTATION_CLEARANCE_INSUFFICIENT"
+    _assert_selection_partition(policy.last_trace)
+    assert policy.last_trace.n_active == policy.last_trace.n_available == 1
 
 
 def test_close_obstacle_limits_candidate_to_zero_before_actuation():
@@ -756,6 +872,8 @@ def test_close_obstacle_limits_candidate_to_zero_before_actuation():
     assert tick.guardian_command.linear_mps == 0.0
     assert guardian_policy.last_trace.safety_decision == 2
     assert guardian_policy.last_trace.safety_reason == "COMMAND_LIMITED"
+    _assert_selection_partition(guardian_policy.last_trace)
+    assert guardian_policy.last_trace.n_active == guardian_policy.last_trace.n_available == 1
 
 
 def test_pose_uncertainty_above_profile_bound_fails_closed():

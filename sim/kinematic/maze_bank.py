@@ -78,7 +78,15 @@ def load_maze_bank(path: str | Path) -> MazeBank:
     entries = raw.get("scenarios")
     if not isinstance(entries, list) or not entries:
         raise ValueError("maze bank requires a non-empty scenarios list")
-    fixtures = tuple(_parse_fixture(entry, cell_size) for entry in entries)
+    bank_walls_raw = raw.get("wall_segments_m")
+    bank_walls = (
+        None
+        if bank_walls_raw is None
+        else _parse_wall_segments(bank_walls_raw, "wall_segments_m")
+    )
+    fixtures = tuple(
+        _parse_fixture(entry, cell_size, bank_walls) for entry in entries
+    )
     if len({fixture.scenario_id for fixture in fixtures}) != len(fixtures):
         raise ValueError("maze scenario IDs must be unique")
     for split in _SPLITS:
@@ -88,7 +96,11 @@ def load_maze_bank(path: str | Path) -> MazeBank:
     return MazeBank(bank_id, fixtures, held_out_policy)
 
 
-def _parse_fixture(raw: Any, cell_size_m: float) -> MazeFixture:
+def _parse_fixture(
+    raw: Any,
+    cell_size_m: float,
+    bank_walls: tuple[Segment, ...] | None = None,
+) -> MazeFixture:
     if not isinstance(raw, dict):
         raise ValueError("each maze scenario must be a JSON object")
     scenario_id = _required_text(raw.get("scenario_id"), "scenario_id")
@@ -125,7 +137,26 @@ def _parse_fixture(raw: Any, cell_size_m: float) -> MazeFixture:
         raise ValueError("role starts must be distinct cells")
     if not isinstance(raw.get("synthetic_goal_rc"), list):
         raise ValueError("synthetic_goal_rc must be a row/column array")
-    geometry = _build_geometry(rows, cell_size_m)
+    walls_raw = raw.get("wall_segments_m")
+    additional_walls_raw = raw.get("additional_wall_segments_m", [])
+    if walls_raw is not None:
+        geometry = WorldGeometry(
+            _parse_wall_segments(walls_raw, "wall_segments_m")
+            + _parse_wall_segments(
+                additional_walls_raw, "additional_wall_segments_m", allow_empty=True
+            )
+        )
+    elif bank_walls is not None:
+        geometry = WorldGeometry(
+            bank_walls
+            + _parse_wall_segments(
+                additional_walls_raw, "additional_wall_segments_m", allow_empty=True
+            )
+        )
+    elif additional_walls_raw:
+        raise ValueError("additional_wall_segments_m requires wall_segments_m")
+    else:
+        geometry = _build_geometry(rows, cell_size_m)
     topology = _build_topology(rows, cell_size_m, f"maze:{scenario_id}:localization")
     _require_connected(topology, starts["guardian"], starts["explorer"], goal, width)
     return MazeFixture(
@@ -143,6 +174,36 @@ def _parse_fixture(raw: Any, cell_size_m: float) -> MazeFixture:
         geometry,
         topology,
     )
+
+
+def _parse_wall_segments(
+    raw: Any, field: str, *, allow_empty: bool = False
+) -> tuple[Segment, ...]:
+    if not isinstance(raw, list) or (not raw and not allow_empty):
+        qualifier = "an array" if allow_empty else "a non-empty array"
+        raise ValueError(f"{field} must be {qualifier}")
+    segments: list[Segment] = []
+    for index, endpoints in enumerate(raw):
+        if not isinstance(endpoints, list) or len(endpoints) != 2:
+            raise ValueError(f"{field}[{index}] must contain two endpoints")
+        points: list[tuple[float, float]] = []
+        for endpoint in endpoints:
+            if (
+                not isinstance(endpoint, list)
+                or len(endpoint) != 2
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(float(value))
+                    for value in endpoint
+                )
+            ):
+                raise ValueError(
+                    f"{field}[{index}] endpoints must be finite XY pairs"
+                )
+            points.append((float(endpoint[0]), float(endpoint[1])))
+        segments.append(Segment(points[0], points[1]))
+    return tuple(segments)
 
 
 def _build_geometry(rows: tuple[str, ...], cell_size_m: float) -> WorldGeometry:

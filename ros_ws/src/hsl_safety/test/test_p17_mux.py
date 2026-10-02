@@ -62,9 +62,20 @@ def test_graph_requires_exactly_one_mux_physical_publisher():
 
 
 def test_mux_configuration_has_required_priority_and_topic_contract():
-    config = Path(
-        "kobuki/workspace/src/cmd_vel_mux/config/cmd_vel_mux_params.yaml"
-    ).read_text(encoding="utf-8")
+    # The host checkout and the Docker build stage intentionally have
+    # different workspace roots.  The mux contract is the same artifact in
+    # both places; do not make R2 evidence depend on the caller's cwd.
+    candidates = (
+        Path("kobuki/workspace/src/cmd_vel_mux/config/cmd_vel_mux_params.yaml"),
+        Path("/workspace_kobuki/src/cmd_vel_mux/config/cmd_vel_mux_params.yaml"),
+        Path(
+            "/workspace_kobuki/install/cmd_vel_mux/share/cmd_vel_mux/"
+            "config/cmd_vel_mux_params.yaml"
+        ),
+    )
+    config_path = next((path for path in candidates if path.is_file()), None)
+    assert config_path is not None, "cmd_vel_mux parameters are unavailable"
+    config = config_path.read_text(encoding="utf-8")
     expected = (
         ('topic: "/hsl/cmd_vel_stop"', "priority: 200", "timeout: 0.10"),
         ('topic: "/teleop/cmd_vel"', "priority: 100", "timeout: 0.2"),

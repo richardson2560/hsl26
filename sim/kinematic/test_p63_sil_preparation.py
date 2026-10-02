@@ -16,6 +16,9 @@ _BANK_PATH = (
 _INTERIOR_BANK_PATH = (
     Path(__file__).parent / "scenarios" / "phase6_interior_tactics_bank.json"
 )
+_HSL26_REFERENCE_BANK_PATH = (
+    Path(__file__).parent / "scenarios" / "hsl26_maze_evolution_bank.json"
+)
 
 
 @pytest.fixture
@@ -79,6 +82,32 @@ def test_interior_tactics_bank_routes_are_connected_turning_and_not_perimeter_sh
             assert turns >= 3
         assert fixture.synthetic_goal_rc == (4, 4)
         assert fixture.policy_goal_authorized is False
+
+
+def test_hsl26_schematic_bank_has_two_end_assignments_exact_walls_and_box_cases():
+    bank = load_maze_bank(_HSL26_REFERENCE_BANK_PATH)
+    assert len(bank.training_fixtures()) == 2
+    assert len(bank.validation_fixtures()) == 2
+    assert len(bank.held_out_fixtures()) == 1
+    assert all(not fixture.policy_goal_authorized for fixture in bank.fixtures)
+
+    left_base, right_base = bank.training_fixtures()
+    assert left_base.guardian_start_rc == (0, 1)
+    assert left_base.explorer_start_rc == (0, 6)
+    assert right_base.guardian_start_rc == (0, 6)
+    assert right_base.explorer_start_rc == (0, 1)
+    assert len(left_base.geometry.static_segments) == 19
+    assert len(right_base.geometry.static_segments) == 23
+    for segment in left_base.geometry.static_segments:
+        length = math.hypot(
+            segment.end_xy[0] - segment.start_xy[0],
+            segment.end_xy[1] - segment.start_xy[1],
+        )
+        assert length == pytest.approx(1.0)
+    assert all(
+        (fixture.rows[0][0] == "." and fixture.rows[0][-1] == ".")
+        for fixture in bank.fixtures
+    )
 
 
 def test_training_bank_includes_connected_seven_by_seven_geometries(maze_bank):

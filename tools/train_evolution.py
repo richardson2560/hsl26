@@ -345,6 +345,18 @@ def train_p63_evolution(
     report = {
         "schema": "hsl26.p63-development-run.v1",
         "run_id": run_id,
+        "traceability": {
+            "plan_document": "docs/HSL26_COEVOLUTION_PLAN.md",
+            "plan_revision": "2.1",
+            "step": "signal_diagnostics_and_registration",
+            "phase": "P6.3",
+            "generated_at_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+            "source_file_sha256": _source_hashes(),
+            "maze_bank_sha256": hashlib.sha256(
+                Path(bank_path).read_bytes()
+            ).hexdigest(),
+            "selected_policy_sha256": selected.sha256,
+        },
         "invocation": sys.argv if __name__ == "__main__" else "programmatic API",
         "python_version": platform.python_version(),
         "evidence_class": EVIDENCE_CLASS,
@@ -498,6 +510,10 @@ def _fixture_reference(fixture) -> dict[str, Any]:
         "explorer_start_rc": fixture.explorer_start_rc,
         "synthetic_goal_rc": fixture.synthetic_goal_rc,
         "cell_size_m": fixture.cell_size_m,
+        "wall_segments_m": tuple(
+            (segment.start_xy, segment.end_xy)
+            for segment in fixture.geometry.static_segments
+        ),
     }
     encoded = json.dumps(
         payload, sort_keys=True, separators=(",", ":"), allow_nan=False
@@ -512,6 +528,7 @@ def _source_hashes() -> dict[str, str]:
         ROOT_DIR / "tools" / "p63_policy.py",
         ROOT_DIR / "sim" / "kinematic" / "benchmark.py",
         ROOT_DIR / "sim" / "kinematic" / "autonomous.py",
+        ROOT_DIR / "sim" / "kinematic" / "maze_bank.py",
         ROOT_DIR / "sim" / "kinematic" / "scenarios" / "phase6_maze_bank.json",
         ROOT_DIR / "hsl_core" / "hsl_core" / "learning" / "evolution.py",
     )

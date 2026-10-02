@@ -1,0 +1,327 @@
+{
+  "schema": "hsl26.coevolution.package-a-verification.v1",
+  "generated_at_utc": "2026-10-02T09:19:25.692453+00:00",
+  "commit": "8d1c6a96d1517bd953cb6d16da1dfe4d653d69e3",
+  "evidence_class": "DEVELOPMENT_ONLY",
+  "promotion_eligible": false,
+  "gate_acceptance": false,
+  "baseline_genome_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "reference_commit": "8d1c6a96d1517bd953cb6d16da1dfe4d653d69e3",
+  "reference_autonomous_source_sha256": "9682f472adf91927d5d41a737a496b5d95c1b83b6fb18fb498f561877a704e0d",
+  "regression": {
+    "command": "python -m pytest hsl_core/tests/test_p53_tactics.py hsl_core/tests/test_p63_evolution.py sim/kinematic/test_selection_diagnostics.py sim/kinematic/test_p56_autonomous.py sim/kinematic/test_p63_benchmark.py sim/kinematic/test_p63_tools.py -q -p no:cacheprovider --tb=short",
+    "passed": 190,
+    "elapsed_s": 36.45,
+    "log_sha256": "68aeb43120e21ec14f746089c3b653b82d71bf9dfd721fce013d5c53926847fd",
+    "note": "Existing log is validated and hashed; this script does not rerun pytest."
+  },
+  "source_sha256": {
+    "sim/kinematic/autonomous.py": "0d7b1a748de5839b5c36aa32597bfbc5d5afabc6f6a0b89a07024c5e0d9e37ab",
+    "sim/kinematic/selection_diagnostics.py": "9e93402023534818cb6296a783235d450e12b26324f40861d2b026ea3e2720b1",
+    "sim/kinematic/test_selection_diagnostics.py": "092fd357b909c24ee7350d66c51ea163ecf7595a702c44e251316813bf591076",
+    "sim/kinematic/test_p56_autonomous.py": "877f632a69ea347830e3e29a49baee59a5762ae2a5d723989b3d1f70efdd7e61",
+    "sim/kinematic/benchmark.py": "73efa158e3ff7da5853a0dd854252d4ea53775f7acf3d2d02fcc3c8fe41faf41",
+    "hsl_core/hsl_core/tactics/fsm.py": "96bc93cda0682a55096213d5fefa8bee821973d61646f5dfcd2ed04d6bb763b8",
+    "hsl_core/hsl_core/tactics/options.py": "5e8e02c9f1995e5e52ac3076aeeb87238c7724a7fbae1fdb0b34c9937761695f",
+    "hsl_core/hsl_core/planning/astar.py": "0c80ac131061c115205734140ad3a249a91870e32bec675a238e5d84a99d968b",
+    "sim/kinematic/scenarios/phase6_maze_bank.json": "69722b7d555628dc99843ec4f8ee5c91e40b3f683a05eb6f46d75c1aea8e9250",
+    "artifacts/reports/coevolution_package_a_20261002/verify_runtime.py": "efc177b4ce1bd1f112c7c8c9e4d14af4e8abbea8e95b66470a73dafc2e86fbb1",
+    "docs/HSL26_COEVOLUTION_IMPLEMENTATION_REVIEW_20261002.md": "c7cbbfcf2f1b9b904bf4695726b5756c7b25fb8b70a4f354847240d166e03364"
+  },
+  "cases": [
+    {
+      "scenario_id": "maze_loop_o_train",
+      "seed": 20261002,
+      "split": "training",
+      "behavior_equal": true,
+      "decision_command_authority_trace_sha256": "fd15e7af4f6c4afba6686cdf47e9553b89a4f879ecd0bb1b815c65c5b91d6a6a",
+      "reference_wall_s": 1.5734559000047739,
+      "instrumented_wall_s": 1.7809392999988631,
+      "outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_loop_o_train",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loop-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "dfbdf34ef6d041ff50379b61a36b654b6dda26caf06f77d2a3d9618ebe4baac8"
+          },
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_loop_o_train",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loop-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "dfbdf34ef6d041ff50379b61a36b654b6dda26caf06f77d2a3d9618ebe4baac8"
+          }
+        ]
+      },
+      "selection_totals": {
+        "guardian": {
+          "policy_calls": 160,
+          "selector_invocations": 160,
+          "active_before_selector": 0,
+          "non_active_calls": 3,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 157,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "explorer": {
+          "policy_calls": 160,
+          "selector_invocations": 160,
+          "active_before_selector": 0,
+          "non_active_calls": 3,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 0,
+          "n_forced": 157,
+          "n_empty": 0
+        }
+      }
+    },
+    {
+      "scenario_id": "maze_t_junction_train",
+      "seed": 20261002,
+      "split": "training",
+      "behavior_equal": true,
+      "decision_command_authority_trace_sha256": "80f1d92401be795e3fa88e0bea9dd6a21eada5acd00177135b85f4a034d25f57",
+      "reference_wall_s": 1.3694983999957913,
+      "instrumented_wall_s": 1.0408284000004642,
+      "outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_t_junction_train",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-t-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "fba880e73231b08aa0ef27f5e8e90f0cc9b75beafa590b3fcb38ba0e2f0c3fbf"
+          },
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_t_junction_train",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-t-v1",
+            "opponent_bank_id": "opponent-training-v1",
+            "seed_bank_id": "seed-training-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "fba880e73231b08aa0ef27f5e8e90f0cc9b75beafa590b3fcb38ba0e2f0c3fbf"
+          }
+        ]
+      },
+      "selection_totals": {
+        "guardian": {
+          "policy_calls": 160,
+          "selector_invocations": 160,
+          "active_before_selector": 0,
+          "non_active_calls": 3,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 157,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "explorer": {
+          "policy_calls": 160,
+          "selector_invocations": 160,
+          "active_before_selector": 0,
+          "non_active_calls": 3,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 0,
+          "n_forced": 157,
+          "n_empty": 0
+        }
+      }
+    },
+    {
+      "scenario_id": "maze_multiring_7x7_train_a",
+      "seed": 20261002,
+      "split": "training",
+      "behavior_equal": true,
+      "decision_command_authority_trace_sha256": "6de95a8fa7eed16024011fe850b2df8f47c371ec3d973702bfaf8cbf00fcb6ad",
+      "reference_wall_s": 1.7922714999949676,
+      "instrumented_wall_s": 2.262703500004136,
+      "outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_multiring_7x7_train_a",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-multiring-a-v1",
+            "opponent_bank_id": "opponent-training-multiring-a-v1",
+            "seed_bank_id": "seed-training-multiring-a-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "13f126327007abe22638c8fb61b86bbe33519fd572befa9050d6681b00b6a95d"
+          },
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_multiring_7x7_train_a",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-multiring-a-v1",
+            "opponent_bank_id": "opponent-training-multiring-a-v1",
+            "seed_bank_id": "seed-training-multiring-a-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "13f126327007abe22638c8fb61b86bbe33519fd572befa9050d6681b00b6a95d"
+          }
+        ]
+      },
+      "selection_totals": {
+        "guardian": {
+          "policy_calls": 160,
+          "selector_invocations": 160,
+          "active_before_selector": 0,
+          "non_active_calls": 3,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 157,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "explorer": {
+          "policy_calls": 160,
+          "selector_invocations": 160,
+          "active_before_selector": 0,
+          "non_active_calls": 3,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 0,
+          "n_forced": 157,
+          "n_empty": 0
+        }
+      }
+    },
+    {
+      "scenario_id": "maze_loops_deadends_7x7_train_b",
+      "seed": 20261002,
+      "split": "training",
+      "behavior_equal": true,
+      "decision_command_authority_trace_sha256": "1ea847fb3c6f954a871ee80ed58d0fed229b997952bb503ce52be2b1a4a986cd",
+      "reference_wall_s": 1.707877599998028,
+      "instrumented_wall_s": 2.1090422999986913,
+      "outcome": {
+        "terminal_kind": "TIMEOUT",
+        "active_duration_s": 7.85,
+        "step_count": 160,
+        "role_results": [
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_loops_deadends_7x7_train_b",
+            "split": "training",
+            "role": 1,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loops-deadends-b-v1",
+            "opponent_bank_id": "opponent-training-loops-deadends-b-v1",
+            "seed_bank_id": "seed-training-loops-deadends-b-v1",
+            "training_return": -0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "ad7a8cc68d00ed981f9134775b3cf2f067b0e922c42de85765e722d33af303ef"
+          },
+          {
+            "policy_id": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+            "scenario_id": "maze_loops_deadends_7x7_train_b",
+            "split": "training",
+            "role": 0,
+            "seed": 20261002,
+            "map_bank_id": "map-training-loops-deadends-b-v1",
+            "opponent_bank_id": "opponent-training-loops-deadends-b-v1",
+            "seed_bank_id": "seed-training-loops-deadends-b-v1",
+            "training_return": 0.9245020599315531,
+            "safety_overrides": 0,
+            "safety_violations": 0,
+            "collisions": 0,
+            "completed": true,
+            "evaluation_profile_id": "ad7a8cc68d00ed981f9134775b3cf2f067b0e922c42de85765e722d33af303ef"
+          }
+        ]
+      },
+      "selection_totals": {
+        "guardian": {
+          "policy_calls": 160,
+          "selector_invocations": 160,
+          "active_before_selector": 0,
+          "non_active_calls": 3,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 157,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "explorer": {
+          "policy_calls": 160,
+          "selector_invocations": 160,
+          "active_before_selector": 0,
+          "non_active_calls": 3,
+          "n_active": 157,
+          "n_available": 157,
+          "n_choice": 0,
+          "n_forced": 157,
+          "n_empty": 0
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Four deterministic training fixtures, 8 s horizon, one seed; no learning/generalization claim.",
+    "Reference is source from the fixed reference commit; local initial trace additions changed telemetry only.",
+    "Wall times include wrappers and order/warm-up effects; not a sustained overhead benchmark.",
+    "No validation/held-out or G4/G5/G6 acceptance; package B dwell and C collector remain pending."
+  ]
+}

@@ -114,6 +114,21 @@ def test_model_prediction_and_support_fraction_are_finite():
     assert model.support_fraction([(0.05, 0.0, 0.0), (3.0, 0.0, 0.0)]) == pytest.approx(0.5)
 
 
+def test_batched_evaluation_matches_single_point_evaluation():
+    model = HermiteGPIS(_observations(), support_radius_m=1.0, regularization=1e-8)
+    points = np.array(
+        [[0.05, 0.0, 0.0], [0.0, 0.2, 0.0], [3.0, -1.0, 0.0], [0.0, 0.0, 0.0]]
+    )
+    means, variances, gradients = model.evaluate_many(points)
+    expected = [model.evaluate(point) for point in points]
+    assert np.allclose(means, [item[0] for item in expected], atol=1e-10)
+    assert np.allclose(variances, [item[1] for item in expected], atol=1e-10)
+    assert np.allclose(gradients, [item[2] for item in expected], atol=1e-10)
+    assert model.evaluate_many(np.empty((0, 3)))[0].shape == (0,)
+    assert np.allclose(model.evaluate_mean_many(points), means, atol=1e-10)
+    assert model.evaluate_mean_many(np.empty((0, 3))).shape == (0,)
+
+
 def test_invalid_observations_and_kernel_parameters_are_rejected():
     with pytest.raises(ValueError):
         HermiteObservation((0.0, 0.0, 0.0), "value", (0.0, 0.0, 0.0), 0.0, 1e-3)
@@ -135,3 +150,45 @@ def test_artifact_round_trip_has_non_object_arrays_and_hash_manifest(tmp_path: P
     loaded_manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
     assert loaded_manifest["artifact_sha256"] == manifest["artifact_sha256"]
     assert hashlib.sha256((tmp_path / "model.npz").read_bytes()).hexdigest() == manifest["artifact_sha256"]
+
+
+def test_artifact_preserves_centered_model_transform(tmp_path: Path):
+    transform = np.eye(4)
+    transform[:3, 3] = (0.4, -0.2, 0.1)
+    model = HermiteGPIS(
+        _observations(),
+        support_radius_m=1.0,
+        regularization=1e-8,
+        base_from_model=transform,
+    )
+    manifest = model.save(tmp_path)
+    with np.load(tmp_path / "model.npz", allow_pickle=False) as arrays:
+        assert np.allclose(arrays["base_from_model"], transform)
+    assert manifest["base_from_model"] == transform.tolist()
+    loaded = HermiteGPIS.load(tmp_path)
+    assert np.allclose(loaded.to_arrays()["base_from_model"], transform)
+    assert loaded.evaluate((0.05, 0.0, 0.0))[0] == pytest.approx(
+        model.evaluate((0.05, 0.0, 0.0))[0]
+    )
+
+
+def test_model_rejects_reflection_as_frame_transform():
+    transform = np.eye(4)
+    transform[0, 0] = -1.0
+    with pytest.raises(ValueError, match="proper rigid"):
+        HermiteGPIS(
+            _observations(),
+            support_radius_m=1.0,
+            base_from_model=transform,
+        )
+
+
+def test_model_loader_rejects_manifest_transform_mismatch(tmp_path: Path):
+    model = HermiteGPIS(_observations(), support_radius_m=1.0, regularization=1e-8)
+    model.save(tmp_path)
+    manifest_path = tmp_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["base_from_model"][0][3] = 0.1
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="metadata"):
+        HermiteGPIS.load(tmp_path)

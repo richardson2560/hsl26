@@ -30,6 +30,17 @@ Cada flecha conserva `ContractHeader` revisión 2: fuente/sesión/secuencia, eta
 
 R2 y R3 pueden desarrollarse antes de R8. El primer movimiento simulado no autoriza movimiento real. R4 puede empezar con bags/sensores sintéticos mientras se caracteriza MVSim.
 
+### R3-A — puerta de observación normalizada
+
+**Estado: `PASS` técnico de núcleo; `IN_PROGRESS` para runtime ROS.**
+`hsl_core.perception.observation_gate` admite una nube sólo si su frame,
+clock/localization epochs, `calibration_id`, stamps por punto y edad coinciden
+con el contexto receptor. Después aplica deskew y `LocalObstacleBuilder`; un
+dato incompleto, futuro, stale o incoherente es rechazo, nunca cobertura libre.
+Las pruebas de puerta, deskew y mapping se ejecutan en R3-A; los comandos y
+la evidencia Docker están en `docker/r3/README.md`. R3-B permanece bloqueado
+hasta inventariar el contrato real Livox/IMU/odom y una calibración aceptada.
+
 ## 2.1 R0 — línea base reproducible y segura
 
 **Objetivo de R0:** producir una base de ejecución que otra persona pueda reconstruir, inspeccionar y arrancar sin interpretar etiquetas mutables ni descargar dependencias durante la validación final. R0 no implementa seguridad, grafo, MVSim ni movimiento. Su salida solo habilita la ejecución fiable de R1–R8.
@@ -177,7 +188,8 @@ alcance.
 
 ## 2.3 R2 — límite supervisor/watchdog, cerrado por defecto
 
-**Estado de implementación: `IN_PROGRESS` (sin autorización de movimiento).**
+**Estado de implementación: `IN_PROGRESS`; R2-A (arranque desarmado) tiene
+`PASS` técnico, sin autorización de movimiento.**
 
 R2 materializa el límite de proceso de seguridad sin reutilizar como
 calibración los valores orientativos de `hardware.yaml`. El perfil
@@ -198,6 +210,31 @@ están en `docker/r2/README.md`. El cierre de R2 requiere, además de esas
 pruebas de software, I01–I05 contra mux y downstream reales, medición de
 latencias/timeout y revisión independiente. R2 por sí solo no acredita base
 física, MVSim, ni competición.
+
+La evidencia R2-A está en `artifacts/reports/r2/r2_20261002T104405Z/`: imagen
+`hsl26@sha256:750ec9f4f99de9b74007285f3cbdc42204830238bb12ddabfc12404c819567df`,
+39 pruebas unitarias aprobadas, ambos procesos vivos con `--network none`,
+dos capturas `Twist` nulas, `WatchdogHealth.stop_asserted=true` y rechazo
+explícito de `RearmSafety`. Esta evidencia no cubre el mux ni una planta y no
+se puede extrapolar a I01–I05.
+
+R2-B tiene `PASS` técnico en
+`artifacts/reports/r2/r2b_20261002T140144Z/`: la imagen
+`hsl26@sha256:6a16bc85fee5950f5f864e3f6534a8b97073c32fb79f4fbbd57bd3540d0f7a68`
+ejecutó 61 muestras de `/commands/velocity` en cero frente a una inyección
+lógica de `0.2 m/s`, y el único escritor físico fue `/cmd_vel_mux`. El probe
+exige tanto `--allow-test-nonzero` como `HSL26_TEST_ONLY=1`; no forma parte de
+un launch de producción.
+
+R2-C tiene `PASS` técnico en el mismo run: tras terminar el supervisor, el
+watchdog y mux continuaron vivos, 61 muestras físicas lógicas siguieron en
+cero y `WatchdogHealth` pasó a `healthy=false`, `stop_asserted=true`,
+`STALE_HEARTBEAT`. R2-D debe tratar la caída del propio watchdog como una
+limitación de arquitectura a cerrar con downstream/interlock independiente;
+en R2-D, al perder el watchdog, el mux dejó pasar `0.2 m/s` en su salida
+lógica. Por tanto, R2 no puede cerrar I01–I05 ni autorizar hardware hasta que
+un controlador/downstream independiente haya sido diseñado, integrado y
+medido; un mux ROS no puede demostrar por sí solo esa detención física.
 
 ## 3. Caracterización obligatoria de MVSim y MID-360
 

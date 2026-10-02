@@ -23,6 +23,8 @@ from hsl_core.tactics import (
     OptionContext,
     OptionGoal,
     OptionKind,
+    OptionPhase,
+    OptionOutcome,
     OptionProposal,
     OptionRegistry,
     MAX_TACTICAL_PROPOSALS,
@@ -44,6 +46,11 @@ from hsl_core.types import MotionCandidate, OpponentTrack, Pose2D, TrackState
 from .common import Actuation, PoseEstimate
 from .match import MatchRole, PolicyInput, SILPolicyInput
 from .perception import extract_synthetic_opponent, line_of_sight_clear
+from .selection_diagnostics import (
+    SelectionDiagnostics,
+    begin_selection,
+    finish_selection,
+)
 
 _ROUTE_TREE_CACHE_LIMIT = 2
 
@@ -167,7 +174,38 @@ class P56Profile:
 
 
 @dataclass(frozen=True)
-class PolicyCycleTrace:
+class ActiveOption:
+    """One admitted motion instance; replanning replaces path/generation only."""
+
+    stable_key: str
+    option_instance_id: str
+    goal: OptionGoal
+    path: PlannedPath
+    started_at_ns: int
+    action_id: str
+    lease_generation: int
+
+    def __post_init__(self) -> None:
+        if not self.stable_key or not self.action_id:
+            raise ValueError("active option requires stable key and action ID")
+        if self.option_instance_id != self.goal.option_instance_id:
+            raise ValueError("active option instance must match admitted goal")
+        if (not isinstance(self.started_at_ns, int) or isinstance(self.started_at_ns, bool)
+                or self.started_at_ns < 0):
+            raise ValueError("option start must be a non-negative integer nanosecond stamp")
+        if (not isinstance(self.lease_generation, int) or isinstance(self.lease_generation, bool)
+                or self.lease_generation < 1):
+            raise ValueError("active option requires an admitted lease generation")
+        if self.goal.kind in (OptionKind.HOLD_SAFE, OptionKind.OBSERVE_SAFE):
+            raise ValueError("only persistent motion options have an ActiveOption")
+        if (self.path.map_version, self.path.topology_version, self.path.localization_epoch) != (
+            self.goal.map_version, self.goal.topology_version, self.goal.localization_epoch
+        ) or self.path.goal_node_id != self.goal.target_node_id:
+            raise ValueError("active path must match admitted goal and versions")
+
+
+@dataclass(frozen=True)
+class PolicyCycleTrace(SelectionDiagnostics):
     status: str
     selected_kind: OptionKind | None
     selection_reason: str
@@ -271,7 +309,10 @@ class KinematicAutonomousPolicy:
             ),
         )
         self._counter = 0
-        self._active: tuple[str, str, OptionGoal, PlannedPath] | None = None
+        self._active: ActiveOption | None = None
+        self._clock_epoch: str | None = None
+        self._clock_epoch_invalidated = False
+        self._observation_identity: tuple[str, str, int, int] | None = None
         self._completed_nodes: set[int] = set()
         self._safety_latched = False
         self._last_route_rejection = ""
@@ -289,12 +330,35 @@ class KinematicAutonomousPolicy:
             "NOT_RUN", None, "", "", 0, 0.0, 0.0, None, "",
             Actuation(0.0, 0.0), "",
         )
+        self._selection_trace_state = SelectionDiagnostics()
+        self._trace_cycle_sequence = 0
+
+    def _record_trace(self, **execution_fields) -> None:
+        self.last_trace = PolicyCycleTrace(
+            **execution_fields, **self._selection_trace_state.trace_fields()
+        )
 
     def __call__(self, frame: PolicyInput) -> Actuation:
         if not isinstance(frame, PolicyInput):
             raise ValueError("frame must be a validated PolicyInput")
+        self._trace_cycle_sequence += 1
+        self._selection_trace_state = SelectionDiagnostics(
+            cycle_sequence=self._trace_cycle_sequence,
+            cycle_stamp_ns=frame.stamp_ns,
+            phase=frame.match_state.phase.name if frame.match_state is not None else "",
+        )
         if frame.role != self.role:
             raise ValueError("policy role does not match its endpoint")
+        if self._clock_epoch_invalidated or (
+            self._clock_epoch is not None and frame.match_state is not None
+            and frame.match_state.meta.clock_epoch != self._clock_epoch
+        ):
+            # This policy/authority belongs to a single clock epoch. Never
+            # subtract stamps across epochs or reset the lease generation.
+            if not self._clock_epoch_invalidated:
+                self._reset_navigation_context()
+            self._clock_epoch_invalidated = True
+            return self._stop("clock_epoch_changed_requires_policy_reset", frame)
         if self._last_policy_stamp_ns is not None:
             if frame.stamp_ns <= self._last_policy_stamp_ns:
                 return self._stop("non_monotonic_policy_time", frame)
@@ -309,6 +373,19 @@ class KinematicAutonomousPolicy:
             return self._stop("missing_stage_pose_or_topology", frame)
         if not self._coherent(frame, estimate, graph):
             return self._stop("incoherent_observation_or_versions", frame)
+        self._clock_epoch = match.meta.clock_epoch
+        identity = (match.meta.stage_id, estimate.localization_epoch,
+                    graph.map_version, graph.topology_version)
+        if self._observation_identity is not None and identity != self._observation_identity:
+            status = ("stage_or_localization_changed"
+                      if identity[:2] != self._observation_identity[:2]
+                      else "route_versions_changed")
+            self._observation_identity = identity
+            self._reset_navigation_context()
+            return self._stop(status, frame)
+        self._observation_identity = identity
+        if self._active is not None and self.authority.result(self._active.action_id) is not None:
+            self._active = None
         self._update_opponent_track(frame, estimate, graph)
         now_ns = frame.stamp_ns
         coverage_fraction, free_distance, forward_coverage = self._forward_clearance(
@@ -354,18 +431,31 @@ class KinematicAutonomousPolicy:
                 else "pose_stage_or_sensor_evidence_unavailable"
             ),
         )
-        current_key = self._active[0] if self._active else ""
-        current_id = self._active[1] if self._active else ""
-        current_started = (
-            self._active[2].deadline_ns - (match.stage_ends_at_ns - now_ns)
-            if self._active
-            else None
-        )
-        selection = self.selector.select(
-            tactical,
-            current_stable_key=current_key,
-            current_option_instance_id=current_id,
-            current_started_at_ns=current_started,
+        current_key = self._active.stable_key if self._active else ""
+        current_id = self._active.option_instance_id if self._active else ""
+        current_started = self._active.started_at_ns if self._active else None
+        self._selection_trace_state = begin_selection(self._selection_trace_state, tactical)
+        try:
+            selection = self.selector.select(
+                tactical,
+                current_stable_key=current_key,
+                current_option_instance_id=current_id,
+                current_started_at_ns=current_started,
+            )
+        except Exception as error:
+            self._selection_trace_state = replace(
+                self._selection_trace_state,
+                diagnostic_error=f"selector_failed:{error}",
+            )
+            stopped = self._stop("selector_failed", frame)
+            if not isinstance(error, ValueError):
+                raise
+            return stopped
+        self._selection_trace_state = finish_selection(
+            self._selection_trace_state, tactical, selection,
+            {p.stable_key: paths[p.goal.target_node_id] for p in tactical.proposals
+             if p.goal.target_node_id in paths},
+            graph,
         )
         selected = selection.selected
         if selected.goal.kind == OptionKind.HOLD_SAFE:
@@ -382,13 +472,17 @@ class KinematicAutonomousPolicy:
             selected.goal.kind != OptionKind.OBSERVE_SAFE
             and selected_path is None
         ):
+            if self._active is not None:
+                self._cancel_active(frame, graph)
             return self._trace_stop(
                 "path_unavailable",
                 selected.goal.kind,
                 selection.reason,
                 "no_versioned_open_path",
             )
-        if self._active is None or self._active[1] != selected.goal.option_instance_id:
+        if (self._active is None
+                or self._active.option_instance_id != selected.goal.option_instance_id
+                or self._active.stable_key != selected.stable_key):
             if self._active is not None:
                 self._cancel_active(frame, graph)
             if selected.goal.kind == OptionKind.OBSERVE_SAFE:
@@ -415,7 +509,24 @@ class KinematicAutonomousPolicy:
             return self._execute_observation_option(
                 frame, context, selected, selection.reason
             )
-        if self._at_goal(estimate, selected_path):
+        if selected.goal != self._active.goal:
+            self._cancel_active(frame, graph)
+            return self._trace_stop(
+                "active_goal_mutation_rejected", selected.goal.kind,
+                selection.reason, "admitted_goal_is_immutable",
+            )
+        try:
+            # Validate continuity before the effect checkpoint, which otherwise
+            # could confirm a different path's endpoint under the admitted ID.
+            updated_active = replace(self._active, path=selected_path)
+            target_xy = self._validate_motion_target(selected.goal, selected_path, graph)
+        except ValueError as error:
+            self._cancel_active(frame, graph)
+            return self._trace_stop(
+                "authority_or_planning_rejected", selected.goal.kind,
+                selection.reason, str(error),
+            )
+        if self._at_goal(estimate, target_xy, selected.goal):
             evidence_id = (
                 f"p56-arrival:{selected.goal.option_instance_id}:{frame.stamp_ns}"
             )
@@ -428,7 +539,18 @@ class KinematicAutonomousPolicy:
                 effect_instance_id=selected.goal.option_instance_id,
                 effect_evidence_id=evidence_id,
             )
+            action_id = self._active.action_id
             self.authority.tick(effect_context)
+            result = self.authority.result(action_id)
+            if result is None or result.outcome != OptionOutcome.SUCCESS:
+                if result is not None:
+                    self._active = None
+                else:
+                    self._cancel_active(frame, graph)
+                return self._trace_stop(
+                    "option_effect_not_confirmed", selected.goal.kind,
+                    selection.reason, self.authority.execution_state.reason,
+                )
             self._completed_nodes.add(selected.goal.target_node_id)
             self._active = None
             return self._trace_stop(
@@ -444,9 +566,18 @@ class KinematicAutonomousPolicy:
             )
             action_id = self._active_action_id()
             state = self.authority.begin_replan(action_id, replanning_context)
-            self.authority.mark_executing(action_id, replanning_context)
             if selected_path is None:
                 raise ValueError("active option has no current versioned path")
+            self._active = replace(
+                updated_active, lease_generation=state.lease_generation
+            )
+            state = self.authority.mark_executing(action_id, replanning_context)
+            if state.phase != OptionPhase.EXECUTING or not state.candidate_authorized:
+                self._cancel_active(frame, graph)
+                return self._trace_stop(
+                    "option_not_executing", selected.goal.kind,
+                    selection.reason, state.reason,
+                )
             return self._execute_candidate(
                 frame,
                 graph,
@@ -495,6 +626,18 @@ class KinematicAutonomousPolicy:
             and match.meta.observation_stamp_ns <= frame.stamp_ns
             and match.meta.state_stamp_ns <= frame.stamp_ns
         )
+
+    def _reset_navigation_context(self) -> None:
+        """Clear context-bound history; safety latches and lease IDs survive."""
+        self._completed_nodes.clear()
+        self._route_graph = None
+        self._route_edges.clear()
+        self._route_trees.clear()
+        self._route_starts_stamp_ns = None
+        self._route_starts = ()
+        self._opponent_filter.reset()
+        self._opponent_filter_identity = None
+        self._opponent_track = None
 
     @property
     def opponent_track(self) -> OpponentTrack | None:
@@ -1165,12 +1308,14 @@ class KinematicAutonomousPolicy:
             raise ValueError("match state and topology are required")
         stable_key = f"{kind.name.lower()}:{target_node_id}"
         instance_id = (
-            self._active[1]
-            if self._active is not None and self._active[0] == stable_key
+            self._active.option_instance_id
+            if self._active is not None and self._active.stable_key == stable_key
             else f"p56:{self.role.value}:{match.meta.stage_id}:{stable_key}:"
             f"{self._counter + 1}"
         )
-        goal = OptionGoal(
+        goal = self._active.goal if (
+            self._active is not None and self._active.stable_key == stable_key
+        ) else OptionGoal(
             option_instance_id=instance_id,
             kind=kind,
             role=_core_role(frame.role),
@@ -1241,6 +1386,7 @@ class KinematicAutonomousPolicy:
         free_distance: float,
         coverage_valid: bool,
     ) -> Actuation:
+        admission = None
         try:
             self._counter += 1
             action_id = f"p56-action-{self.role.value}-{self._counter}"
@@ -1260,13 +1406,21 @@ class KinematicAutonomousPolicy:
                     selection_reason,
                     admission.reason,
                 )
-            self._active = (
-                proposal.stable_key,
-                proposal.goal.option_instance_id,
-                proposal.goal,
-                path,
+            self._validate_motion_target(proposal.goal, path, graph)
+            self._active = ActiveOption(
+                stable_key=proposal.stable_key,
+                option_instance_id=proposal.goal.option_instance_id,
+                goal=proposal.goal, path=path,
+                started_at_ns=authority_context.now_ns, action_id=action_id,
+                lease_generation=admission.execution_state.lease_generation,
             )
             state = self.authority.mark_executing(action_id, authority_context)
+            if state.phase != OptionPhase.EXECUTING or not state.candidate_authorized:
+                self._cancel_active(frame, graph)
+                return self._trace_stop(
+                    "option_not_executing", proposal.goal.kind,
+                    selection_reason, state.reason,
+                )
             return self._execute_candidate(
                 frame,
                 graph,
@@ -1280,6 +1434,11 @@ class KinematicAutonomousPolicy:
         except ValueError as error:
             if self._active is not None:
                 self._cancel_active(frame, frame.topology_graph)
+            elif admission is not None and admission.accepted and self.authority.result(action_id) is None:
+                # Creation of the local record may reject an inconsistent path
+                # after submit. Close that planning lease without a cache.
+                self.authority.request_cancel(action_id, authority_context, cancel_timeout_ns=1)
+                self.authority.acknowledge_cancel(action_id, authority_context)
             return self._trace_stop(
                 "option_admission_or_plan_failed",
                 proposal.goal.kind,
@@ -1392,22 +1551,22 @@ class KinematicAutonomousPolicy:
                 )
             )
             self._active = None
-        self.last_trace = PolicyCycleTrace(
-            "candidate_supervised",
-            goal.kind,
-            selection_reason,
-            (
+        self._record_trace(
+            status="candidate_supervised",
+            selected_kind=goal.kind,
+            selection_reason=selection_reason,
+            authority_reason=(
                 self.authority.execution_state.reason
                 if safety.decision == STOP
                 else "executing"
             ),
-            generation,
-            admitted.linear_velocity_mps,
-            admitted.angular_velocity_rps,
-            safety.decision,
-            safety.primary_reason,
-            command,
-            "",
+            lease_generation=generation,
+            candidate_v_mps=admitted.linear_velocity_mps,
+            candidate_omega_rps=admitted.angular_velocity_rps,
+            safety_decision=safety.decision,
+            safety_reason=safety.primary_reason,
+            command=command,
+            effect_evidence_id="",
         )
         return command
 
@@ -1830,43 +1989,44 @@ class KinematicAutonomousPolicy:
                 selection_reason,
                 str(error),
             )
-        self.last_trace = PolicyCycleTrace(
-            "observation_completed",
-            proposal.goal.kind,
-            selection_reason,
-            self.authority.execution_state.reason,
-            state.lease_generation,
-            0.0,
-            0.0,
-            None,
-            "no_motion_option",
-            Actuation(0.0, 0.0),
-            evidence_id,
+        self._record_trace(
+            status="observation_completed",
+            selected_kind=proposal.goal.kind,
+            selection_reason=selection_reason,
+            authority_reason=self.authority.execution_state.reason,
+            lease_generation=state.lease_generation,
+            candidate_v_mps=0.0,
+            candidate_omega_rps=0.0,
+            safety_decision=None,
+            safety_reason="no_motion_option",
+            command=Actuation(0.0, 0.0),
+            effect_evidence_id=evidence_id,
         )
         return Actuation(0.0, 0.0)
 
-    def _at_goal(self, estimate: PoseEstimate, path: PlannedPath) -> bool:
-        goal = path.polyline_xy_m[-1]
+    @staticmethod
+    def _validate_motion_target(
+        goal: OptionGoal, path: PlannedPath, graph: TopologyGraph,
+    ) -> tuple[float, float]:
+        target = next((node for node in graph.nodes if node.node_id == goal.target_node_id), None)
+        if target is None or not math.dist(path.polyline_xy_m[-1], (target.x_m, target.y_m)) <= 1e-9:
+            raise ValueError("path endpoint must match the admitted target geometry")
+        return target.x_m, target.y_m
+
+    def _at_goal(self, estimate: PoseEstimate, target_xy: tuple[float, float], goal: OptionGoal) -> bool:
         return (
             math.hypot(
-                estimate.pose.x_m - goal[0],
-                estimate.pose.y_m - goal[1],
+                estimate.pose.x_m - target_xy[0],
+                estimate.pose.y_m - target_xy[1],
             )
             + estimate.position_error_bound_m
-            <= self.profile.goal_tolerance_m
+            <= goal.position_tolerance_m
         )
 
     def _active_action_id(self) -> str:
         if self._active is None:
             raise ValueError("no active option")
-        state = self.authority.execution_state
-        for record in reversed(self.authority.journal):
-            if (
-                record.option_instance_id == self._active[1]
-                and record.action_id
-            ):
-                return record.action_id
-        raise ValueError(f"active option {state.active_option_instance_id} has no action record")
+        return self._active.action_id
 
     def _cancel_active(
         self, frame: PolicyInput, graph: TopologyGraph
@@ -1874,6 +2034,9 @@ class KinematicAutonomousPolicy:
         if self._active is None:
             return
         action_id = self._active_action_id()
+        if self.authority.result(action_id) is not None:
+            self._active = None
+            return
         context = self._context(
             frame, graph, safety_stop=True, path_valid=False
         )
@@ -1893,18 +2056,18 @@ class KinematicAutonomousPolicy:
         evidence_id: str = "",
     ) -> Actuation:
         command = Actuation(0.0, 0.0)
-        self.last_trace = PolicyCycleTrace(
-            status,
-            kind,
-            selection_reason,
-            authority_reason,
-            self.authority.execution_state.lease_generation,
-            0.0,
-            0.0,
-            None,
-            status,
-            command,
-            evidence_id,
+        self._record_trace(
+            status=status,
+            selected_kind=kind,
+            selection_reason=selection_reason,
+            authority_reason=authority_reason,
+            lease_generation=self.authority.execution_state.lease_generation,
+            candidate_v_mps=0.0,
+            candidate_omega_rps=0.0,
+            safety_decision=None,
+            safety_reason=status,
+            command=command,
+            effect_evidence_id=evidence_id,
         )
         return command
 
@@ -1916,20 +2079,22 @@ class KinematicAutonomousPolicy:
     def _revoke_active(self, frame: PolicyInput) -> None:
         if self._active is None:
             return
-        goal = self._active[2]
-        now_ns = max(
-            frame.stamp_ns,
-            self.authority.execution_state.updated_at_ns,
-        )
+        goal = self._active.goal
+        if self.authority.result(self._active.action_id) is not None:
+            self._active = None
+            return
         match = frame.match_state
+        same_clock = match is None or match.meta.clock_epoch == goal.clock_epoch
+        # A stamp from a new epoch has no order relative to this authority.
+        # Revoke at its last known old-clock stamp, without mixing domains.
+        now_ns = self.authority.execution_state.updated_at_ns
+        if same_clock:
+            now_ns = max(frame.stamp_ns, now_ns)
         context = OptionContext(
             now_ns=now_ns,
-            stage_id=match.meta.stage_id if match is not None else goal.stage_id,
-            stage_phase=match.phase if match is not None else StagePhase.TERMINAL,
-            stage_ends_at_ns=max(
-                now_ns + 1,
-                match.stage_ends_at_ns if match is not None else goal.deadline_ns,
-            ),
+            stage_id=goal.stage_id,
+            stage_phase=match.phase if match is not None and same_clock else StagePhase.TERMINAL,
+            stage_ends_at_ns=max(now_ns + 1, goal.deadline_ns),
             role=goal.role,
             clock_epoch=goal.clock_epoch,
             localization_epoch=goal.localization_epoch,

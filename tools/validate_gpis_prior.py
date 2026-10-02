@@ -77,8 +77,26 @@ def validate(directory: str | Path) -> dict:
             transform.shape != (4, 4)
             or not np.allclose(transform[3], (0.0, 0.0, 0.0, 1.0), atol=1e-9)
             or not np.allclose(transform[:3, :3].T @ transform[:3, :3], np.eye(3), atol=1e-8)
+            or not np.isclose(np.linalg.det(transform[:3, :3]), 1.0, atol=1e-8)
         ):
             raise ValueError("base_from_model is not a rigid homogeneous transform")
+        if (
+            manifest.get("field_units") != "metres"
+            or manifest.get("coordinate_units") != "metres"
+            or not np.isclose(manifest.get("support_radius_m", np.nan), arrays["support_radius_m"][0])
+            or not np.allclose(
+                manifest.get("base_from_model", np.full((4, 4), np.nan)),
+                transform,
+                atol=1e-12,
+            )
+        ):
+            raise ValueError("manifest model metadata does not match model.npz")
+        if (
+            arrays["normalization_center_m"].shape != (3,)
+            or arrays["normalization_scale"].shape != (3,)
+            or np.any(arrays["normalization_scale"] <= 0.0)
+        ):
+            raise ValueError("model coordinate normalization is invalid")
     if manifest.get("uncertainty_method") != "exact_cholesky":
         raise ValueError("unsupported uncertainty method")
     return {

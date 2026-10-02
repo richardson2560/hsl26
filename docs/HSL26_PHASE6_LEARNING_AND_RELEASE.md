@@ -7,7 +7,7 @@
 
 ## 1. Entry and immutability
 
-Requires a G4 deterministic baseline, validated G0–G3 prerequisites in the intended execution profile, and recorded organizer decisions for all information required by the chosen policy. Official score fields remain unavailable until the organizer supplies them; surrogate rewards are explicitly labeled. Learning never changes rule predicates, option realizers, geometry inflation, speed/braking bounds, ROS authority or truth access.
+Requires a G4 deterministic baseline, validated G0–G3 prerequisites in the intended execution profile, and recorded organizer decisions for all information required by the chosen policy. The supplied score sheet and task-owner clarification define conditional points for mark arrival/capture in [`HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md`](HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md); the current benchmark still does not adjudicate Explorer arrival or emit official scores, so its surrogate rewards remain explicitly separate. Learning never changes rule predicates, option realizers, geometry inflation, speed/braking bounds, ROS authority or truth access.
 
 The current P5.5 evidence records G4 as `BLOCKED_NOT_RUN`. P5.6 now includes
 an optional two-role interactive SIL fixture with synthetic scan-residual
@@ -85,6 +85,17 @@ while P5.6 remains a fixture profile and G4 is `BLOCKED_NOT_RUN`. Synthetic
 Explorer routes/tracks and ideal raycast settings are not validated policies,
 perception, or physical sensor behavior. No held-out use-once ledger, shadow
 logging, or promotion review is implemented.
+
+The schematic map, score equations and evidence limits are now consolidated
+in [`HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md`](HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md).
+The additional
+[`hsl26_maze_evolution_bank.json`](../sim/kinematic/scenarios/hsl26_maze_evolution_bank.json)
+is a separate fixture profile with a 1 m segment raycast model, a 0.5 m
+planning raster, both end-zone assignments and optional **static**
+non-scoring box obstacles. `tools/train_evolution.py --bank
+sim/kinematic/scenarios/hsl26_maze_evolution_bank.json` can select it only
+under `--development-fixtures`. It does not add official mark-arrival
+adjudication, dynamic box pushing, competition geometry or promotion evidence.
 
 The demo consumes the serialized policy genome and records policy options,
 commands, trajectories, and terminal outcome in JSON and SVG. It uses the

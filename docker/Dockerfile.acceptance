@@ -21,6 +21,10 @@ COPY hsl_core /workspace_hsl26/hsl_core
 RUN pip3 wheel --no-index --no-deps --no-build-isolation --wheel-dir /opt/hsl26-artifacts /workspace_hsl26/hsl_core && \
     pip3 install --no-index --no-deps /opt/hsl26-artifacts/hsl_core-0.1.0-py3-none-any.whl
 COPY ros_ws/src /workspace_hsl26/src
+# R2's ROS-free authority test imports this versioned static verifier.  Keep
+# the production acceptance image source-free; this file is needed only by the
+# explicit hsl-build test stage.
+COPY tools/check_ros_graph_authority.py /workspace_hsl26/tools/check_ros_graph_authority.py
 RUN /bin/bash -c "source /opt/ros/humble/setup.bash && source /workspace_kobuki/install/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
 
 FROM ${BASE_IMAGE} AS hsl26-acceptance

@@ -1,0 +1,857 @@
+{
+  "schema": "hsl26.coevolution.step1-audit.v1",
+  "audit_date": "2026-10-02",
+  "generated_at_utc": "2026-10-02T08:44:01.844059+00:00",
+  "commit": "8d1c6a96d1517bd953cb6d16da1dfe4d653d69e3",
+  "source_sha256": {
+    "sim/kinematic/autonomous.py": "e6995b879216b301a3c6dfded28ca1a79e302dbbeb79d9d213cd6de40925066a",
+    "sim/kinematic/benchmark.py": "73efa158e3ff7da5853a0dd854252d4ea53775f7acf3d2d02fcc3c8fe41faf41",
+    "hsl_core/hsl_core/tactics/fsm.py": "96bc93cda0682a55096213d5fefa8bee821973d61646f5dfcd2ed04d6bb763b8",
+    "hsl_core/hsl_core/tactics/options.py": "5e8e02c9f1995e5e52ac3076aeeb87238c7724a7fbae1fdb0b34c9937761695f",
+    "hsl_core/hsl_core/learning/evolution.py": "53d389e7dc90c3afb92ef4647593e116fcb41e2552d1f41e3856238196f2d1ae",
+    "tools/train_evolution.py": "8f39698c40e3287f348be64772e26d4efb1350cb6edf5576e48fa93514a52ae0",
+    "tools/p63_policy.py": "b932fe28c8f1b974edb74ee1e20fe2125b4af6f0417984dbef164778a2fa2e98",
+    "docs/HSL26_COEVOLUTION_PLAN.md": "d3d9767f0b36d8dd50b943d3263bfc33559baf522cf8b113259b7a6420f954be",
+    "sim/kinematic/scenarios/phase6_maze_bank.json": "69722b7d555628dc99843ec4f8ee5c91e40b3f683a05eb6f46d75c1aea8e9250",
+    "hsl_core/tests/test_p53_tactics.py": "6a004484b6bfff68469022b7d776e19f6f3b952ec3e086403c8263749fa322ee",
+    "sim/kinematic/test_p56_autonomous.py": "15ab69a2dc2de1cbb786de82ddf8e26655bbd8cbee433cc6487ecf6ba3a6b2c0",
+    "artifacts/reports/coevolution_step1_audit_20261002/reproduce.py": "3653efa77e8b2c9ec8e6b9cfb568d0fb977ddb79fb8f3743dfd663f26e37a8b9"
+  },
+  "python": "3.14.7",
+  "promotion_eligible": false,
+  "gate_acceptance": false,
+  "synthetic_cases": {
+    "empty_non_hold_set": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 1,
+        "proposal_feasible": 0,
+        "proposal_choice": 0,
+        "n_active": 1,
+        "n_available": 0,
+        "n_choice": 0,
+        "n_forced": 0,
+        "n_empty": 1
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 0,
+        "winning_cohort_cardinality_before_behavior_dedup": 0,
+        "winning_cohort_keys": [],
+        "selection_reason": "no_feasible_option",
+        "rejections": {}
+      },
+      "partition_sum": 1
+    },
+    "single_applicable_proposal": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 2,
+        "proposal_feasible": 1,
+        "proposal_choice": 0,
+        "n_active": 1,
+        "n_available": 1,
+        "n_choice": 0,
+        "n_forced": 1,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 1,
+        "winning_cohort_cardinality_before_behavior_dedup": 1,
+        "winning_cohort_keys": [
+          "search_portal-1"
+        ],
+        "selection_reason": "highest_priority_then_utility",
+        "rejections": {}
+      },
+      "partition_sum": 1
+    },
+    "four_applicable_proposals": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 5,
+        "proposal_feasible": 4,
+        "proposal_choice": 4,
+        "n_active": 1,
+        "n_available": 4,
+        "n_choice": 1,
+        "n_forced": 3,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 4,
+        "winning_cohort_cardinality_before_behavior_dedup": 4,
+        "winning_cohort_keys": [
+          "search_portal-1",
+          "search_portal-2",
+          "search_portal-3",
+          "search_portal-4"
+        ],
+        "selection_reason": "highest_priority_then_utility",
+        "rejections": {}
+      },
+      "partition_sum": 4
+    },
+    "same_target_different_instance_ids": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 3,
+        "proposal_feasible": 2,
+        "proposal_choice": 2,
+        "n_active": 1,
+        "n_available": 2,
+        "n_choice": 1,
+        "n_forced": 1,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 2,
+        "winning_cohort_cardinality_before_behavior_dedup": 2,
+        "winning_cohort_keys": [
+          "a",
+          "b"
+        ],
+        "selection_reason": "highest_priority_then_utility",
+        "rejections": {}
+      },
+      "partition_sum": 2
+    },
+    "different_priorities_single_winning_candidate": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 3,
+        "proposal_feasible": 2,
+        "proposal_choice": 2,
+        "n_active": 1,
+        "n_available": 2,
+        "n_choice": 1,
+        "n_forced": 1,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 2,
+        "winning_cohort_cardinality_before_behavior_dedup": 1,
+        "winning_cohort_keys": [
+          "pressure_route-1"
+        ],
+        "selection_reason": "highest_priority_then_utility",
+        "rejections": {}
+      },
+      "partition_sum": 2
+    },
+    "different_urgencies_single_winning_candidate": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 3,
+        "proposal_feasible": 2,
+        "proposal_choice": 2,
+        "n_active": 1,
+        "n_available": 2,
+        "n_choice": 1,
+        "n_forced": 1,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 2,
+        "winning_cohort_cardinality_before_behavior_dedup": 1,
+        "winning_cohort_keys": [
+          "break_los-1"
+        ],
+        "selection_reason": "highest_priority_then_utility",
+        "rejections": {}
+      },
+      "partition_sum": 2
+    },
+    "missing_required_guard": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 2,
+        "proposal_feasible": 1,
+        "proposal_choice": 0,
+        "n_active": 1,
+        "n_available": 1,
+        "n_choice": 0,
+        "n_forced": 1,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 0,
+        "winning_cohort_cardinality_before_behavior_dedup": 0,
+        "winning_cohort_keys": [],
+        "selection_reason": "no_feasible_option",
+        "rejections": {
+          "search_portal-1": "guard_not_satisfied:GRAPH_SEARCH_VIEWPOINT"
+        }
+      },
+      "partition_sum": 1
+    },
+    "not_ready": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": false,
+        "proposal_total": 2,
+        "proposal_feasible": 1,
+        "proposal_choice": 0,
+        "n_active": 1,
+        "n_available": 1,
+        "n_choice": 0,
+        "n_forced": 1,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 0,
+        "winning_cohort_cardinality_before_behavior_dedup": 0,
+        "winning_cohort_keys": [],
+        "selection_reason": "system_not_ready:audit-no-ready",
+        "rejections": {
+          "search_portal-1": "global_gate:system_not_ready:audit-no-ready"
+        }
+      },
+      "partition_sum": 1
+    },
+    "safety_stop": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 2,
+        "proposal_feasible": 1,
+        "proposal_choice": 0,
+        "n_active": 1,
+        "n_available": 1,
+        "n_choice": 0,
+        "n_forced": 1,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 0,
+        "winning_cohort_cardinality_before_behavior_dedup": 0,
+        "winning_cohort_keys": [],
+        "selection_reason": "safety_stop_active",
+        "rejections": {
+          "search_portal-1": "safety_stop_active"
+        }
+      },
+      "partition_sum": 1
+    },
+    "invalid_lease": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 2,
+        "proposal_feasible": 1,
+        "proposal_choice": 0,
+        "n_active": 1,
+        "n_available": 1,
+        "n_choice": 0,
+        "n_forced": 1,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 0,
+        "winning_cohort_cardinality_before_behavior_dedup": 0,
+        "winning_cohort_keys": [],
+        "selection_reason": "stage_lease_invalid",
+        "rejections": {
+          "search_portal-1": "motion_authority_unavailable"
+        }
+      },
+      "partition_sum": 1
+    },
+    "motion_not_authorized": {
+      "attempted": {
+        "phase": "ACTIVE",
+        "system_ready": true,
+        "proposal_total": 2,
+        "proposal_feasible": 1,
+        "proposal_choice": 0,
+        "n_active": 1,
+        "n_available": 1,
+        "n_choice": 0,
+        "n_forced": 1,
+        "n_empty": 0
+      },
+      "selector": {
+        "selector_invoked_active": 1,
+        "applicable_non_hold": 0,
+        "winning_cohort_cardinality_before_behavior_dedup": 0,
+        "winning_cohort_keys": [],
+        "selection_reason": "stage_motion_not_authorized",
+        "rejections": {
+          "search_portal-1": "motion_authority_unavailable"
+        }
+      },
+      "partition_sum": 1
+    }
+  },
+  "controlled_dwell": {
+    "actual_old_start": {
+      "reason": "utility_improvement_exceeds_hysteresis",
+      "selected_key": "search_portal-2",
+      "elapsed_ns": 1000000000
+    },
+    "start_recomputed_as_now": {
+      "reason": "minimum_dwell",
+      "selected_key": "search_portal-1",
+      "elapsed_ns": 0
+    }
+  },
+  "runtime": {
+    "status_counts_including_small_regressions": {
+      "guardian": {
+        "hold_safe": 5,
+        "candidate_supervised": 157,
+        "missing_stage_pose_or_topology": 1,
+        "no_supported_open_route_to_node:0": 3,
+        "option_effect_satisfied": 1
+      },
+      "explorer": {
+        "hold_safe": 8,
+        "observation_completed": 1,
+        "candidate_supervised": 157
+      }
+    },
+    "totals_including_small_regressions": {
+      "guardian": {
+        "actual_active_selector_calls": 159,
+        "active_calls_with_applicable_proposal": 158,
+        "active_calls_with_multiple_cohort_entries_before_dedup": 157,
+        "trace_sum_n_active": 3,
+        "trace_sum_n_available": 39,
+        "trace_sum_n_choice": 1,
+        "trace_sum_n_forced": 38,
+        "trace_sum_n_empty": 0,
+        "current_start_supplied": 155,
+        "current_age_zero": 155
+      },
+      "explorer": {
+        "actual_active_selector_calls": 159,
+        "active_calls_with_applicable_proposal": 158,
+        "active_calls_with_multiple_cohort_entries_before_dedup": 0,
+        "trace_sum_n_active": 1,
+        "trace_sum_n_available": 1,
+        "trace_sum_n_choice": 0,
+        "trace_sum_n_forced": 1,
+        "trace_sum_n_empty": 0,
+        "current_start_supplied": 156,
+        "current_age_zero": 156
+      }
+    },
+    "examples": {
+      "guardian:hold_safe": {
+        "frame_stamp_ns": 0,
+        "frame_phase": "FREEZE",
+        "trace": {
+          "status": "hold_safe",
+          "selected_kind": 0,
+          "selection_reason": "stage_motion_not_authorized",
+          "authority_reason": "not_admitted",
+          "lease_generation": 0,
+          "candidate_v_mps": 0.0,
+          "candidate_omega_rps": 0.0,
+          "safety_decision": null,
+          "safety_reason": "hold_safe",
+          "command": {
+            "linear_mps": 0.0,
+            "angular_rps": 0.0
+          },
+          "effect_evidence_id": "",
+          "phase": "FREEZE",
+          "system_ready": true,
+          "proposal_total": 0,
+          "proposal_feasible": 0,
+          "proposal_choice": 0,
+          "n_active": 0,
+          "n_available": 0,
+          "n_choice": 0,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "selector": {
+          "selector_invoked_active": 0,
+          "applicable_non_hold": 0,
+          "winning_cohort_cardinality_before_behavior_dedup": 0,
+          "winning_cohort_keys": [],
+          "selection_reason": "stage_motion_not_authorized",
+          "rejections": {
+            "search_portal:1": "stage_not_active"
+          },
+          "attempted": {
+            "phase": "FREEZE",
+            "system_ready": true,
+            "proposal_total": 0,
+            "proposal_feasible": 0,
+            "proposal_choice": 0,
+            "n_active": 0,
+            "n_available": 0,
+            "n_choice": 0,
+            "n_forced": 0,
+            "n_empty": 0
+          },
+          "current_age_ns": null
+        }
+      },
+      "explorer:hold_safe": {
+        "frame_stamp_ns": 0,
+        "frame_phase": "FREEZE",
+        "trace": {
+          "status": "hold_safe",
+          "selected_kind": 0,
+          "selection_reason": "stage_motion_not_authorized",
+          "authority_reason": "not_admitted",
+          "lease_generation": 0,
+          "candidate_v_mps": 0.0,
+          "candidate_omega_rps": 0.0,
+          "safety_decision": null,
+          "safety_reason": "hold_safe",
+          "command": {
+            "linear_mps": 0.0,
+            "angular_rps": 0.0
+          },
+          "effect_evidence_id": "",
+          "phase": "FREEZE",
+          "system_ready": true,
+          "proposal_total": 0,
+          "proposal_feasible": 0,
+          "proposal_choice": 0,
+          "n_active": 0,
+          "n_available": 0,
+          "n_choice": 0,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "selector": {
+          "selector_invoked_active": 0,
+          "applicable_non_hold": 0,
+          "winning_cohort_cardinality_before_behavior_dedup": 0,
+          "winning_cohort_keys": [],
+          "selection_reason": "stage_motion_not_authorized",
+          "rejections": {
+            "observe_safe:0": "stage_not_active"
+          },
+          "attempted": {
+            "phase": "FREEZE",
+            "system_ready": true,
+            "proposal_total": 0,
+            "proposal_feasible": 0,
+            "proposal_choice": 0,
+            "n_active": 0,
+            "n_available": 0,
+            "n_choice": 0,
+            "n_forced": 0,
+            "n_empty": 0
+          },
+          "current_age_ns": null
+        }
+      },
+      "guardian:candidate_supervised": {
+        "frame_stamp_ns": 100000000,
+        "frame_phase": "ACTIVE",
+        "trace": {
+          "status": "candidate_supervised",
+          "selected_kind": 1,
+          "selection_reason": "highest_priority_then_utility",
+          "authority_reason": "executing",
+          "lease_generation": 1,
+          "candidate_v_mps": 0.2,
+          "candidate_omega_rps": 0.0,
+          "safety_decision": 1,
+          "safety_reason": "NONE",
+          "command": {
+            "linear_mps": 0.2,
+            "angular_rps": 0.0
+          },
+          "effect_evidence_id": "",
+          "phase": "",
+          "system_ready": false,
+          "proposal_total": 0,
+          "proposal_feasible": 0,
+          "proposal_choice": 0,
+          "n_active": 0,
+          "n_available": 0,
+          "n_choice": 0,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "selector": {
+          "selector_invoked_active": 1,
+          "applicable_non_hold": 1,
+          "winning_cohort_cardinality_before_behavior_dedup": 1,
+          "winning_cohort_keys": [
+            "search_portal:1"
+          ],
+          "selection_reason": "highest_priority_then_utility",
+          "rejections": {},
+          "attempted": {
+            "phase": "ACTIVE",
+            "system_ready": true,
+            "proposal_total": 2,
+            "proposal_feasible": 1,
+            "proposal_choice": 0,
+            "n_active": 1,
+            "n_available": 1,
+            "n_choice": 0,
+            "n_forced": 1,
+            "n_empty": 0
+          },
+          "current_age_ns": null
+        }
+      },
+      "guardian:missing_stage_pose_or_topology": {
+        "frame_stamp_ns": 100000001,
+        "frame_phase": "ACTIVE",
+        "trace": {
+          "status": "missing_stage_pose_or_topology",
+          "selected_kind": null,
+          "selection_reason": "",
+          "authority_reason": "not_attempted",
+          "lease_generation": 1,
+          "candidate_v_mps": 0.0,
+          "candidate_omega_rps": 0.0,
+          "safety_decision": null,
+          "safety_reason": "missing_stage_pose_or_topology",
+          "command": {
+            "linear_mps": 0.0,
+            "angular_rps": 0.0
+          },
+          "effect_evidence_id": "",
+          "phase": "ACTIVE",
+          "system_ready": true,
+          "proposal_total": 2,
+          "proposal_feasible": 1,
+          "proposal_choice": 0,
+          "n_active": 1,
+          "n_available": 1,
+          "n_choice": 0,
+          "n_forced": 1,
+          "n_empty": 0
+        },
+        "selector": null
+      },
+      "explorer:observation_completed": {
+        "frame_stamp_ns": 100000000,
+        "frame_phase": "ACTIVE",
+        "trace": {
+          "status": "observation_completed",
+          "selected_kind": 11,
+          "selection_reason": "highest_priority_then_utility",
+          "authority_reason": "effect_satisfied",
+          "lease_generation": 1,
+          "candidate_v_mps": 0.0,
+          "candidate_omega_rps": 0.0,
+          "safety_decision": null,
+          "safety_reason": "no_motion_option",
+          "command": {
+            "linear_mps": 0.0,
+            "angular_rps": 0.0
+          },
+          "effect_evidence_id": "lidar-observation:100000000:lidar_link",
+          "phase": "",
+          "system_ready": false,
+          "proposal_total": 0,
+          "proposal_feasible": 0,
+          "proposal_choice": 0,
+          "n_active": 0,
+          "n_available": 0,
+          "n_choice": 0,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "selector": {
+          "selector_invoked_active": 1,
+          "applicable_non_hold": 1,
+          "winning_cohort_cardinality_before_behavior_dedup": 1,
+          "winning_cohort_keys": [
+            "observe_safe:0"
+          ],
+          "selection_reason": "highest_priority_then_utility",
+          "rejections": {},
+          "attempted": {
+            "phase": "ACTIVE",
+            "system_ready": true,
+            "proposal_total": 2,
+            "proposal_feasible": 1,
+            "proposal_choice": 0,
+            "n_active": 1,
+            "n_available": 1,
+            "n_choice": 0,
+            "n_forced": 1,
+            "n_empty": 0
+          },
+          "current_age_ns": null
+        }
+      },
+      "guardian:no_supported_open_route_to_node:0": {
+        "frame_stamp_ns": 0,
+        "frame_phase": "FREEZE",
+        "trace": {
+          "status": "no_supported_open_route_to_node:0",
+          "selected_kind": 0,
+          "selection_reason": "stage_motion_not_authorized",
+          "authority_reason": "not_admitted",
+          "lease_generation": 0,
+          "candidate_v_mps": 0.0,
+          "candidate_omega_rps": 0.0,
+          "safety_decision": null,
+          "safety_reason": "no_supported_open_route_to_node:0",
+          "command": {
+            "linear_mps": 0.0,
+            "angular_rps": 0.0
+          },
+          "effect_evidence_id": "",
+          "phase": "FREEZE",
+          "system_ready": true,
+          "proposal_total": 0,
+          "proposal_feasible": 0,
+          "proposal_choice": 0,
+          "n_active": 0,
+          "n_available": 0,
+          "n_choice": 0,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "selector": {
+          "selector_invoked_active": 0,
+          "applicable_non_hold": 0,
+          "winning_cohort_cardinality_before_behavior_dedup": 0,
+          "winning_cohort_keys": [],
+          "selection_reason": "stage_motion_not_authorized",
+          "rejections": {
+            "search_portal:1": "stage_not_active",
+            "search_portal:11": "stage_not_active",
+            "search_portal:13": "stage_not_active",
+            "search_portal:14": "stage_not_active",
+            "search_portal:15": "stage_not_active",
+            "search_portal:16": "stage_not_active",
+            "search_portal:18": "stage_not_active",
+            "search_portal:19": "stage_not_active",
+            "search_portal:2": "stage_not_active",
+            "search_portal:20": "stage_not_active",
+            "search_portal:21": "stage_not_active",
+            "search_portal:23": "stage_not_active",
+            "search_portal:24": "stage_not_active",
+            "search_portal:25": "stage_not_active",
+            "search_portal:27": "stage_not_active",
+            "search_portal:28": "stage_not_active",
+            "search_portal:29": "stage_not_active",
+            "search_portal:3": "stage_not_active",
+            "search_portal:30": "stage_not_active",
+            "search_portal:32": "stage_not_active",
+            "search_portal:33": "stage_not_active",
+            "search_portal:34": "stage_not_active",
+            "search_portal:35": "stage_not_active",
+            "search_portal:37": "stage_not_active",
+            "search_portal:4": "stage_not_active",
+            "search_portal:41": "stage_not_active",
+            "search_portal:42": "stage_not_active",
+            "search_portal:43": "stage_not_active",
+            "search_portal:44": "stage_not_active",
+            "search_portal:45": "stage_not_active",
+            "search_portal:46": "stage_not_active",
+            "search_portal:47": "stage_not_active",
+            "search_portal:48": "stage_not_active",
+            "search_portal:5": "stage_not_active",
+            "search_portal:6": "stage_not_active",
+            "search_portal:7": "stage_not_active"
+          },
+          "attempted": {
+            "phase": "FREEZE",
+            "system_ready": true,
+            "proposal_total": 0,
+            "proposal_feasible": 0,
+            "proposal_choice": 0,
+            "n_active": 0,
+            "n_available": 0,
+            "n_choice": 0,
+            "n_forced": 0,
+            "n_empty": 0
+          },
+          "current_age_ns": null
+        }
+      },
+      "explorer:candidate_supervised": {
+        "frame_stamp_ns": 150000000,
+        "frame_phase": "ACTIVE",
+        "trace": {
+          "status": "candidate_supervised",
+          "selected_kind": 12,
+          "selection_reason": "highest_priority_then_utility",
+          "authority_reason": "executing",
+          "lease_generation": 1,
+          "candidate_v_mps": 0.2,
+          "candidate_omega_rps": 6.53144959545255e-17,
+          "safety_decision": 1,
+          "safety_reason": "NONE",
+          "command": {
+            "linear_mps": 0.2,
+            "angular_rps": 6.53144959545255e-17
+          },
+          "effect_evidence_id": "",
+          "phase": "",
+          "system_ready": false,
+          "proposal_total": 0,
+          "proposal_feasible": 0,
+          "proposal_choice": 0,
+          "n_active": 0,
+          "n_available": 0,
+          "n_choice": 0,
+          "n_forced": 0,
+          "n_empty": 0
+        },
+        "selector": {
+          "selector_invoked_active": 1,
+          "applicable_non_hold": 1,
+          "winning_cohort_cardinality_before_behavior_dedup": 1,
+          "winning_cohort_keys": [
+            "advance_known_route:42"
+          ],
+          "selection_reason": "highest_priority_then_utility",
+          "rejections": {},
+          "attempted": {
+            "phase": "ACTIVE",
+            "system_ready": true,
+            "proposal_total": 2,
+            "proposal_feasible": 1,
+            "proposal_choice": 0,
+            "n_active": 1,
+            "n_available": 1,
+            "n_choice": 0,
+            "n_forced": 1,
+            "n_empty": 0
+          },
+          "current_age_ns": null
+        }
+      },
+      "guardian:option_effect_satisfied": {
+        "frame_stamp_ns": 4650000000,
+        "frame_phase": "ACTIVE",
+        "trace": {
+          "status": "option_effect_satisfied",
+          "selected_kind": 1,
+          "selection_reason": "current_remains_best",
+          "authority_reason": "effect_satisfied",
+          "lease_generation": 90,
+          "candidate_v_mps": 0.0,
+          "candidate_omega_rps": 0.0,
+          "safety_decision": null,
+          "safety_reason": "option_effect_satisfied",
+          "command": {
+            "linear_mps": 0.0,
+            "angular_rps": 0.0
+          },
+          "effect_evidence_id": "p56-arrival:p56:guardian:p63-maze_multiring_7x7_train_a-20261002:search_portal:1:1:4650000000",
+          "phase": "ACTIVE",
+          "system_ready": true,
+          "proposal_total": 38,
+          "proposal_feasible": 37,
+          "proposal_choice": 37,
+          "n_active": 1,
+          "n_available": 37,
+          "n_choice": 1,
+          "n_forced": 36,
+          "n_empty": 0
+        },
+        "selector": {
+          "selector_invoked_active": 1,
+          "applicable_non_hold": 37,
+          "winning_cohort_cardinality_before_behavior_dedup": 37,
+          "winning_cohort_keys": [
+            "search_portal:0",
+            "search_portal:1",
+            "search_portal:11",
+            "search_portal:13",
+            "search_portal:14",
+            "search_portal:15",
+            "search_portal:16",
+            "search_portal:18",
+            "search_portal:19",
+            "search_portal:2",
+            "search_portal:20",
+            "search_portal:21",
+            "search_portal:23",
+            "search_portal:24",
+            "search_portal:25",
+            "search_portal:27",
+            "search_portal:28",
+            "search_portal:29",
+            "search_portal:3",
+            "search_portal:30",
+            "search_portal:32",
+            "search_portal:33",
+            "search_portal:34",
+            "search_portal:35",
+            "search_portal:37",
+            "search_portal:4",
+            "search_portal:41",
+            "search_portal:42",
+            "search_portal:43",
+            "search_portal:44",
+            "search_portal:45",
+            "search_portal:46",
+            "search_portal:47",
+            "search_portal:48",
+            "search_portal:5",
+            "search_portal:6",
+            "search_portal:7"
+          ],
+          "selection_reason": "current_remains_best",
+          "rejections": {},
+          "attempted": {
+            "phase": "ACTIVE",
+            "system_ready": true,
+            "proposal_total": 38,
+            "proposal_feasible": 37,
+            "proposal_choice": 37,
+            "n_active": 1,
+            "n_available": 37,
+            "n_choice": 1,
+            "n_forced": 36,
+            "n_empty": 0
+          },
+          "current_age_ns": 0
+        }
+      }
+    },
+    "short_training_fixture": {
+      "scenario_id": "maze_multiring_7x7_train_a",
+      "seed": 20261002,
+      "config": {
+        "episode_duration_s": 8.0,
+        "control_period_s": 0.05,
+        "discount_rate_per_s": 0.01,
+        "lidar_beam_count": 360,
+        "lidar_max_range_m": 5.0,
+        "lidar_noise_std_m": 0.0,
+        "robot_radius_m": 0.15,
+        "robot_max_speed_mps": 0.2,
+        "max_episode_steps": 100000
+      },
+      "terminal": "TIMEOUT",
+      "active_duration_s": 7.85,
+      "limitation": "8 s horizon is a development fixture timeout, not a competition survival victory."
+    }
+  },
+  "limitations": [
+    "Audit wrappers observe existing decisions; no production fix is applied.",
+    "Cohort counts are cardinalities before route/effect deduplication; not N_choice rates.",
+    "Runtime totals mix three small regression cases and one training fixture; no statistical claim.",
+    "No training search, validation, held-out, ROS, hardware or HGW acceptance is run.",
+    "Synthetic builders are imported from existing tests; this script needs pytest installed."
+  ],
+  "source_unchanged_during_run": true
+}

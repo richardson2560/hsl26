@@ -1,0 +1,138 @@
+{
+  "schema_version": "hsl26.opponent-gpis.v1",
+  "model_id": "opponent-gpis-425a5e19bebb",
+  "kernel_id": "wendland_c4_d3_unit_center_v1",
+  "field_units": "metres",
+  "coordinate_units": "metres",
+  "support_radius_m": 0.06,
+  "model_frame": "static_1m_robot_cloud_centered",
+  "base_from_model": [
+    [
+      1.0,
+      0.0,
+      0.0,
+      0.9229999780654907
+    ],
+    [
+      0.0,
+      1.0,
+      0.0,
+      -0.027000000700354576
+    ],
+    [
+      0.0,
+      0.0,
+      1.0,
+      0.14000000059604645
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "source_hashes": {
+    "data\\static_1m_robot.npz": "e85e0842653756ce94e6488685aea22a47d4272ba4540cf41264113b5870c07d"
+  },
+  "training_config_hash": "d62a39925428933bb72c37607e378330dfc4d735601aa2dc04bf66f863bfc5b5",
+  "array_shapes": {
+    "support_points_m": [
+      300,
+      3
+    ],
+    "operator_kind": [
+      300
+    ],
+    "operator_direction": [
+      300,
+      3
+    ],
+    "observations": [
+      300
+    ],
+    "noise_variance": [
+      300
+    ],
+    "alpha": [
+      300
+    ],
+    "cholesky": [
+      300,
+      300
+    ],
+    "support_radius_m": [
+      1
+    ],
+    "amplitude": [
+      1
+    ],
+    "regularization": [
+      1
+    ],
+    "base_from_model": [
+      4,
+      4
+    ],
+    "normalization_center_m": [
+      3
+    ],
+    "normalization_scale": [
+      3
+    ]
+  },
+  "artifact_sha256": "425a5e19bebb4f9cadd7f15c2d8802f35818a7f0faedddcce6996fa8d2a5cc0e",
+  "uncertainty_method": "exact_cholesky",
+  "supported_view_domain": {
+    "support_radius_m": 0.06
+  },
+  "created_by_version": "hsl26-p4.1",
+  "condition_number": 5829.446089788557,
+  "training_method": "sampled_points_with_oriented_open3d_normals",
+  "training_status": "CLOUD_FIT_CANDIDATE",
+  "training_parameters": {
+    "array_name": "points_base_link",
+    "max_surface_points": 150,
+    "normal_radius_m": 0.04,
+    "normal_max_neighbors": 30,
+    "sigma_lidar_m": 0.012,
+    "sigma_gradient": 0.05,
+    "support_radius_m": 0.06,
+    "amplitude": 1.0,
+    "regularization": 1e-08,
+    "sensor_origin_base_link_m": [
+      0.0,
+      0.0,
+      0.3
+    ]
+  },
+  "training_report": {
+    "status": "CLOUD_FIT_CANDIDATE",
+    "input_point_count": 22449,
+    "valid_normal_count": 22449,
+    "surface_sample_count": 150,
+    "hermite_observation_count": 300,
+    "normal_estimator": "Open3D PointCloud.estimate_normals",
+    "normal_radius_m": 0.04,
+    "normal_max_neighbors": 30,
+    "normal_orientation": "towards_sensor_origin",
+    "sensor_origin_base_link_m": [
+      0.0,
+      0.0,
+      0.3
+    ],
+    "value_noise_variance_m2": 0.000144,
+    "directional_derivative_noise_variance": 0.0025000000000000005,
+    "surface_constraints": {
+      "value_at_return_m": 0.0,
+      "normal_derivative": 1.0,
+      "off_surface_anchors": false
+    },
+    "model_origin_base_link_m": [
+      0.9229999780654907,
+      -0.027000000700354576,
+      0.14000000059604645
+    ],
+    "model_frame_semantics": "The coordinate-wise cloud median defines a convenient local model frame; it is not asserted to be the robot's mechanical origin."
+  }
+}

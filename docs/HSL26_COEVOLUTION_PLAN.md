@@ -34,6 +34,16 @@ No se elimina la coevolución por una imposibilidad teórica: se condiciona a qu
 | Gates | Informes P5.6 y cierre P6.4/P6.5: G4 `BLOCKED_NOT_RUN`, G5 `NOT_RUN`, G6 `BLOCKED` | Los diagnósticos pre-G4 son `development-only`; datos elegibles y promoción esperan aceptación por perfil |
 | ROS/MVSim | Adaptador MVSim sin lógica; nodos operativos incompletos; R0 aporta entorno y smoke, no autonomía | Cerrar R1–R8 aplicables y evidencia de grafo/actuación según plan de integración; conectar tópicos por sí solo no cierra G4 |
 
+El croquis y la aclaración de puntuación se consolidan en
+[`HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md`](HSL26_MAZE_LAYOUT_AND_SCORE_MODEL.md).
+El nuevo banco
+[`hsl26_maze_evolution_bank.json`](../sim/kinematic/scenarios/hsl26_maze_evolution_bank.json)
+permite ejercicios `--development-fixtures` con paredes explícitas de 1 m,
+zonas de inicio permutadas y cajas estáticas opcionales. No reemplaza el banco
+genérico ni es un mapa levantado del concurso. El benchmark sigue sin evaluar
+llegada a marca ni la puntuación condicionada `t_mark`/`t_catch`; no usar su
+retorno sustituto como puntuación oficial ni como promoción.
+
 Los informes históricos se conservan. Toda aceptación posterior requiere reporte nuevo, matriz de casos aplicables y revisión independiente. Antes de recolectar episodios elegibles: baseline determinista G/E, perfil de sensores/mapa/reglas completo, ausencia de truth leakage, cancelación/reemplazo, fallback, terminales y seguridad auditados. Un G4 cinemático habilita datos de ese perfil, no movimiento físico ni G6.
 
 ## 3. Resolver la señal antes de optimizar

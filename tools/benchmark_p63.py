@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict
 import hashlib
-import json
 from pathlib import Path
 import sys
 from time import perf_counter
@@ -97,19 +96,7 @@ def _paired_job(job):
         "scenario_id": scenario_id,
         "split": fixture.split,
         "seed": seed,
-        "scenario_sha256": hashlib.sha256(
-            json.dumps(
-                {
-                    "rows": fixture.rows,
-                    "cell_size_m": fixture.cell_size_m,
-                    "guardian_start_rc": fixture.guardian_start_rc,
-                    "explorer_start_rc": fixture.explorer_start_rc,
-                    "synthetic_goal_rc": fixture.synthetic_goal_rc,
-                },
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode("utf-8")
-        ).hexdigest(),
+        "scenario_sha256": base.scenario_sha256,
         "baseline": _episode_summary(base),
         "candidate_guardian_vs_baseline_explorer": _episode_summary(
             candidate_guardian

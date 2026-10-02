@@ -1,0 +1,13 @@
+Audit date: 2026-10-02
+Command from repository root:
+python -m pytest hsl_core/tests/test_p53_tactics.py hsl_core/tests/test_p63_evolution.py sim/kinematic/test_p56_autonomous.py sim/kinematic/test_p63_benchmark.py sim/kinematic/test_p63_tools.py -q
+
+Result captured from this audit's execution:
+149 passed, 1 warning in 92.99s (0:01:32)
+
+Warning: PytestCacheWarning, could not create the pytest cache nodeids path
+under hsl_core/.pytest_cache on Windows (WinError 183).
+
+This file records the command and result; it is not a full raw stdout log.
+These existing regressions do not test the added selection trace counters.
+They do not certify G4, coevolution signal, ROS or hardware acceptance.

@@ -1,15 +1,15 @@
 # Plan para construir el modelo HGW del robot HSL26
 
-**Fecha de auditoría:** 2026-10-01  
-**Estado:** plan de trabajo; no se genera ni promueve todavía un modelo de producción  
+**Fecha de auditoría:** 2026-10-01; actualización del pipeline: 2026-10-02
+**Estado:** candidato HGW reducido generado desde la nube de `data/`, sin promoverlo como modelo de producción
 **Alcance:** modelo geométrico Hermite-GPIS-W del Kobuki/TurtleBot2 usado por ambos participantes de la competencia simétrica  
 **Autoridad técnica:** [especificación técnica HSL26](./HSL26_TECHNICAL_SPECIFICATION.md), [arquitectura final HSL26](./HSL26_FINAL_ARCHITECTURE.md) y documentos de P4
 
 ## 1. Decisión ejecutiva
 
-**Decisión de cierre 2026-10-02:** construir y aceptar **un único prior HGW** para el ensamblaje compartido, con el mismo registrador y presupuestos adaptables de adquisición/seguimiento. No se exige entrenar un modelo rápido y otro denso. Cadencia, ROI, número de puntos, inicializaciones e iteraciones se acotan mediante perfilado y error de origen medidos; una variante geométrica solo se justifica por diferencias físicas o necesidad empírica. El [plan de coevolución rev. 2.0](HSL26_COEVOLUTION_PLAN.md) §5 fija la integración: sin coste/precisión inventados, yaw rival no observable no se fuerza y la rama de seguridad conserva retornos. Esta decisión no implica que el modelo ya exista ni que cumpla aceptación física.
+**Decisión de cierre 2026-10-02:** construir y aceptar **un único prior HGW** para el ensamblaje compartido, con el mismo registrador y presupuestos adaptables de adquisición/seguimiento. No se exige entrenar un modelo rápido y otro denso. Cadencia, ROI, número de puntos, inicializaciones e iteraciones se acotan mediante perfilado y error de origen medidos; una variante geométrica solo se justifica por diferencias físicas o necesidad empírica. El [plan de coevolución rev. 2.0](HSL26_COEVOLUTION_PLAN.md) §5 fija la integración: sin coste/precisión inventados, yaw rival no observable no se fuerza y la rama de seguridad conserva retornos. El prior experimental ya generado no implica que exista un modelo aceptado físicamente.
 
-El repositorio ya implementa el núcleo matemático HGW y su registro planar en P4.1–P4.2, pero todavía **no contiene un modelo geométrico HGW entrenado con datos del robot real**. El entrenamiento disponible recibe observaciones Hermite preconstruidas en JSON; no importa ni procesa CAD/DAE. Los informes existentes son evidencia de pruebas SIL y declaran explícitamente bloqueada la aceptación con nube real.
+El repositorio implementa el núcleo matemático HGW y el registro planar en P4.1–P4.2. A partir de `data/static_1m_robot.npz` se generó un **candidato HGW reducido del robot observado**. El pipeline vigente estima normales con Open3D, orienta las normales hacia el sensor y muestrea puntos de la superficie por distancia de punto más lejano; por cada muestra usa solamente `f(x)=0` y `∇f(x)·n=1`. No añade puntos fuera de la nube, anclas firmadas, PCA propio ni offsets inventados. El artefacto sigue siendo de una sola observación estática y carece de validación independiente. El entrenador JSON original no importa CAD/DAE; el constructor nube→observaciones conserva la separación entre núcleo y adaptadores.
 
 Hay dos mallas COLLADA locales —carcasa principal y rueda—, pero no constituyen por sí solas una representación verificada del robot completo. El Xacro agrega geometría de colisión simplificada para base, ruedas y ruedas locas; en el inventario local no se encontró geometría CAD del MID-360, su soporte, cableado u otros elementos montados que formen parte de la superficie visible. Además, no hay una calibración validada del transform entre el marco del modelo y `base_link`.
 
@@ -28,7 +28,7 @@ Hay dos mallas COLLADA locales —carcasa principal y rueda—, pero no constitu
 | `kobuki_description/urdf/kobuki.urdf.xacro` | Usa las dos mallas como visuales. Colisión de la base cilíndrica, ruedas cilíndricas y ruedas locas simplificadas. Declara dimensiones y offsets del modelo Kobuki. | URDF/Xacro es una referencia de ensamblaje y marcos, no una malla superficial completa para ajustar puntos de una nube. |
 | `kobuki_description/package.xml` | Declara licencia BSD y apunta al repositorio `kobuki-base/kobuki_ros`. | Registrar procedencia y conservar atribución/licencia al exportar o transformar geometría. |
 | `config/frames.yaml` | Declara `lidar: lidar_link`. | El nombre lógico del frame está configurado, pero no se encontró aquí una descripción Xacro local que modele el MID-360 y su montaje. Hay que reconciliar el árbol de TF real con el modelo. |
-| Árbol de archivos CAD/DAE local | Solo aparecen `main_body.dae` y `wheel.dae`; no se encontró STEP/STP, ensamblaje DAE completo ni nube real registrada. La carcasa contiene 4,222 vértices y 8,440 triángulos; la rueda, 2,396 vértices y 4,788 triángulos. | Sí son mallas triangulares muestreables para el Kobuki base/rueda, pero no son una nube de puntos ni el ensamblaje completo. |
+| Árbol de archivos CAD/DAE local | Solo aparecen `main_body.dae` y `wheel.dae`; no se encontró STEP/STP, ensamblaje DAE completo ni nube multi-vista registrada. La carcasa contiene 4,222 vértices y 8,440 triángulos; la rueda, 2,396 vértices y 4,788 triángulos. | Sí son mallas triangulares muestreables para el Kobuki base/rueda, pero no son una nube de puntos ni el ensamblaje completo. |
 
 Los DAE locales tienen coordenadas de geometría y unidades declaradas en metros. Se contrastaron sus identificadores Git blob contra `kobuki-base/kobuki_ros` commit `e1fbf7bdec199411008bd7c94c6e4b7d82903347`: `main_body.dae` = `9606185ab277645cfa7e0d7fbbffe0ce3978ae66` y `wheel.dae` = `014f5970ddf693c909badfb8779d36f7eafc37a4`. Esto fija una procedencia reproducible para las dos mallas, pero no prueba que representen cada modificación de los robots de competencia.
 
@@ -40,11 +40,16 @@ La condición de competencia simétrica permite reutilizar el mismo modelo geom�
 
 | Componente | Implementación actual | Límite para este trabajo |
 |---|---|---|
-| `hsl_core/perception/implicit_surface.py` | Kernel Wendland C4 3D `wendland_c4_d3_unit_center_v1`, operadores de valor y derivada direccional, covarianza Hermite, posterior con Cholesky, gradiente/varianza, control de soporte y serialización NPZ sin pickle. | El modelo es ajustado desde observaciones ya preparadas; la extracción de geometría CAD, orientación de normales y creación de anclas con signo no está implementada. |
-| `tools/train_gpis_prior.py` | Lee `observations` desde JSON y produce `model.npz` y `manifest.json`. Registra el hash del JSON de entrada. | No acepta directamente DAE/CAD; el transform guardado actualmente es identidad. No basta para establecer `T_B_M` de un robot real. |
-| `tools/validate_gpis_prior.py` | Verifica hash, versión de esquema/kernel, arrays no ejecutables, formas, finitud y parte de la estructura rígida del transform. | Es validación de integridad/esquema, no de exactitud geométrica, sesgo del origen, observabilidad ni fidelidad de nube real. |
+| `hsl_core/perception/implicit_surface.py` | Kernel Wendland C4 3D `wendland_c4_d3_unit_center_v1`, operadores de valor y derivada direccional, posterior con Cholesky, control de soporte, guardado y carga sin pickle; conserva `base_from_model` y rechaza reflexiones. | El transform del prototipo relaciona la mediana de la nube con el `base_link` del registro; no calibra el origen mecánico del oponente. |
+| `tools/train_gpis_prior.py` | Lee `observations` Hermite desde JSON y produce `model.npz` y `manifest.json`. | No importa directamente DAE/CAD ni nubes crudas. |
+| `tools/build_gpis_from_robot_cloud.py` | Estima normales con Open3D, las orienta hacia el sensor y aplica muestreo de punto más lejano. Por cada punto crea solo una observación `f=0` y una derivada direccional `∇f·n=1`; la varianza de cada ruido es `σ²`. Escribe el artefacto C4 y su reporte. | Ajuste de una sola nube; las normales orientadas al sensor son una aproximación local, y no validan visibilidad, topología ni otras vistas. |
+| `tools/validate_gpis_prior.py` | Verifica hash, versión de esquema/kernel, arrays no ejecutables, formas, finitud y transform rígido propio. | Comprueba integridad, no exactitud geométrica, observabilidad ni fidelidad física. |
 | `hsl_core/perception/registration.py` | Registro robusto planar acotado de traslación y yaw sobre el campo; puede rechazar soporte insuficiente y soluciones degeneradas. | Sus resultados SIL no demuestran rendimiento con nubes Livox ni con el robot completo. |
-| Artefactos | Los informes P4.1, P4.2 y P4.5 existen en `artifacts/reports/phase4/`. No se encontró `artifacts/models/opponent_gpis/model.npz` ni artefacto de producción equivalente. | No hay un modelo físico actualmente listo para integrar. |
+| Artefactos | Los informes P4.1, P4.2 y P4.5 siguen siendo evidencia SIL. La única nube de puntos fuente es `data/static_1m_robot.npz`; `data/static_1m_robot.json` conserva metadatos y procedencia de esa extracción. Los candidatos KISS de 16/32/64/100 muestras están juntos en `artifacts/models/opponent_gpis/static_1m_robot_hgw_20261002/`, separados por resolución e indexados con hashes. | Son candidatos de prueba; su aceptación física y la exactitud de identificación siguen pendientes. |
+
+**Contraste matemático del GPIS anterior:** se conserva su flujo útil (normales estimadas sobre la nube, puntos de superficie reducidos y restricciones Hermite), pero no se copia su bloque de covarianza C2. La especificación vigente exige el kernel compacto C4; sus bloques valor-gradiente y gradiente-gradiente deben ser las derivadas mixtas correctas del mismo kernel. El anterior combinaba radios por par distintos al radio por primitiva usado en evaluación, empleaba C2, trataba `sigma_grad` como varianza sin elevarlo al cuadrado y devolvía un valor constante fuera de soporte, que no constituye evidencia de superficie. El modelo actual mantiene un único radio de soporte por modelo, utiliza C4 del núcleo y `σ²` en la diagonal de ruido, y el visualizador enmascara regiones fuera del soporte. El derivado normal de magnitud uno es una restricción local —no impone la ecuación eikonal global—, tal como advierte la especificación. La validación de integridad y un render no sustituyen pruebas con vistas retenidas.
+
+El smoke test de la **primera iteración histórica PCA/anclas** transforma rígidamente 80 puntos de la misma nube y vuelve a registrarlos: aceptó la pose sintética con error de traslación de 1,4 mm, yaw de 0,0144 rad y soporte 1,0. No es evidencia del candidato KISS vigente. Tras vectorizar la evaluación por lotes, aquellas ejecuciones midieron entre 0,40 y 3,6 s en este entorno Windows/Python; no es un perfil del hardware objetivo ni un presupuesto de runtime.
 
 ### 2.3 Informes e historial contrastados
 
@@ -53,7 +58,7 @@ La condición de competencia simétrica permite reutilizar el mismo modelo geom�
 - [Informe P4.5](../artifacts/reports/phase4/P4.5_runtime_fidelity_report.json): **PASS de contratos SIL**, pero perfil de nube real bloqueado por falta de robot/bolsas registradas; MVSim bloqueado hasta inspeccionar su modelo de sensor.
 - [Baseline de P4](../artifacts/reports/phase4/P4_environment_baseline.json): confirma que la simulación cinemática y detecciones sintéticas no constituyen evidencia de fidelidad de nube ni de aceptación física.
 - [Auditoría independiente de P6](./HSL26_PHASE6_INDEPENDENT_AUDIT.md): ubica correctamente la producción GPIS desde CAD dentro de P4; P6 solo debe fijar un artefacto aceptado si el perfil de despliegue lo consume.
-- El changelog registra la selección normativa de C4 en lugar del kernel C2 didáctico anterior. Sin embargo, el docstring del módulo y la sección 4 de `HSL26_PHASE4_IMPLEMENTATION_PLAN.md` aún mencionan C2. Esta inconsistencia documental debe corregirse antes de usar esos textos como instrucciones de implementación; la especificación técnica y el identificador de kernel vigente son la autoridad.
+- El changelog registra la selección normativa de C4 en lugar del kernel C2 didáctico anterior. El docstring del módulo ya indica C4; la sección 4 de `HSL26_PHASE4_IMPLEMENTATION_PLAN.md` aún contiene referencias a C2 y debe corregirse antes de usarla como instrucción. La especificación técnica y el identificador de kernel vigente son la autoridad.
 - La documentación de P4 enlaza `main_hgw.tex`, pero el archivo no aparece en el checkout revisado. La trazabilidad matemática disponible debe apoyarse en la especificación técnica vigente hasta que se aporte esa fuente, si es necesaria para el proyecto.
 
 ### 2.4 Recursos externos de geometría
@@ -75,7 +80,9 @@ MVSim documenta perfiles 3D como Velodyne VLP-16, Ouster OS1 y Hesai Helios; la 
 
 ### 2.6 Bags de la prueba y capacidad del driver
 
-En el checkout **no hay archivos de rosbag ni nubes PCD/PLY/LAS**, por lo que todavía no se han inspeccionado las grabaciones que mencionas. Esta ausencia no significa que los bags de la prueba no existan fuera del repo.
+En el checkout no está el rosbag original ni nubes PCD/PLY/LAS, pero `data/` sí contiene una extracción estática del robot confirmada por el usuario: 22.449 retornos seleccionados de 99/99 frames aceptados (1.979.904 puntos fuente), con offsets temporales e intensidades válidos. La imagen compartida confirma la estructura abierta de barras visible en esa observación. Se usó para construir el candidato KISS descrito en §2.2.
+
+El JSON adjunto registra hashes del bag, del prior de fondo y de la configuración de extracción, pero los archivos de bag/config/prior citados no están presentes en sus rutas originales dentro del checkout. El NPZ presente coincide con el SHA-256 declarado. La secuencia dura unos 9,8 s y aporta densidad temporal desde una adquisición estática; por sí sola no demuestra cobertura de las superficies ocultas ni equivale a varias vistas independientes. La nube se acepta aquí como fuente válida para un primer prototipo, no como evidencia suficiente para aceptación de producción.
 
 El driver vendorizado en `kobuki/workspace/src/livox_ros_driver2` proporciona evidencia útil para revisar esos bags:
 
@@ -94,7 +101,7 @@ El modelo:
 
 1. Representará la superficie **externa y observable** del ensamblaje de competencia, en un marco de modelo explícito.
 2. Mantendrá unidades físicas, escala, orientación de normales y una relación calibrada con `base_link`.
-3. Usará observaciones Hermite (valores de campo y derivadas direccionales), con anclas firmadas dentro/fuera cuando el método de construcción las requiera.
+3. Usará observaciones Hermite de superficie (valores cero y derivadas direccionales). Para esta nube, no se generan anclas fuera de superficie; cualquier extensión a otro método de construcción requeriría justificación y validación separadas.
 4. No se interpretará necesariamente como distancia firmada global exacta; el GPIS de soporte compacto solo es válido en el dominio donde hay soporte suficiente.
 5. No reemplazará el detector de obstáculos de seguridad: los retornos físicos completos siguen alimentando la ruta de colisión, aunque se rechace un candidato semántico.
 
@@ -321,13 +328,32 @@ El dataset de entrenamiento y validación se particiona por **sesión/vista comp
 
 ## 9. Orden recomendado de ejecución
 
-1. Solicitar y hacer inventario/hash de los bags previos; están fuera del checkout revisado y aún no se han inspeccionado.
-2. Determinar formato/tipo de nube, `timestamp` por punto, referencia temporal, `/tf`, `/tf_static`, `/odom` y si se registró estado del robot objetivo. Separar capacidad de ego-deskew y target-despin.
-3. Procesar primero el bag del objetivo inmóvil para segmentación y validar el deskew del observador; analizar el bag del objetivo girando como fuente de nuevas vistas solo si se puede estimar su trayectoria angular.
-4. Mantener Kobuki DAE/Xacro y sensor MID-360 candidato como referencia parcial; comparar la envolvente baja y el montaje con las nubes. Pedir CAD del bastidor si existe, pero no bloquear la prueba de viabilidad de bag.
-5. Si las grabaciones contienen vistas, tiempos y poses utilizables, reconstruir una geometría observada versionada; en paralelo preparar la escena MVSim con geometría compuesta y perfil de sensor explícitamente aproximado.
-6. Si falta cobertura, pose, sincronización o visibilidad, pedir CAD/mediciones del bastidor y repetir capturas controladas; no forzar la geometría a partir de datos insuficientes.
-7. Construir observaciones Hermite, actualizar el pipeline/manifiesto, y validar el candidato en sesiones reales separadas.
-8. Promover e integrar solo después de cumplir G0–G6 con evidencia cuantitativa.
+1. Usar el candidato KISS de 100 muestras para conectar y depurar el registro; cualquier evaluación transformando la misma nube es solo un smoke test sintético, no una medida de identificación ni un gate físico.
+2. Recuperar y auditar el rosbag original y los archivos de extracción por sus hashes; confirmar la semántica temporal, `/tf`, `/tf_static`, `/odom` y estado del robot objetivo.
+3. Conseguir nuevas vistas/sesiones independientes o aprovechar la secuencia de giro solo si se estima de forma fiable la trayectoria angular del objetivo; no asumir que el estático añade cobertura angular.
+4. Comparar la nube con Kobuki DAE/Xacro y la geometría del montaje; conservar la reconstrucción observada como fuente separada del CAD. Pedir mediciones/CAD faltantes sin bloquear las pruebas exploratorias.
+5. Evaluar el registro en datos retenidos por sesión, midiendo error, rechazo, soporte, ambigüedad de yaw, latencia y memoria; comparar con baseline sin GPIS.
+6. Mejorar calibración `T_B_M`, normales o reducción del modelo solo en respuesta a fallos medidos; no añadir offsets ni otros mecanismos sin evidencia que los justifique.
+7. Promover e integrar únicamente después de cumplir G0–G6 con evidencia cuantitativa independiente.
 
-Hasta inspeccionar los bags, el estado correcto es: **HGW matemático implementado y SIL probado; candidato Kobuki-base parcial disponible; datos reales potencialmente más representativos identificados pero aún no auditados; modelo geométrico del ensamblaje y registro real pendientes de validación**.
+Estado actualizado: **HGW matemático y registro planar implementados; candidatos de nube estática KISS reproducibles a 100/150/200/250 puntos de superficie, con dos observaciones Hermite por punto; validación independiente, calibración mecánica del origen y aceptación física pendientes**.
+
+### 10. Candidatos KISS y pruebas de resolución
+
+La única fuente de puntos es `data/static_1m_robot.npz`, array `points_base_link` (22.449 retornos). `data/static_1m_robot.json` se conserva como manifiesto de extracción con hashes del origen; no contiene una segunda nube. El índice `resolution_candidates.json` registra los hashes del NPZ, de esos metadatos y de cada artefacto para mantener trazabilidad.
+
+El conjunto tiene modelos separados de 100, 150, 200 y 250 **puntos de superficie únicos**, respectivamente 200, 300, 400 y 500 filas de observación Hermite. Cada punto seleccionado aporta dos filas en la matriz: una restricción de valor `f=0` y una derivada direccional normal `∇f·n=1`, ambas en la misma coordenada. Por eso “100 muestras” y “200 observaciones Hermite” describen cantidades diferentes, no una discrepancia. El generador comprueba el número de ubicaciones únicas y el conteo de ambos tipos de operador en cada NPZ antes de indexarlo. Cada directorio contiene su propio `model.npz`, manifiesto y reporte. Comparten el mismo flujo KISS: normales Open3D, sin PCA propio ni anclas fuera de la nube. Las resoluciones son candidatos para pruebas; **no se ha medido aún un umbral de degradación de identificación**.
+
+```powershell
+$env:PYTHONPATH = "hsl_core"
+python tools\create_gpis_resolution_suite.py data\static_1m_robot.npz artifacts\models\opponent_gpis\static_1m_robot_hgw_20261002
+```
+
+El visualizador 3D dibuja la superficie `f(x)=0` como jaula cian, los retornos base coloreados por `|f(x)|`, los puntos de soporte de valor cero y las normales derivadas. El residuo es una escala del campo implícito y **no se interpreta como error métrico ni distancia**. Extrae la isosuperficie mediante Marching Cubes si `scikit-image` está instalado y usa un fallback local de tetraedros si no:
+
+```powershell
+$env:PYTHONPATH = "hsl_core"
+python tools\visualize_gpis_field.py --model artifacts\models\opponent_gpis\static_1m_robot_hgw_20261002\surface_points_100 --input-npz data\static_1m_robot.npz
+```
+
+Requiere Open3D; `--grid-res 0.015` ajusta detalle frente a velocidad, `--solid-mesh` rellena la malla, `--hide-primitives` oculta muestras/flechas y `--heatmap-limit` cambia el contraste de `|f|`. Los retornos sin soporte se muestran en gris; el residuo `|f|` no se interpreta como distancia.
