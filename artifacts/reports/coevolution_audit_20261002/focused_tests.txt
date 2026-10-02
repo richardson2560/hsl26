@@ -1,0 +1,9 @@
+Date: 2026-10-02
+Host: Windows; Python 3.14.7
+Command:
+python -m pytest hsl_core/tests/test_p53_tactics.py hsl_core/tests/test_p63_evolution.py hsl_core/tests/test_p42_registration.py hsl_core/tests/test_safety.py sim/kinematic/test_p56_perception.py sim/kinematic/test_p56_autonomous.py sim/kinematic/test_p63_benchmark.py -q
+
+Exit code: 0
+Result: 190 passed, 1 warning in 6.57s
+Warning: PytestCacheWarning; cache creation under hsl_core/.pytest_cache reported WinError 183.
+Scope: regression of existing software contracts; no hardware, ROS or gate acceptance.

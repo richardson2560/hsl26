@@ -10,7 +10,7 @@ La secuencia tiene tres líneas de trabajo con una dependencia de aceptación:
 
 1. [Integración ROS 2 y MVSim](HSL26_ROS_MVSIM_INTEGRATION_PLAN.md): convertir interfaces y lanzadores en procesos ejecutables; cerrar la ruta observación → decisión → seguridad → mux → planta.
 2. [Auditoría de conformidad SIL](HSL26_SIL_CONFORMANCE_PLAN.md): demostrar qué partes del simulador siguen la arquitectura y el reglamento, distinguir perfiles con y sin percepción 3D y fijar un baseline G4 válido.
-3. [Coevolución y selección](HSL26_COEVOLUTION_PLAN.md): ampliar el entrenamiento de ambos roles, cruzar oponentes y transferir candidatos entre SIL, MVSim y hardware.
+3. [Coevolución y selección, rev. 2.0](HSL26_COEVOLUTION_PLAN.md): diagnosticar sensibilidad y propuestas realizables, buscar pocos candidatos por rol frente a rivales congelados y alternar rondas de coevolución solo con señal y presupuesto; evaluar y transferir entre SIL, MVSim y hardware. El backend ligero queda diferido y no es un requisito de cierre. Un solo prior HGW compartido, aceptado en P4, es el diseño inicial; variar presupuesto de registro no exige dos modelos.
 
 El trabajo puro de estas líneas puede avanzar en paralelo. **La recolección de datos elegibles, la promoción G5 y la liberación G6 dependen de un baseline G4 aceptado para el perfil correspondiente.** Las puertas G0–G3 de ROS/hardware siguen siendo independientes de un `PASS` cinemático.
 
@@ -41,7 +41,7 @@ El trabajo puro de estas líneas puede avanzar en paralelo. **La recolección de
 | M1: G0 de software/ROS | Imagen reproducible; interfaces generadas; procesos arrancan; grafo de tópicos/TF y autoridad correctos; fallos de proceso producen cero | reportes I01–I05, trazas ROS, hash de imagen/config |
 | M2: MVSim caracterizado | Versión/API/sensor/tiempo medidos; dos namespaces; políticas sin verdad; comandos pasan por supervisor | capability report, bags, grafo ROS, escenarios I06–I14 según fidelidad |
 | M3: SIL conforme | Matriz arquitectura/reglamento satisfecha en perfil declarado; ejecución de ambos roles, carrera de acciones y eventos continuos; baseline revisado | matriz T01–T30/I11–I14, trazas observación→actuación y aceptación G4 por perfil |
-| M4: datos y coevolución | Bancos independientes, episodios completos y censurados, torneo cruzado, selección por validación, held-out una vez | manifests de dataset, poblaciones, matrices de torneos y evaluación G5 |
+| M4: datos y búsqueda/coevolución condicionada | Sensibilidad por rol, bancos independientes, episodios completos y censurados, rivales congelados y torneo cruzado; validación y held-out una vez si hay candidato | manifests, coste/curva de búsqueda y matrices; evaluación G5 o baseline retenido con decisión documentada |
 | M5: release | Política compatible y firmada; dos etapas de duración autorizada, roles intercambiados, arranque sin red, rollback y evidencia física | manifest final, runbook, I16/G6, informe de limitaciones |
 
 Cada reporte debe registrar comando exacto, revisión/hash, imagen, perfil, mapa/oponente/semilla, reloj, condiciones del robot, logs crudos, esperado/observado, estado `PASS`/`FAIL`/`BLOCKED`/`NOT_RUN` y revisor. Una prueba solo cuenta para el entorno donde se ejecutó.

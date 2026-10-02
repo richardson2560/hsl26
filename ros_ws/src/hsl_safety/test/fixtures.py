@@ -158,10 +158,10 @@ class DeterministicMockScenario:
             phase=2,
         )
 
-    def watchdog_health(self, *, ready: bool, stop_latched: bool, lease_ns: int) -> Any:
+    def watchdog_health(self, *, healthy: bool, stop_asserted: bool, lease_ns: int) -> Any:
         return SimpleNamespace(
             meta=self.header(frame_id="", lease_ns=lease_ns),
-            ready=ready,
-            stop_latched=stop_latched,
+            healthy=healthy,
+            stop_asserted=stop_asserted,
             config_hash="mock-config",
         )

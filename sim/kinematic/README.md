@@ -66,15 +66,26 @@ and [`P5_environment_baseline.json`](../../artifacts/reports/phase5/P5_environme
 The bounded P5.5 evidence matrix is in
 [`P5.5_rehearsal_report.json`](../../artifacts/reports/phase5/P5.5_rehearsal_report.json).
 
-`autonomous.py` is the bounded P5.6 slice: it adds explicit per-beam coverage,
-a separate estimated-pose input, shared topology identity, Guardian
-`SEARCH_PORTAL` planning/authority/lease/safety composition and a no-motion
-Explorer `OBSERVE_SAFE` path. Its curvature-free supervisor limits usable
-motion to supported commands; fixture values are not hardware calibration.
-It does not supply opponent belief, accepted goal zones, full Explorer
-navigation or G4 evidence. See
+`autonomous.py` is the bounded P5.6 slice: it composes per-beam coverage,
+estimated pose, versioned topology, tactics, authority, routing, control and
+safety. The optional simultaneous SIL profile adds scan-residual opponent
+extraction and a four-state filter, Guardian pursuit, and Explorer synthetic
+goal/escape navigation. Curved motion requires the implemented swept-scan
+coverage, braking and motion-limit evidence. The default exclusive-role
+profile remains distinct. All parameters and inputs are synthetic fixtures,
+not hardware calibration, accepted competition zones, real-cloud HGW or G4
+acceptance. In the simultaneous profile, tracked Guardian pursuit and
+Explorer navigation currently return one proposal; weight-search sensitivity
+must be diagnosed before population-scale training. See
 [`P5.6_autonomous_integration_report.json`](../../artifacts/reports/phase5/P5.6_autonomous_integration_report.json)
 and [`test_p56_autonomous.py`](test_p56_autonomous.py).
+
+The [coevolution plan rev. 2.0](../../docs/HSL26_COEVOLUTION_PLAN.md) retains
+this backend, defers a separate light simulator and requires independent
+evaluation before any candidate promotion. The current benchmark supports
+CAPTURE/TIMEOUT only and uses a synthetic 0.15-second freeze; it does not
+validate official arrival or the 600-second total/240-second preparation
+timing profile.
 
 ## Optional visualizer
 

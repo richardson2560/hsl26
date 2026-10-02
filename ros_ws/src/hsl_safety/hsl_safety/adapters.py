@@ -569,7 +569,14 @@ def validate_authority_context(
         raise ValueError("execution phase is not EXECUTING")
     if not _required(match_state, "motion_authorized"):
         raise ValueError("match motion authority is not granted")
-    if not _required(watchdog_health, "ready"):
-        raise ValueError("watchdog is not ready")
-    if _required(watchdog_health, "stop_latched"):
-        raise ValueError("watchdog stop is latched")
+    # WatchdogHealth is a revision-2 wire contract.  Do not accept the
+    # historical ``ready``/``stop_latched`` aliases here: accepting a field
+    # which is not on the wire would silently manufacture authority.
+    healthy = _required(watchdog_health, "healthy")
+    stop_asserted = _required(watchdog_health, "stop_asserted")
+    if not isinstance(healthy, bool) or not healthy:
+        raise ValueError("watchdog is not healthy")
+    if not isinstance(stop_asserted, bool):
+        raise ValueError("watchdog stop_asserted must be boolean")
+    if stop_asserted:
+        raise ValueError("watchdog stop is asserted")

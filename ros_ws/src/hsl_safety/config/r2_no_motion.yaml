@@ -1,0 +1,13 @@
+# R2 process-boundary profile.  It is deliberately not a calibrated limits
+# profile and must never be used to authorize a competition run.
+safety_supervisor:
+  ros__parameters:
+    config_hash: "UNCONFIGURED_NO_MOTION"
+    stage_id: "r2-disarmed"
+    tick_rate_hz: 20.0
+safety_watchdog:
+  ros__parameters:
+    config_hash: "UNCONFIGURED_NO_MOTION"
+    stage_id: "r2-disarmed"
+    heartbeat_lease_s: 0.15
+    stop_rate_hz: 20.0

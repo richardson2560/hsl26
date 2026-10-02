@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "purpose": "R1 ROS graph ownership, QoS and TF inventory. This file declares contracts; it does not start nodes or grant motion authority.",
+  "physical_command": {
+    "topic": "/commands/velocity",
+    "type": "geometry_msgs/msg/Twist",
+    "sole_publisher": "/cmd_vel_mux"
+  },
+  "topics": [
+    {"name": "/sensors/points", "type": "sensor_msgs/msg/PointCloud2", "owner": "sensor_adapter", "qos": {"reliability": "best_effort", "durability": "volatile", "depth": 1}, "rate": "sensor"},
+    {"name": "/sensors/imu", "type": "sensor_msgs/msg/Imu", "owner": "sensor_adapter", "qos": {"reliability": "best_effort", "durability": "volatile", "depth": 1}, "rate": "sensor"},
+    {"name": "/wheel_odom", "type": "nav_msgs/msg/Odometry", "owner": "kobuki_adapter", "qos": {"reliability": "driver_matched", "durability": "volatile"}, "rate": "driver"},
+    {"name": "/state/ego_local", "type": "hsl_interfaces/msg/EgoState", "owner": "ego_adapter", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "30-50Hz"},
+    {"name": "/state/ego", "type": "hsl_interfaces/msg/EgoState", "owner": "ego_adapter", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "30-50Hz"},
+    {"name": "/world/local_obstacles", "type": "hsl_interfaces/msg/LocalObstacleSnapshot", "owner": "fast_obstacle_adapter", "qos": {"reliability": "best_effort", "durability": "volatile", "depth": 1}, "rate": "processed_cloud"},
+    {"name": "/world/topology", "type": "hsl_interfaces/msg/WorldSnapshot", "owner": "topology_node", "qos": {"reliability": "reliable", "durability": "transient_local", "depth": 1}, "rate": "event"},
+    {"name": "/world/opponent_track", "type": "hsl_interfaces/msg/OpponentTrack", "owner": "tracker_node", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "5-10Hz"},
+    {"name": "/world/opponent_belief", "type": "hsl_interfaces/msg/OpponentBelief", "owner": "belief_node", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "event"},
+    {"name": "/match/match_state", "type": "hsl_interfaces/msg/MatchState", "owner": "stage_manager", "qos": {"reliability": "reliable", "durability": "transient_local", "depth": 1}, "rate": "event_heartbeat"},
+    {"name": "/match/rule_events", "type": "hsl_interfaces/msg/RuleEvent", "owner": "stage_manager", "qos": {"reliability": "reliable", "durability": "volatile"}, "rate": "event"},
+    {"name": "/navigation/path", "type": "hsl_interfaces/msg/PathPlan", "owner": "global_planner", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "event"},
+    {"name": "/navigation/execution_state", "type": "hsl_interfaces/msg/ExecutionState", "owner": "option_executor", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "lease"},
+    {"name": "/hsl/watchdog_health", "type": "hsl_interfaces/msg/WatchdogHealth", "owner": "safety_watchdog", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "lease"},
+    {"name": "/hsl/motion_candidate", "type": "hsl_interfaces/msg/MotionCandidate", "owner": "local_control", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "20Hz"},
+    {"name": "/hsl/safety_status", "type": "hsl_interfaces/msg/SafetyStatus", "owner": "safety_supervisor", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "decision"},
+    {"name": "/hsl/supervisor_heartbeat", "type": "hsl_interfaces/msg/SupervisorHeartbeat", "owner": "safety_supervisor", "qos": {"reliability": "reliable", "durability": "volatile", "depth": 1}, "rate": "cycle"},
+    {"name": "/hsl/cmd_vel_final", "type": "geometry_msgs/msg/Twist", "owner": "safety_supervisor", "qos": {"reliability": "best_effort", "durability": "volatile", "depth": 1}, "rate": "50Hz"},
+    {"name": "/teleop/cmd_vel", "type": "geometry_msgs/msg/Twist", "owner": "authorized_test_teleop", "qos": {"reliability": "best_effort", "durability": "volatile", "depth": 1}, "rate": "manual"},
+    {"name": "/hsl/cmd_vel_stop", "type": "geometry_msgs/msg/Twist", "owner": "safety_watchdog", "qos": {"reliability": "best_effort", "durability": "volatile", "depth": 1}, "rate": ">=20Hz"}
+  ],
+  "tf": [
+    {"parent": "map", "child": "odom", "owner": "localization_fusion"},
+    {"parent": "odom", "child": "base_link", "owner": "wheel_odometry_fusion"},
+    {"parent": "base_link", "child": "lidar_link", "owner": "calibration_static_tf"},
+    {"parent": "base_link", "child": "imu_link", "owner": "calibration_static_tf"}
+  ]
+}

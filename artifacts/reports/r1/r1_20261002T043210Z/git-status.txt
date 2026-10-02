@@ -1,0 +1,20 @@
+﻿ M artifacts/reports/coevolution_audit_20261002/review_checks.json
+ M artifacts/reports/coevolution_audit_20261002/review_checks.py
+ M docs/HSL26_COEVOLUTION_PLAN.md
+ M docs/HSL26_HGW_ROBOT_MODEL_PLAN.md
+ M docs/HSL26_INTEGRATION_AND_COMPETITION_MASTER_PLAN.md
+ M docs/HSL26_PHASE6_IMPLEMENTATION_PLAN.md
+ M docs/HSL26_PHASE6_LEARNING_AND_RELEASE.md
+ M docs/HSL26_ROS_MVSIM_INTEGRATION_PLAN.md
+ M ros_ws/src/hsl_bringup/package.xml
+ M ros_ws/src/hsl_bringup/setup.py
+ M sim/kinematic/README.md
+?? .dockerignore
+?? artifacts/reports/coevolution_audit_20261002/focused_tests.txt
+?? artifacts/reports/r1/
+?? docker/r1/
+?? docs/HSL26_COEVOLUTION_AUDIT_20261002.md
+?? ros_ws/src/hsl_bringup/config/ros_graph_contract.json
+?? ros_ws/src/hsl_bringup/hsl_bringup/graph_verifier.py
+?? ros_ws/src/hsl_bringup/hsl_bringup/r1_graph_fixture.py
+?? ros_ws/src/hsl_bringup/test/

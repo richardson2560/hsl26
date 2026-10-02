@@ -13,7 +13,10 @@ setup(
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
-        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (
+            os.path.join('share', package_name, 'config'),
+            glob('config/*.yaml') + glob('config/*.json'),
+        ),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -22,4 +25,10 @@ setup(
     description='System bringup for HSL26',
     license='Proprietary',
     tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'hsl_graph_verifier = hsl_bringup.graph_verifier:main',
+            'r1_graph_fixture = hsl_bringup.r1_graph_fixture:main',
+        ],
+    },
 )

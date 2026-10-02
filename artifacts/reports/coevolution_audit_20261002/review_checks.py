@@ -8,6 +8,7 @@ import platform
 import pstats
 import io
 from collections import Counter, defaultdict
+from dataclasses import asdict
 from time import perf_counter
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -75,6 +76,9 @@ report = {
     "evidence_class": "development_fixture_diagnostic", "promotion_eligible": False,
     "gate_acceptance": False, "python": platform.python_version(), "host": platform.platform(),
     "scenario_id": fixture.scenario_id, "seed": 20260931, "policy_sha256": genome.sha256,
+    "benchmark_configs": {"unprofiled": asdict(short_runner.config),
+                          "instrumented": asdict(BenchmarkConfig(episode_duration_s=60.0))},
+    "synthetic_freeze_s": 0.15,
     "unprofiled_short_runs": timings, "instrumented_selector_counts": dict(counts),
     "instrumented_terminal": diagnostic.terminal_kind.name,
     "instrumented_active_s": diagnostic.active_duration_s,

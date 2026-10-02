@@ -108,6 +108,97 @@ una persona distinta del autor, como exige esta sección.
 
 R0 pasa a `PASS` únicamente si R0-A–R0-F están aprobados por un revisor distinto del autor y la imagen `acceptance` se identifica por digest. La ausencia de Docker, de acceso al registro, de digest base, de wheelhouse o de una fuente MVSim verificable deja R0 en `BLOCKED_NOT_RUN`; no autoriza sustituirlos con números supuestos. Al pasar R0, se congelan el digest de imagen, locks, SBOM, commit y configuración de build como baseline de R1. Cualquier cambio en ellos invalida R0-B–R0-F y la evidencia ROS/MVSim que dependa de esa imagen.
 
+## 2.2 R1 — inventario y autoridad del grafo
+
+**Cierre técnico a 2026-10-02: `PASS`.** El run
+`artifacts/reports/r1/r1_20261002T052131Z/` validó el contrato SHA-256
+`7a9da872a358d0e22d26169880e81f3a2cda05591d623db15751b5870c55b2d1` contra
+la imagen `hsl26@sha256:aa6852929a8f26eafec66f47991139466de550c614398447bb54711939f9011f`.
+El mux fue el único escritor físico antes y después de reiniciarse; los
+fixtures de segundo escritor, QoS incompatible y TF duplicado fueron
+rechazados; las aristas TF estáticas válidas aprobaron. R1 no activa el robot
+ni implementa la seguridad de R2, y no acredita aún el grafo de dos robots de
+R8. La decisión formal de puerta sigue pendiente de revisión independiente.
+
+### R1.1 — congelar el registro de grafo
+
+1. `ros_ws/src/hsl_bringup/config/ros_graph_contract.json` es el inventario
+   legible por máquina de los tópicos canónicos: nombre robot-relativo, tipo,
+   productor semántico único, QoS y tasa objetivo. La tabla §5 de
+   `HSL26_TECHNICAL_SPECIFICATION.md` continúa siendo normativa si hay una
+   discrepancia; cualquier cambio se hace en ambos documentos y aumenta la
+   revisión del contrato.
+2. Registrar las aristas `map→odom→base_link→{lidar_link,imu_link}` y su
+   propietario semántico único. Un frame duplicado, un padre múltiple o un
+   broadcaster no declarado es `FAIL`; no se corrige con remapping.
+3. Para dos robots, prefijar todos los nombres canónicos bajo `/guardian` o
+   `/explorer`; nunca compartir `/commands/velocity`, `/tf` ni un frame hijo.
+   La variante de un solo robot conserva los nombres raíz de la tabla.
+4. El único escritor físico es `/cmd_vel_mux` sobre
+   `/commands/velocity`. Supervisor, watchdog y teleoperación sólo escriben
+   sus entradas del mux. R1 no autoriza que ningún fixture publique comandos
+   de movimiento no nulos.
+
+### R1.2 — verificador vivo y pruebas negativas
+
+1. `hsl_graph_verifier` usa la API de grafo de `rclpy`, no texto parseado de
+   `ros2 node list`. Captura publicadores, suscriptores, tipos y QoS y escribe
+   un JSON de evidencia. Falla si el tópico físico no tiene exactamente el
+   mux declarado como único publicador o si detecta una pareja QoS incompatible.
+2. Mantener `tools/check_ros_graph_authority.py` como control estático de
+   fixtures JSON; no sustituye al verificador vivo.
+3. La prueba positiva inicial levanta sólo `cmd_vel_mux` en un contenedor
+   `--network none`, sin base ni sensores. La prueba negativa añade un
+   publicador de fixture, espera fallo del verificador y conserva ese log. No
+   se usa un driver o robot físico para provocar el fallo.
+4. Reiniciar el único proceso fuente, esperar descubrimiento DDS y repetir la
+   captura. Debe conservarse exactamente un escritor físico y no debe aparecer
+   otro por el reinicio. El verificador observa `/tf_static` con QoS durable y
+   rechaza aristas duplicadas, padres múltiples o aristas de calibración
+   ausentes. Como TF no transporta la identidad del nodo emisor, la atribución
+   de propietario se revisa contra el launch y el contrato firmado; no se
+   infiere del nombre del frame.
+
+### R1.3 — criterios de salida
+
+| Caso | Evidencia requerida | Resultado para aprobar |
+| --- | --- | --- |
+| R1-A | hash del contrato, tipos/tópicos/QoS/TF y namespaces revisados | registro coincide con §5 y no contiene alias de autoridad |
+| R1-B | captura viva positiva con mux aislado | sólo `/cmd_vel_mux` publica `/commands/velocity` |
+| R1-C | fixture de segundo publicador y fixture QoS incompatible | ambos son detectados y el verificador termina en `FAIL` esperado |
+| R1-D | captura antes/después de reiniciar fuente y reporte TF | no hay escritor residual ni arista TF duplicada |
+
+Los comandos de ejecución y la forma de conservar los reportes están en
+`docker/r1/README.md`. R1-A–R1-D tienen evidencia técnica en
+`artifacts/reports/r1/r1_20261002T052131Z/`; la revisión independiente sigue
+pendiente. R2 puede desarrollar y probar su límite de parada sin habilitar
+movimiento; R7 y cualquier nodo que permita movimiento continúan fuera de
+alcance.
+
+## 2.3 R2 — límite supervisor/watchdog, cerrado por defecto
+
+**Estado de implementación: `IN_PROGRESS` (sin autorización de movimiento).**
+
+R2 materializa el límite de proceso de seguridad sin reutilizar como
+calibración los valores orientativos de `hardware.yaml`. El perfil
+`r2_no_motion.yaml` declara explícitamente `UNCONFIGURED_NO_MOTION`: el
+supervisor publica sólo `Twist()` nulo en `/hsl/cmd_vel_final`; el watchdog,
+en otro proceso, publica periódicamente `Twist()` nulo en
+`/hsl/cmd_vel_stop`. El watchdog arranca desarmado, supervisa secuencia,
+identidad, tiempo steady y lease del latido, y niega todo rearme mientras no
+exista evidencia de velocidad física y recuperación calibrada.
+
+La orden de publicación del supervisor es comando final, estado y sólo
+entonces latido. Si falla esa secuencia, no se publica latido y el watchdog
+conserva la parada. `WatchdogHealth` usa su IDL R2 real (`healthy` y
+`stop_asserted`); los alias históricos no son autoridad válida.
+
+Los comandos reproducibles, criterios PASS/FAIL y dónde guardar la evidencia
+están en `docker/r2/README.md`. El cierre de R2 requiere, además de esas
+pruebas de software, I01–I05 contra mux y downstream reales, medición de
+latencias/timeout y revisión independiente. R2 por sí solo no acredita base
+física, MVSim, ni competición.
+
 ## 3. Caracterización obligatoria de MVSim y MID-360
 
 Antes de diseñar el puente, registrar commit/paquete/API instalados, tipos y frames emitidos, frecuencia, timestamps, latencia, QoS, número/distribución de rayos, alcance, ángulos verticales, zonas ciegas, intensidad y comportamiento ante obstáculos bajos. Comparar con documentación y, cuando existan, bags reales MID-360. Repetir pruebas con el robot en giro y con un rival parcialmente oculto. La salida se clasifica:

@@ -1,0 +1,8 @@
+# Generated interpreter and test-runner state must never become Docker build input.
+# In particular, Windows may keep pytest cache files locked after a test run.
+**/__pycache__/
+**/.pytest_cache/
+**/*.py[cod]
+
+# Git metadata is captured in reports on the host; no Dockerfile consumes it.
+.git/

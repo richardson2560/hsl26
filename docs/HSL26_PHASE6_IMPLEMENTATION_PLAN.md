@@ -8,6 +8,8 @@
 
 ## 1. Purpose, entry conditions and limits
 
+**Execution priority update (2026-10-02):** follow [coevolution plan revision 2.0](HSL26_COEVOLUTION_PLAN.md) for the empirical search sequence: accepted profile-specific baseline, measurable choice/sensitivity for each searched gene, small fixed-opponent search, and alternating role rounds only when signal and budget support them. A second tactical simulator is deferred; two HGW priors are not required. Existing fixture-only training remains non-promotable, and all gates below retain their reported status. The new plan describes work to implement, not new CLI capabilities or completed learning.
+
 This document prepares the repository and a reproducible software-in-the-loop
 (SIL) workflow for Phase 6. It does not implement or claim completion of the
 learning algorithm, G5 promotion, a frozen release, or G6. The Phase 6 entry

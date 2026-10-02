@@ -8,6 +8,7 @@ that decision succeeds.
 
 from dataclasses import dataclass
 from typing import Callable, Optional
+import time
 
 from hsl_core.control.safety import STOP, SafetyEvaluation, SafetySnapshot, SafetySupervisor
 
@@ -87,21 +88,140 @@ class SupervisorRuntime:
 
 
 class SafetySupervisorNode:
-    """ROS-facing orchestration seam around the pure supervisor runtime."""
+    """ROS-facing supervisor which is deliberately motion-disabled in R2.
 
-    def __init__(self, runtime: SupervisorRuntime) -> None:
-        self._runtime = runtime
+    R2 establishes the process and output boundary.  It does *not* install a
+    calibrated limits profile, therefore this node can only publish a STOP.
+    A later calibrated release may replace the evaluator, but must retain this
+    output ordering: final command, status, then heartbeat.
+    """
 
-    def evaluate_tick(self, snapshot, *, now_ros_ns: int, now_steady_ns: int) -> SupervisorTick:
-        return self._runtime.tick(
-            snapshot, now_ros_ns=now_ros_ns, now_steady_ns=now_steady_ns
+    def __init__(self) -> None:
+        # Imports live here so the pure state-machine/adapters remain testable
+        # on a host which has not sourced ROS.
+        import rclpy
+        from geometry_msgs.msg import Twist
+        from hsl_interfaces.msg import SafetyStatus, SupervisorHeartbeat, WatchdogHealth
+        from rclpy.node import Node
+
+        class _Node(Node):
+            pass
+
+        self._node = _Node("safety_supervisor")
+        self._Twist = Twist
+        self._SafetyStatus = SafetyStatus
+        self._SupervisorHeartbeat = SupervisorHeartbeat
+        self._WatchdogHealth = WatchdogHealth
+        self._config_hash = self._node.declare_parameter(
+            "config_hash", "UNCONFIGURED_NO_MOTION"
+        ).value
+        self._stage_id = self._node.declare_parameter("stage_id", "r2-disarmed").value
+        rate_hz = float(self._node.declare_parameter("tick_rate_hz", 20.0).value)
+        if not self._config_hash or not self._stage_id or rate_hz <= 0.0:
+            raise ValueError("supervisor runtime parameters are invalid")
+        self._watchdog_healthy = False
+        self._command_pub = self._node.create_publisher(Twist, "/hsl/cmd_vel_final", 10)
+        self._status_pub = self._node.create_publisher(SafetyStatus, "/hsl/safety_status", 10)
+        self._heartbeat_pub = self._node.create_publisher(
+            SupervisorHeartbeat, "/hsl/supervisor_heartbeat", 10
         )
+        self._node.create_subscription(
+            WatchdogHealth, "/hsl/watchdog_health", self._on_watchdog_health, 10
+        )
+        self._runtime = SupervisorRuntime(
+            _NoMotionEvaluator(),
+            config_hash=self._config_hash,
+            watchdog_health=lambda: self._watchdog_healthy,
+        )
+        self._node.create_timer(1.0 / rate_hz, self._on_tick)
+
+    @property
+    def node(self):
+        """Expose the underlying rclpy node only to the entry point."""
+
+        return self._node
+
+    def _on_watchdog_health(self, message) -> None:
+        # A watchdog declaring a stop is not a usable watchdog authority.
+        self._watchdog_healthy = bool(message.healthy) and not bool(message.stop_asserted)
+
+    def _header(self, *, now_ros_ns: int, seq: int):
+        from hsl_interfaces.msg import ContractHeader
+
+        header = ContractHeader()
+        header.schema_version = ContractHeader.REVISION_2
+        header.source_id = "hsl_safety_supervisor"
+        header.source_session = "r2-no-motion"
+        header.seq = seq
+        header.stage_id = self._stage_id
+        header.clock_epoch = "ros-clock"
+        header.localization_epoch = ""
+        header.frame_id = ""
+        header.observation_stamp.sec = now_ros_ns // 1_000_000_000
+        header.observation_stamp.nanosec = now_ros_ns % 1_000_000_000
+        header.state_stamp.sec = header.observation_stamp.sec
+        header.state_stamp.nanosec = header.observation_stamp.nanosec
+        header.publication_stamp.sec = header.observation_stamp.sec
+        header.publication_stamp.nanosec = header.observation_stamp.nanosec
+        valid_until_ns = now_ros_ns + 200_000_000
+        header.valid_until.sec = valid_until_ns // 1_000_000_000
+        header.valid_until.nanosec = valid_until_ns % 1_000_000_000
+        header.map_version = 0
+        header.topology_version = 0
+        header.validity = ContractHeader.VALID
+        return header
+
+    def _on_tick(self) -> None:
+        now_ros_ns = self._node.get_clock().now().nanoseconds
+        tick = self._runtime.tick(
+            None, now_ros_ns=now_ros_ns, now_steady_ns=time.monotonic_ns()
+        )
+        command = self._Twist()  # geometry_msgs defaults are exactly zero.
+        try:
+            self._command_pub.publish(command)
+            from .adapters import encode_safety_status, encode_supervisor_heartbeat
+
+            status = encode_safety_status(
+                tick.evaluation,
+                self._SafetyStatus(),
+                meta=self._header(now_ros_ns=now_ros_ns, seq=tick.heartbeat_decision_seq),
+                mode=0,
+                limits_id="UNCONFIGURED_NO_MOTION",
+                evaluation_time_ns=0,
+            )
+            self._status_pub.publish(status)
+            # This remains false in R2, independently of any incoming data.
+            heartbeat = encode_supervisor_heartbeat(
+                message=self._SupervisorHeartbeat(),
+                meta=self._header(now_ros_ns=now_ros_ns, seq=tick.heartbeat_decision_seq),
+                decision_seq=tick.heartbeat_decision_seq,
+                mode=0,
+                permit_motion=False,
+                config_hash=self._config_hash,
+                active_option_instance_id="",
+            )
+            self._heartbeat_pub.publish(heartbeat)
+        except Exception as exc:  # no heartbeat on an incomplete publication cycle
+            self._node.get_logger().error(f"fail-closed supervisor publication error: {exc}")
+
+
+class _NoMotionEvaluator:
+    """R2 evaluator sentinel: calibration is intentionally absent."""
+
+    def evaluate(self, snapshot, now_ros_ns, now_steady_ns):
+        del snapshot, now_ros_ns, now_steady_ns
+        raise RuntimeError("R2 has no calibrated motion profile")
 
 
 def main(args=None):
-    """ROS entry point reserved for the pinned ROS deployment wrapper."""
+    """Run the no-motion R2 supervisor in a sourced ROS environment."""
 
-    del args
-    raise RuntimeError(
-        "ROS 2 runtime wrapper is unavailable until the pinned ROS environment is sourced"
-    )
+    import rclpy
+
+    rclpy.init(args=args)
+    node = SafetySupervisorNode()
+    try:
+        rclpy.spin(node.node)
+    finally:
+        node.node.destroy_node()
+        rclpy.shutdown()

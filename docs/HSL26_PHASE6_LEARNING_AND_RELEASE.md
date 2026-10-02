@@ -3,6 +3,8 @@
 **Revision:** 1.0 · **Baseline:** architecture/blueprint revision 2.2; roadmap revision 1.0.  
 **Objective:** assess bounded offline tactical improvement without changing runtime safety, then produce a reproducible, authorized two-stage release. **Exit:** G6; G5 is optional.
 
+**Search scope update (2026-10-02):** [coevolution plan rev. 2.0](HSL26_COEVOLUTION_PLAN.md) orders sensitivity and realizable alternatives before a small fixed-opponent search; alternating coevolution is conditional on signal and compute budget. A new light simulator and dual HGW models are not completion requirements. Preserve baseline, split independence, safety exclusions and the entry gates below.
+
 ## 1. Entry and immutability
 
 Requires a G4 deterministic baseline, validated G0–G3 prerequisites in the intended execution profile, and recorded organizer decisions for all information required by the chosen policy. Official score fields remain unavailable until the organizer supplies them; surrogate rewards are explicitly labeled. Learning never changes rule predicates, option realizers, geometry inflation, speed/braking bounds, ROS authority or truth access.

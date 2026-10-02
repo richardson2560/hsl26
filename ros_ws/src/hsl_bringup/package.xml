@@ -7,10 +7,15 @@
   <maintainer email="team@starline.ru">HSL26 Team</maintainer>
   <license>Proprietary</license>
   <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2_msgs</depend>
+  <depend>tf2_ros</depend>
   <depend>hsl_interfaces</depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>ros2launch</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>

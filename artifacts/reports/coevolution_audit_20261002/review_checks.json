@@ -9,6 +9,19 @@
   "scenario_id": "maze_multiring_7x7_train_a",
   "seed": 20260931,
   "policy_sha256": "d9b07d1cd9998ea1904f05fe4233d98ed49f54fb037a66169df8f4514572a9cf",
+  "benchmark_profile": {
+    "unprofiled_duration_cap_s": 8.0,
+    "instrumented_duration_cap_s": 60.0,
+    "synthetic_freeze_s": 0.15,
+    "control_period_s": 0.05,
+    "discount_rate_per_s": 0.01,
+    "lidar_beam_count": 360,
+    "lidar_max_range_m": 5.0,
+    "lidar_noise_std_m": 0.0,
+    "robot_radius_m": 0.15,
+    "robot_max_speed_mps": 0.20,
+    "remaining_values": "BenchmarkConfig defaults at the source hashes recorded below"
+  },
   "unprofiled_short_runs": [
     {
       "wall_s": 2.9395160999997643,

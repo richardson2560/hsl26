@@ -234,12 +234,12 @@ def test_authority_context_requires_execution_match_and_watchdog_health():
         phase=2,
     )
     match = SimpleNamespace(meta=meta, motion_authorized=True)
-    health = SimpleNamespace(meta=meta, ready=True, stop_latched=False)
+    health = SimpleNamespace(meta=meta, healthy=True, stop_asserted=False)
     validate_authority_context(execution, match, health, context=_context(scenario))
-    health.stop_latched = True
-    with pytest.raises(ValueError, match="latched"):
+    health.stop_asserted = True
+    with pytest.raises(ValueError, match="asserted"):
         validate_authority_context(execution, match, health, context=_context(scenario))
-    health.stop_latched = False
+    health.stop_asserted = False
     execution.lease_generation = 2
     with pytest.raises(ValueError, match="lease_generation"):
         validate_authority_context(execution, match, health, context=_context(scenario))
@@ -257,7 +257,7 @@ def test_authority_context_requires_execution_match_and_watchdog_health():
             phase=2,
         ),
         SimpleNamespace(meta=metadata_meta, motion_authorized=True),
-        SimpleNamespace(meta=metadata_meta, ready=True, stop_latched=False),
+        SimpleNamespace(meta=metadata_meta, healthy=True, stop_asserted=False),
         context=_context(scenario),
     )
 
@@ -326,7 +326,7 @@ def test_deterministic_scenario_controls_all_phase1_sources_and_sinks():
     obstacles = scenario.obstacles(complete=True, lease_ns=100)
     match = scenario.match(motion_authorized=True, lease_ns=100)
     execution = scenario.execution(candidate_authorized=True, lease_ns=100)
-    health = scenario.watchdog_health(ready=True, stop_latched=False, lease_ns=100)
+    health = scenario.watchdog_health(healthy=True, stop_asserted=False, lease_ns=100)
     assert candidate.meta.seq < ego.meta.seq < obstacles.meta.seq
     assert match.meta.frame_id == ""
     assert execution.meta.frame_id == ""

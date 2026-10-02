@@ -1,0 +1,120 @@
+{
+  "contract": "/workspace_hsl26/install/hsl_bringup/share/hsl_bringup/config/ros_graph_contract.json",
+  "errors": [],
+  "result": "PASS",
+  "schema_version": 1,
+  "topics": {
+    "/commands/velocity": {
+      "publishers": [
+        {
+          "durability": "volatile",
+          "node": "/cmd_vel_mux",
+          "reliability": "reliable",
+          "topic_type": "geometry_msgs/msg/Twist"
+        }
+      ],
+      "subscribers": []
+    },
+    "/hsl/cmd_vel_final": {
+      "publishers": [],
+      "subscribers": [
+        {
+          "durability": "volatile",
+          "node": "/cmd_vel_mux",
+          "reliability": "reliable",
+          "topic_type": "geometry_msgs/msg/Twist"
+        }
+      ]
+    },
+    "/hsl/cmd_vel_stop": {
+      "publishers": [],
+      "subscribers": [
+        {
+          "durability": "volatile",
+          "node": "/cmd_vel_mux",
+          "reliability": "reliable",
+          "topic_type": "geometry_msgs/msg/Twist"
+        }
+      ]
+    },
+    "/hsl/motion_candidate": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/hsl/safety_status": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/hsl/supervisor_heartbeat": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/hsl/watchdog_health": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/match/match_state": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/match/rule_events": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/navigation/execution_state": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/navigation/path": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/sensors/imu": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/sensors/points": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/state/ego": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/state/ego_local": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/teleop/cmd_vel": {
+      "publishers": [],
+      "subscribers": [
+        {
+          "durability": "volatile",
+          "node": "/cmd_vel_mux",
+          "reliability": "reliable",
+          "topic_type": "geometry_msgs/msg/Twist"
+        }
+      ]
+    },
+    "/wheel_odom": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/world/local_obstacles": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/world/opponent_belief": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/world/opponent_track": {
+      "publishers": [],
+      "subscribers": []
+    },
+    "/world/topology": {
+      "publishers": [],
+      "subscribers": []
+    }
+  }
+}

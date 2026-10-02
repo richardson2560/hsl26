@@ -7,6 +7,8 @@
 
 ## 1. Decisión ejecutiva
 
+**Decisión de cierre 2026-10-02:** construir y aceptar **un único prior HGW** para el ensamblaje compartido, con el mismo registrador y presupuestos adaptables de adquisición/seguimiento. No se exige entrenar un modelo rápido y otro denso. Cadencia, ROI, número de puntos, inicializaciones e iteraciones se acotan mediante perfilado y error de origen medidos; una variante geométrica solo se justifica por diferencias físicas o necesidad empírica. El [plan de coevolución rev. 2.0](HSL26_COEVOLUTION_PLAN.md) §5 fija la integración: sin coste/precisión inventados, yaw rival no observable no se fuerza y la rama de seguridad conserva retornos. Esta decisión no implica que el modelo ya exista ni que cumpla aceptación física.
+
 El repositorio ya implementa el núcleo matemático HGW y su registro planar en P4.1–P4.2, pero todavía **no contiene un modelo geométrico HGW entrenado con datos del robot real**. El entrenamiento disponible recibe observaciones Hermite preconstruidas en JSON; no importa ni procesa CAD/DAE. Los informes existentes son evidencia de pruebas SIL y declaran explícitamente bloqueada la aceptación con nube real.
 
 Hay dos mallas COLLADA locales —carcasa principal y rueda—, pero no constituyen por sí solas una representación verificada del robot completo. El Xacro agrega geometría de colisión simplificada para base, ruedas y ruedas locas; en el inventario local no se encontró geometría CAD del MID-360, su soporte, cableado u otros elementos montados que formen parte de la superficie visible. Además, no hay una calibración validada del transform entre el marco del modelo y `base_link`.
